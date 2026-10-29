@@ -1,4 +1,11 @@
-import type { Category, MonthKey, Settings, Totals, Transaction } from '@livro-caixa/domain';
+import type {
+  Category,
+  MonthKey,
+  Settings,
+  Totals,
+  Transaction,
+  TransactionInput,
+} from '@livro-caixa/domain';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch, jsonBody } from '@/shared/api/client';
@@ -92,5 +99,17 @@ export function useDeleteTransaction() {
       return queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
     onError: showError,
+  });
+}
+
+export function useSaveTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string | null; input: TransactionInput }) =>
+      apiFetch<{ transaction: Transaction }>(id ? `/api/transactions/${id}` : '/api/transactions', {
+        method: id ? 'PUT' : 'POST',
+        ...jsonBody(input),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY }),
   });
 }
