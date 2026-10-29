@@ -4,6 +4,8 @@ Self-hosted household cash book for a couple. It tracks income and expenses, mar
 
 The source design is the Design canvas "Livro-caixa — Lançamentos e acerto": https://claude.ai/code/artifact/fe1ce3e5-2bb1-4f8e-8afa-5406b57c8a9a. Its `project/Main.dc.html` holds the whole interactive prototype, markup and logic. When a story below is ambiguous, the prototype decides.
 
+**[Project status & roadmap](#project-status--roadmap) is the source of truth for what is done and what comes next.** Keep it current: every feature PR updates it (see the Definition of done).
+
 ## Language rules
 
 - **Code, identifiers, comments, commits, branch names, PR titles and PR bodies are in English.**
@@ -30,10 +32,10 @@ The source design is the Design canvas "Livro-caixa — Lançamentos e acerto": 
 | Layer | Choice |
 |---|---|
 | Runtime / package manager | Bun (workspaces) |
-| Backend | Express on Bun, `bun:sqlite`, zod |
-| Frontend | Vite + React + TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, React Router, React Hook Form |
+| Backend | Express 5 on Bun, `bun:sqlite`, zod 3, cookie-parser |
+| Frontend | Vite 7 + React 19 + TypeScript, Tailwind CSS v4, shadcn/ui (new-york, radix-ui), TanStack Query 5, React Router 7, React Hook Form, Sonner, lucide-react |
 | Shared | `packages/domain`: pure TypeScript domain rules and zod schemas, used by both apps |
-| Tests | `bun test` (domain + API), Vitest + Testing Library + happy-dom (web), Playwright (e2e) |
+| Tests | `bun test` (domain + API, supertest), Vitest 4 + Testing Library + happy-dom (web), Playwright (e2e, Chromium) |
 | Delivery | One multi-stage Docker image. Express serves `/api` and the built SPA. SQLite lives on the `/data` volume. |
 
 ## Repository layout
@@ -57,17 +59,28 @@ e2e/                    Playwright specs
 ```bash
 bun install
 bun run dev            # api on :3000 and web on :5173 (proxying /api)
+bun run seed:demo      # loads the prototype's sample data (Nov 2025 – Oct 2026) into an empty dev database
 bun run test           # all unit + integration tests
-bun run test:e2e       # Playwright (starts the app)
+bun run test:e2e       # Playwright: builds the SPA and serves it from the API on :4173 with an in-memory DB
 bun run lint
-bun run typecheck
-bun run build
+bun run typecheck      # all workspaces plus e2e/
+bun run build          # builds the SPA into apps/web/dist
 docker compose up --build             # production image on http://localhost:3000
 docker compose exec app bun run cli create-user <email> <name>
 docker compose exec app bun run cli reset-password <email>
 ```
 
-The first user comes from `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` on first boot, or from `create-user`. There is no signup screen.
+The first user comes from `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` on first boot, or from `create-user`. There is no signup screen. The CLI prompts for the password, or reads it from `NEW_PASSWORD`. `reset-password` signs out every session of that user.
+
+Environment variables (`apps/api/src/config.ts`):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3000` | HTTP port |
+| `DATABASE_PATH` | `./data/livro-caixa.sqlite` (`/data/livro-caixa.sqlite` in Docker) | SQLite file; `:memory:` for tests |
+| `STATIC_DIR` | unset (`/app/apps/web/dist` in Docker) | Built SPA to serve; may be relative |
+| `SECURE_COOKIES` | `false` | Set `true` behind HTTPS |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | unset | First user, created only while the database has no users |
 
 ## Architecture
 
@@ -119,7 +132,7 @@ Work **red → green → refactor**. Write the failing test first, make it pass 
 
 - Test behavior, not implementation. One reason to fail per test. Use test-data builders instead of large literals.
 - Every bug fix starts with a test that reproduces the bug.
-- **Definition of done:** tests written first and passing, plus `lint`, `typecheck` and `build` passing, plus the UI checked against the design at 1440px and 375px.
+- **Definition of done:** tests written first and passing, plus `lint`, `typecheck` and `build` passing, plus the UI checked against the design at 1440px and 375px, plus [Project status & roadmap](#project-status--roadmap) updated in the same PR (story status, endpoints, schema, test counts, follow-ups).
 
 ## Git workflow
 
@@ -184,9 +197,204 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 ---
 
+# Project status & roadmap
+
+_Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`._
+
+## Summary
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
+| 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ⏳ Next |
+| 2 — Configurações | US-11 Categories and partner split settings | ⏳ Planned |
+| 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
+| 4 — Resumo mensal | US-08 | ⏳ Planned |
+| 5 — Visão geral | US-09 (becomes the landing page) | ⏳ Planned |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | ⏳ Planned |
+
+Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
+
+## What is built (Phase 1)
+
+| PR | Branch | Delivered |
+|---|---|---|
+| [#1](https://github.com/matheus-ferreira1/livro-caixa/pull/1) | `feat/auth-login` | Session auth, login throttling, admin CLI, login page, app shell, Docker image |
+| [#2](https://github.com/matheus-ferreira1/livro-caixa/pull/2) | `feat/transactions-list` | Money, date, settlement and list rules; ledger schema; read, toggle and delete endpoints; Lançamentos page in both modes; demo seed |
+| [#3](https://github.com/matheus-ferreira1/livro-caixa/pull/3) | `feat/transaction-form` | Form rules; create/replace endpoints; Novo/Editar lançamento sheet; Playwright e2e; SPA path fix |
+
+### Web routes
+
+| Route | Screen | Notes |
+|---|---|---|
+| `/entrar` | Login (US-01) | Redirects to `/lancamentos` (or the page you came from) when already signed in. Shows the `notice` passed in router state after sign-out. |
+| `/` | — | Redirects to `/lancamentos` |
+| `/lancamentos` | Lançamentos (US-03, US-04, US-05) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
+| any other path | — | Redirects to `/lancamentos`; every route except `/entrar` requires a session |
+
+### API
+
+All routes except `/api/health` and `/api/auth/login` require the `lc_session` cookie. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Validation messages are the pt-BR copy from the design.
+
+| Method & path | Use case | Notes |
+|---|---|---|
+| `GET /api/health` | — | `{ ok: true }`; used by the Docker healthcheck |
+| `POST /api/auth/login` | `Login` | Body `{ email, password, remember }`. Locks e-mail + IP for 60 s after 5 failures. A cookie that lasts 30 days with `remember`, a browser-session cookie otherwise (the server still expires it after 12 h). |
+| `POST /api/auth/logout` | `Logout` | 204; deletes the session |
+| `GET /api/auth/me` | `Authenticate` | `{ user: { id, email, name } }` |
+| `GET /api/categories` | — | `{ categories }` |
+| `GET /api/settings` | — | `{ settings: { partnerName, partnerShare } }` |
+| `GET /api/transactions?month=YYYY-MM` | `ListMonthTransactions` | The month's entries; the client filters and sorts them |
+| `GET /api/transactions/search` | `SearchTransactions` | Query params `type, status, category ('all' \| id \| 'none'), q, from, to, sort, dir, page, pageSize (25\|50\|100)`. Returns `{ items, page, totalPages, start, end, total, totals, groups[{ monthKey, count, netCents, ids }] }`. Filters run in the domain over all rows. |
+| `POST /api/transactions` | `SaveTransaction` | 201; body is `TransactionInput` (`valueCents` as an integer) |
+| `PUT /api/transactions/:id` | `SaveTransaction` | Full replace; keeps `seriesId` |
+| `PATCH /api/transactions/:id` | `ToggleTransactionFlags` | `{ confirmed?, split? }`; only expenses can be split |
+| `DELETE /api/transactions/:id` | `DeleteTransaction` | 204 |
+
+### Database (SQLite, `apps/api/src/infrastructure/db/migrations.ts`)
+
+Migrations are append-only and tracked in `schema_migrations`.
+
+- `001_users_and_sessions`:
+  - `users(id, email UNIQUE, name, password_hash, created_at)`
+  - `sessions(token_hash PK, user_id, expires_at, persistent)`; only the SHA-256 of the token is stored
+- `002_ledger`:
+  - `categories(id, name, type receita|despesa, color, UNIQUE(type, name NOCASE))`, seeded with the 12 default categories from the design
+  - `transactions(id, date YYYY-MM-DD, description, note, type, category_id, value_cents > 0, split, confirmed, recurring, series_id, created_at, updated_at)`
+  - `settings(id = 1, partner_name, partner_share 0–100)`, seeded with `('Companheira', 50)`
+
+### Domain (`packages/domain`)
+
+- `auth/`: login validation and messages, `nameFromEmail`, `initialsOf`
+- `money/`: `parseMoney` (pt-BR input → cents), `formatMoney`, `formatSignedMoney`, `toMoneyInput`, `percentOf`
+- `dates/`: `monthLabel`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `defaultDateForMonth`
+- `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
+- `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation, ready for US-06) and `monthTiles`
+- `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
+- `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
+
+### Tests (all green on `main`)
+
+| Suite | Count | Command |
+|---|---|---|
+| Domain unit | 56 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 33 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 28 | `bun run --filter '@livro-caixa/web' test` |
+| E2E | 1 flow (login error → login → create → confirm → edit → Todos → delete → logout) | `bun run test:e2e` |
+
+### Decisions taken in Phase 1
+
+- After sign-in the user lands on **Lançamentos** instead of Visão geral, because US-09 was not built yet. Switch the landing page in Phase 5.
+- The money parser accepts `1.234,56`, `1234,56`, `180`, `10.5` and `R$ 10,5`, and rejects anything else.
+- Currency formatting keeps Intl's no-break space after `R$`, and negatives use U+2212 (`−R$ 50,00`).
+- The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
+- The month view loads the whole month and filters on the client, because the tiles need the full month anyway.
+- The login lockout counters live in memory, so a restart clears them. This is acceptable for a single container.
+- The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
+- Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
+- Demo data (`seed:demo`) is for development only and refuses to load into a non-empty database.
+
+## Phase 1 placeholders to restore later
+
+These parts of the design were hidden on purpose in Phase 1. Each one comes back with the phase that builds its target.
+
+| Hidden element | Where | Restore in |
+|---|---|---|
+| Nav items "Visão geral", "Patrimônio", "Resumo mensal", "Configurações" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | The phase that builds each screen |
+| User-menu item "Configurações" | `apps/web/src/shared/layout/UserMenu.tsx` | Phase 2 |
+| "Gerenciar categorias" link in the form | `TransactionFormSheet.tsx`, category header | Phase 2 |
+| "Gerar recorrentes" and "Gerar acerto" header buttons | `TransactionsPage.tsx` header actions, next to `NewEntryButton` | Phase 3 |
+| Recurring banner in month mode | `TransactionsPage.tsx`, between the header and the tiles | Phase 3 |
+| Landing on Visão geral after login | `HOME_PATH` in `LoginPage.tsx`, the index redirect in `routes.tsx` | Phase 5 |
+
+## Roadmap
+
+Every item below gets its own branch and PR, following the Git workflow above.
+
+### Phase 1.5 — Hardening (next)
+
+- [ ] **CI**: a GitHub Actions workflow on PRs that runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test`, `build` and `test:e2e` (install Chromium). Then make it a required check on `main`.
+- [ ] **Verify the Docker image**: `docker compose up --build` with `ADMIN_PASSWORD` set; the login works; data survives a container restart (`/data` volume); the healthcheck reports healthy; `docker compose exec app bun run cli reset-password` works. Not verified yet, because the Docker daemon was not running when Phase 1 was built.
+- [ ] **Clean up expired sessions**: delete rows past `expires_at` on boot or periodically. Expired sessions are only removed when someone uses them.
+- [ ] **Rate limit by IP**: the current lockout keys on e-mail + IP, so add a coarse per-IP limit on `/api/auth/login`.
+- [ ] **Session expiry in the UI**: on any 401 from a data request, clear the user query and send the user to `/entrar` (today only `RequireAuth` handles a missing session on load).
+- [ ] **Bundle size**: the app chunk is ~300 kB minified; consider importing lucide icons per file and lazy-loading routes once more screens exist.
+
+### Phase 2 — Configurações (US-11)
+
+- [ ] API:
+  - `POST/PATCH/DELETE /api/categories`; a category in use cannot be deleted; names must be unique per type, case-insensitive
+  - `PUT /api/settings` with `partnerName` and `partnerShare` (0–100, step 5)
+- [ ] Domain: category validation messages ("Dê um nome para a categoria.", "Já existe uma categoria com esse nome nesse tipo."), usage counts, the swatch palette.
+- [ ] Web `/configuracoes`:
+  - categories card with create, inline edit and delete
+  - Divisão de contas with the live preview text
+- [ ] Restore the nav item, the user-menu item and "Gerenciar categorias".
+- [ ] Invalidate the `categories` and `settings` queries after edits; the Lançamentos tiles and form must reflect the new share.
+
+### Phase 3 — Acerto and recorrentes (US-06, US-07)
+
+- [ ] **US-06 Gerar acerto**:
+  - dialog with the print summary, "Incluir contas previstas", share text, "Copiar texto", "Enviar no WhatsApp" and "Registrar acerto"
+  - `computeSettlement` already exists; add `buildShareText` in the domain
+  - register the acerto through `POST /api/transactions`
+- [ ] **US-07 Gerar recorrentes**:
+  - domain `recurringCandidates(transactions, month)`
+  - `GET /api/recurring/candidates?month=` and `POST /api/recurring/generate` (validated, transactional, keeps `seriesId`)
+  - review dialog
+  - the banner with a per-month "Agora não", stored server-side or in `localStorage`; decide in that PR
+- [ ] Restore the "Gerar recorrentes" and "Gerar acerto" buttons and the banner on Lançamentos.
+
+### Phase 4 — Resumo mensal (US-08)
+
+- [ ] Domain: `monthSummary(month, mode)` and `summaryStatus`, plus the year aggregates.
+- [ ] API `GET /api/summary?year=&mode=real|proj`.
+- [ ] Web `/resumo`:
+  - year navigation and mode toggle
+  - KPI tiles
+  - diverging "Balanço por mês" chart
+  - table with Acumulado bars, Situação and links to each month
+
+### Phase 5 — Visão geral (US-09)
+
+- [ ] Domain: KPIs and deltas against the 12-month average, the 12-month series, the category donut with the "Outras" bucket, open items with relative due labels.
+- [ ] API `GET /api/dashboard?month=&mode=`.
+- [ ] Web `/visao-geral`:
+  - KPI tiles
+  - bars chart with tooltip
+  - donut and legend
+  - "Em aberto no mês" with "Confirmar"
+  - acerto card
+- [ ] Make Visão geral the landing page after login and the `/` redirect.
+
+### Phase 6 — Patrimônio and Fechamento (US-10)
+
+- [ ] Migration `003_wealth`: `assets` and `snapshots` tables.
+- [ ] Domain: asset value and cost, KPIs, allocation by class and institution, closing availability (from the 25th), closing math.
+- [ ] API: asset CRUD, `GET /api/wealth`, `POST /api/wealth/closings`.
+- [ ] Web `/patrimonio`:
+  - header with "Modo tranquilo"
+  - banners
+  - KPI tiles
+  - evolution chart
+  - allocation bar
+  - assets table
+  - asset sheet
+  - closing dialog
+- [ ] Automatic quotes for `pricing: 'auto'` assets need a price source. This is an open decision: pick a provider that needs no third-party account, or keep quotes manual.
+
+## Open questions
+
+- Single user or two users per instance? Phase 1 supports several accounts sharing one ledger, but there is no per-user data. Decide before Phase 2 whether the partner gets a login.
+- Where to store "Agora não" for the recurring banner (Phase 3): server-side per user, or `localStorage`.
+- Price source for automatic asset quotes (Phase 6).
+
+---
+
 # User stories
 
-Phase 1 is **Login, Lançamentos, Novo/Editar lançamento**. The other stories are the backlog. Each one becomes its own `feat/` branch and PR.
+Each story's heading shows its status and phase, as tracked in [Project status & roadmap](#project-status--roadmap). Each story becomes its own `feat/` branch and PR.
 
 Shared rules:
 - `partnerName` is `settings.partnerName.trim() || "Companheira"`. `partnerShare` is an integer from 0 to 100 (default 50).
@@ -198,9 +406,9 @@ Shared rules:
 - Month labels use full pt-BR month names ("Outubro 2026"). Weekday abbreviations are `dom seg ter qua qui sex sáb`.
 - Toasts disappear after 2.8 s.
 
-## Phase 1
+## Phase 1 — done
 
-### US-01 Sign in — *Phase 1*
+### US-01 Sign in — ✅ Done (Phase 1, PR #1)
 As the instance owner, I want to sign in with the account my admin created, so my data is protected.
 
 - Split layout. On the **left** is a dark panel (`#17201C`) with faint horizontal ruled lines every 44px (`rgba(159,216,190,0.09)`), containing:
@@ -230,7 +438,7 @@ As the instance owner, I want to sign in with the account my admin created, so m
 - On success, the user lands on **Lançamentos**. (Once Visão geral exists, it becomes the landing page.)
 - "Manter conectado" checked gives a persistent session cookie (30 days); unchecked gives a browser-session cookie. The cookie is httpOnly and SameSite=Lax.
 
-### US-02 Sign out and the app shell — *Phase 1*
+### US-02 Sign out and the app shell — ✅ Done (Phase 1, PR #1)
 - Dark header (`#17201C`, min-height 64px) with the logo and "Livro-caixa".
 - Nav (aria "Principal"). Phase 1 shows only "Lançamentos". The full nav is "Visão geral", "Lançamentos", "Patrimônio", "Resumo mensal", "Configurações". The active item has bg `#2C3832`, white text and `aria-current="page"`; inactive items use `#C9D3CD`.
 - User menu button: a mint avatar with initials plus a chevron (aria "Conta de {nome}", `aria-haspopup=menu`). It opens a 264px white panel with:
@@ -241,7 +449,7 @@ As the instance owner, I want to sign in with the account my admin created, so m
 - Sign out returns to the login screen with the notice "Você saiu da sua conta." (`#E3F1EA` / `#136B4A`, check icon).
 - The display name comes from the user record. Initials are the first letters of the first two words, or the first two letters when the name is one word.
 
-### US-03 Browse the month — *Phase 1*
+### US-03 Browse the month — ✅ Done (Phase 1, PR #2)
 As a user, I want to see one month of entries with totals, so I know where the month stands.
 
 - Header:
@@ -274,7 +482,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 - Footer band: "{shown} de {total} lançamentos", and mono "Entradas {receitas+acertos}" (green) and "Saídas {despesas}" (red) for the filtered rows.
 - Mode, month and filters are kept in the URL.
 
-### US-04 Browse all entries — *Phase 1*
+### US-04 Browse all entries — ✅ Done (Phase 1, PR #2)
 - "Todos" switches to h1 "Todos os lançamentos", sorts by date descending and hides the month navigation.
 - Tiles:
   - "Receitas filtradas"
@@ -296,7 +504,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 - Any filter change resets the list to page 1.
 - Empty hint: "Nenhum lançamento corresponde aos filtros e ao período escolhidos."
 
-### US-05 Create and edit an entry — *Phase 1*
+### US-05 Create and edit an entry — ✅ Done (Phase 1, PR #3)
 - "Novo lançamento" opens a right-side **sheet** (480px). The title is "Novo lançamento", or "Editar lançamento" when editing; the close button has the aria "Fechar".
 - Fields:
   - "Tipo": a 3-column grid of "Receita / Despesa / Acerto". The active button gets the type's bg, color and border. Changing the type resets the category to the first category of that type and clears "split" unless the new type is despesa.
@@ -322,9 +530,9 @@ As a user, I want to see one month of entries with totals, so I know where the m
 - Footer (`#F8F9F6`): "Cancelar" and the primary "Adicionar lançamento", or "Salvar alterações" when editing.
 - Edit (pencil) opens the same sheet prefilled. The value is shown as `0,00`.
 
-## Backlog
+## Backlog — not started
 
-### US-06 Generate the settlement (Gerar acerto)
+### US-06 Generate the settlement (Gerar acerto) — ⏳ Phase 3
 - A dialog (1000px, bg `#F4F5F1`) titled "Acerto de contas", with the sub-line "{Mês AAAA} · contas divididas com {partnerName}".
 - Left column, labeled "Resumo para print":
   - a card with a dark header showing "Acerto · {Mês}", "Valor a acertar por {partnerName}" and the 34px mono balance
@@ -342,7 +550,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - "Enviar no WhatsApp": opens `https://wa.me/?text=…`
 - Blue box: "Quando {partnerName} enviar o valor" / "Registre o acerto como previsto agora e marque como confirmado quando o dinheiro cair." The button "Registrar acerto de {balance}" creates a pending acerto on the month's last day, described "Acerto das contas divididas", with the note "{partnerName} · {n} contas de {Mês}". Toast: "Acerto registrado como previsto. Confirme quando receber." When the balance is 0, the button is disabled and reads "Acerto do mês já registrado".
 
-### US-07 Generate recurring entries (Gerar recorrentes)
+### US-07 Generate recurring entries (Gerar recorrentes) — ⏳ Phase 3
 - Candidates: for each `seriesId`, take the latest occurrence before the month. It is a candidate when it is still `recurring`, is not an acerto, and the series has no entry in the month yet. The candidate's day is the source's day, capped at the month's last day, and its value is the source's value.
 - Banner (month mode only, `#E5EBFA` / `#1F3C8F`):
   - text: "1 lançamento recorrente ainda não foi gerado para {Mês}." or "{n} lançamentos recorrentes ainda não foram gerados para {Mês}."
@@ -357,7 +565,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - Empty state: "Tudo em dia" / "Todos os lançamentos recorrentes já estão em {Mês}."
 - Generated entries are pending, with an empty note and `recurring: true`, and keep their `seriesId`. Toast: "{n} lançamento(s) gerado(s) como previstos".
 
-### US-08 Monthly summary (Resumo mensal)
+### US-08 Monthly summary (Resumo mensal) — ⏳ Phase 4
 - Eyebrow "Resumo mensal". Year navigation ("Ano anterior" / "Próximo ano") around a mono h1 with the year.
 - Mode segment "Realizado | Com previstos". The hint reads "Só lançamentos confirmados." or "Inclui previstos e o acerto esperado das contas divididas."
 - `monthSummary`:
@@ -378,7 +586,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - the last row is "Total {ano}"
 - Footnote: "Balanço = receitas + acertos − despesas. O acerto entra no balanço porque compensa a parte das contas divididas que você pagou, mas não conta como receita."
 
-### US-09 Dashboard (Visão geral)
+### US-09 Dashboard (Visão geral) — ⏳ Phase 5
 - Same month navigation and "Realizado | Com previstos" mode as US-08. The hint reads "Só lançamentos confirmados." or "Inclui previstos e o acerto esperado."
 - KPI tiles; each delta is colored good, bad or neutral and shows an arrow:
   - **"Balanço do mês"**, hint "Receitas + acertos − despesas".
@@ -413,7 +621,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - progress bar, then "{recebido} recebido · {n} contas divididas ({total})"
   - "Abrir acerto" opens US-06
 
-### US-10 Net worth (Patrimônio) and monthly closing (Fechamento)
+### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — ⏳ Phase 6
 - Assets: `{ institution, name, assetClass, pricing: 'auto'|'manual', quantity, avgPrice, price, invested, current, dayChange, updatedAt }`.
   - Classes:
 
@@ -476,7 +684,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - appends a snapshot
   - toast: "Fechamento de {Mês} registrado"
 
-### US-11 Settings (Configurações)
+### US-11 Settings (Configurações) — ⏳ Phase 2
 - Eyebrow "Preferências", h1 "Configurações".
 - **Categorias**
   - Intro: "Categorias organizam receitas e despesas. Acertos não usam categoria. Uma categoria em uso não pode ser excluída, só renomeada."
