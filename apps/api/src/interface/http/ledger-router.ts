@@ -1,4 +1,4 @@
-import { isIsoDate, isMonthKey, PAGE_SIZES } from '@livro-caixa/domain';
+import { isIsoDate, isMonthKey, PAGE_SIZES, transactionInputSchema } from '@livro-caixa/domain';
 import { Router } from 'express';
 import { z } from 'zod';
 import type { Container } from '../../container';
@@ -50,6 +50,19 @@ export function ledgerRouter(container: Container): Router {
   router.get('/transactions/search', (req, res) => {
     const { q, ...rest } = searchQuery.parse(req.query);
     res.json(container.searchTransactions.execute({ ...rest, query: q }));
+  });
+
+  router.post('/transactions', (req, res) => {
+    const transaction = container.saveTransaction.execute(null, transactionInputSchema.parse(req.body));
+    res.status(201).json({ transaction });
+  });
+
+  router.put('/transactions/:id', (req, res) => {
+    const transaction = container.saveTransaction.execute(
+      req.params.id,
+      transactionInputSchema.parse(req.body),
+    );
+    res.json({ transaction });
   });
 
   router.patch('/transactions/:id', (req, res) => {

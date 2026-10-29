@@ -5,3 +5,4 @@ export * from './money/money';
 export * from './transactions/list-query';
 export * from './transactions/month-summary';
 export * from './transactions/transaction';
+export * from './transactions/transaction-input';

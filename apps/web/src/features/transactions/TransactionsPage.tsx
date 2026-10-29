@@ -9,13 +9,16 @@ import {
   shiftMonth,
   sortTransactions,
   defaultSortDirection,
+  draftFromTransaction,
+  emptyDraft,
+  monthOf,
   totalsOf,
   type Category,
   type ListMode,
   type Transaction,
 } from '@livro-caixa/domain';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Segmented } from '@/shared/Segmented';
 import {
   useCategories,
@@ -28,6 +31,7 @@ import {
 import { AllFiltersCard } from './components/AllFiltersCard';
 import { ListToolbar } from './components/ListToolbar';
 import { Pager } from './components/Pager';
+import { TransactionFormSheet, type FormTarget } from './components/TransactionFormSheet';
 import { SummaryTiles, type TileSpec } from './components/SummaryTiles';
 import { TransactionTable, type RowGroup } from './components/TransactionTable';
 import { useListState } from './useListState';
@@ -57,6 +61,7 @@ export function TransactionsPage() {
   const partnerName = settings ? displayPartnerName(settings) : '';
   const toggle = useToggleFlags();
   const remove = useDeleteTransaction();
+  const [formTarget, setFormTarget] = useState<FormTarget | null>(null);
 
   const monthQuery = useMonthTransactions(state.month, !isAll);
   const range = periodRange(state.period, today, { from: state.from, to: state.to });
@@ -95,6 +100,13 @@ export function TransactionsPage() {
   const tiles = isAll
     ? allModeTiles(searchQuery.data?.totals, searchQuery.data?.total ?? 0, PERIOD_NAMES[state.period])
     : monthModeTiles(monthTx, settings?.partnerShare ?? 0, partnerName);
+
+  const visibleById = new Map((isAll ? (searchQuery.data?.items ?? []) : monthTx).map((t) => [t.id, t]));
+  const openNew = () => setFormTarget({ id: null, draft: emptyDraft(state.month, today, categories) });
+  const openEdit = (id: string) => {
+    const t = visibleById.get(id);
+    if (t) setFormTarget({ id, draft: draftFromTransaction(t) });
+  };
 
   const changeMode = (mode: ListMode) =>
     update({ mode, sort: 'date', dir: defaultSortDirection('date', mode) });
@@ -139,7 +151,7 @@ export function TransactionsPage() {
               <MonthArrow label="Mês anterior" onClick={() => update({ month: shiftMonth(state.month, -1) })}>
                 <ChevronLeft className="size-[18px]" aria-hidden="true" />
               </MonthArrow>
-              <h1 className="m-0 min-w-[248px] text-center text-[32px] font-bold tracking-[-0.02em]">
+              <h1 className="m-0 min-w-0 text-center text-[clamp(24px,7vw,32px)] font-bold whitespace-nowrap sm:min-w-[248px] tracking-[-0.02em]">
                 {monthLabel(state.month)}
               </h1>
               <MonthArrow label="Próximo mês" onClick={() => update({ month: shiftMonth(state.month, 1) })}>
@@ -147,6 +159,9 @@ export function TransactionsPage() {
               </MonthArrow>
             </div>
           )}
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          <NewEntryButton onClick={openNew} />
         </div>
       </div>
 
@@ -177,13 +192,28 @@ export function TransactionsPage() {
         onToggleConfirmed={(row) => toggle.mutate({ id: row.id, confirmed: !row.confirmed })}
         onToggleSplit={(row) => toggle.mutate({ id: row.id, split: !row.split })}
         onDelete={(row) => remove.mutate(row.id)}
+        onEdit={(row) => openEdit(row.id)}
         empty={
           <div className="flex flex-col items-center gap-3 px-5 py-14 text-center text-muted-foreground">
             <span className="text-base font-semibold text-ink">Nenhum lançamento encontrado</span>
             <span>{emptyHint}</span>
+            <NewEntryButton onClick={openNew} withIcon={false} />
           </div>
         }
         footer={footer}
+      />
+
+      <TransactionFormSheet
+        target={formTarget}
+        categories={categories}
+        partnerName={partnerName}
+        partnerShare={settings?.partnerShare ?? 0}
+        onClose={() => setFormTarget(null)}
+        onSaved={(transaction) => {
+          setFormTarget(null);
+          // Show the month the entry landed in, as the design does after saving.
+          update({ month: monthOf(transaction.date) }, { resetPage: false });
+        }}
       />
     </div>
   );
@@ -296,6 +326,19 @@ function MonthFooter({ shown, total, filtered }: { shown: number; total: number;
         </span>
       </span>
     </div>
+  );
+}
+
+function NewEntryButton({ onClick, withIcon = true }: { onClick: () => void; withIcon?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-11 items-center gap-2 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90"
+    >
+      {withIcon && <Plus className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />}
+      Novo lançamento
+    </button>
   );
 }
 

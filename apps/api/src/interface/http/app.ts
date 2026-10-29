@@ -1,7 +1,7 @@
 import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { Container } from '../../container';
 import { authRouter } from './auth-router';
 import { errorHandler } from './errors';
@@ -29,9 +29,11 @@ export function createApp(container: Container, { staticDir }: AppOptions = {}):
   });
 
   if (staticDir && existsSync(staticDir)) {
-    app.use(express.static(staticDir, { index: false, maxAge: '1h' }));
+    // sendFile needs an absolute path; STATIC_DIR may be relative to the working directory.
+    const root = resolve(staticDir);
+    app.use(express.static(root, { index: false, maxAge: '1h' }));
     app.get('/{*spa}', (_req, res) => {
-      res.sendFile(join(staticDir, 'index.html'));
+      res.sendFile(join(root, 'index.html'));
     });
   }
 
