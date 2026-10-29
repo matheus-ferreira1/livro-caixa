@@ -199,7 +199,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`; CI added on `chore/ci`._
+_Last updated: 2026-10-29, after PR #6 (CI) was merged into `main`._
 
 ## Summary
 
@@ -207,7 +207,7 @@ _Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`; CI added o
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | 🚧 In progress (CI done) |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | 🚧 In progress (CI done, PR #6) |
 | 2 — Configurações | US-11 Categories and partner split settings | ⏳ Planned |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
@@ -216,13 +216,14 @@ _Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`; CI added o
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phase 1)
+## What is built (Phase 1 and 1.5 so far)
 
 | PR | Branch | Delivered |
 |---|---|---|
 | [#1](https://github.com/matheus-ferreira1/livro-caixa/pull/1) | `feat/auth-login` | Session auth, login throttling, admin CLI, login page, app shell, Docker image |
 | [#2](https://github.com/matheus-ferreira1/livro-caixa/pull/2) | `feat/transactions-list` | Money, date, settlement and list rules; ledger schema; read, toggle and delete endpoints; Lançamentos page in both modes; demo seed |
 | [#3](https://github.com/matheus-ferreira1/livro-caixa/pull/3) | `feat/transaction-form` | Form rules; create/replace endpoints; Novo/Editar lançamento sheet; Playwright e2e; SPA path fix |
+| [#6](https://github.com/matheus-ferreira1/livro-caixa/pull/6) | `chore/ci` | GitHub Actions CI (lint, typecheck, test, build, e2e); fixed a timing race in the web form test |
 
 ### Web routes
 
@@ -274,7 +275,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
 - `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
 
-### Tests (all green on `main`)
+### Tests (all green on `main` and in CI)
 
 | Suite | Count | Command |
 |---|---|---|
@@ -282,6 +283,8 @@ Migrations are append-only and tracked in `schema_migrations`.
 | API integration | 33 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 28 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 1 flow (login error → login → create → confirm → edit → Todos → delete → logout) | `bun run test:e2e` |
+
+CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
 
 ### Decisions taken in Phase 1
 
@@ -313,9 +316,9 @@ These parts of the design were hidden on purpose in Phase 1. Each one comes back
 
 Every item below gets its own branch and PR, following the Git workflow above.
 
-### Phase 1.5 — Hardening (next)
+### Phase 1.5 — Hardening (in progress)
 
-- [x] **CI**: `.github/workflows/ci.yml` runs on every PR and on pushes to `main`, pinned to Bun 1.3.4. Job "Lint, typecheck, test, build" runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test` and `build`; job "E2E (Playwright, Chromium)" runs `test:e2e` with cached browsers and uploads `test-results/` on failure.
+- [x] **CI** (PR #6): `.github/workflows/ci.yml` runs on every PR and on pushes to `main`, pinned to Bun 1.3.4. Job "Lint, typecheck, test, build" runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test` and `build`; job "E2E (Playwright, Chromium)" runs `test:e2e` with cached browsers and uploads `test-results/` on failure.
   - [ ] Make both jobs required status checks on `main` (GitHub → Settings → Branches; repo admin only).
 - [ ] **Verify the Docker image**: `docker compose up --build` with `ADMIN_PASSWORD` set; the login works; data survives a container restart (`/data` volume); the healthcheck reports healthy; `docker compose exec app bun run cli reset-password` works. Not verified yet, because the Docker daemon was not running when Phase 1 was built.
 - [ ] **Clean up expired sessions**: delete rows past `expires_at` on boot or periodically. Expired sessions are only removed when someone uses them.
