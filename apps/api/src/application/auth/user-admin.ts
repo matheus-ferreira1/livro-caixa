@@ -6,7 +6,10 @@ export const MIN_PASSWORD_LENGTH = 8;
 
 function assertPasswordStrength(password: string): void {
   if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new ApplicationError('validation_error', `Password must have at least ${MIN_PASSWORD_LENGTH} characters`);
+    throw new ApplicationError(
+      'validation_error',
+      `Password must have at least ${MIN_PASSWORD_LENGTH} characters`,
+    );
   }
 }
 

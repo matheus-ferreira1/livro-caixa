@@ -11,10 +11,15 @@ export function bootstrap(config: Config) {
 }
 
 /** Creates the first account from ADMIN_* env vars when the instance has no users yet. */
-export async function ensureAdminUser(container: ReturnType<typeof bootstrap>, config: Config): Promise<void> {
+export async function ensureAdminUser(
+  container: ReturnType<typeof bootstrap>,
+  config: Config,
+): Promise<void> {
   if (container.users.count() > 0) return;
   if (!config.ADMIN_EMAIL || !config.ADMIN_PASSWORD) {
-    console.warn('No users yet. Set ADMIN_EMAIL and ADMIN_PASSWORD, or run: bun run cli create-user <email> <name>');
+    console.warn(
+      'No users yet. Set ADMIN_EMAIL and ADMIN_PASSWORD, or run: bun run cli create-user <email> <name>',
+    );
     return;
   }
   await container.createUser.execute({

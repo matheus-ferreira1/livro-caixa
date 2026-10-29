@@ -25,5 +25,8 @@ export async function buildTestApp() {
 }
 
 export async function signIn(agent: ReturnType<typeof request.agent>) {
-  await agent.post('/api/auth/login').send({ email: TEST_USER.email, password: TEST_USER.password }).expect(200);
+  await agent
+    .post('/api/auth/login')
+    .send({ email: TEST_USER.email, password: TEST_USER.password })
+    .expect(200);
 }

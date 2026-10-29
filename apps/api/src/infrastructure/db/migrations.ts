@@ -24,4 +24,52 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX sessions_user_id ON sessions(user_id);
     `,
   },
+  {
+    id: '002_ledger',
+    sql: `
+      CREATE TABLE categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('receita', 'despesa')),
+        color TEXT NOT NULL,
+        UNIQUE (type, name COLLATE NOCASE)
+      );
+      CREATE TABLE transactions (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        description TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        type TEXT NOT NULL CHECK (type IN ('receita', 'despesa', 'acerto')),
+        category_id TEXT REFERENCES categories(id),
+        value_cents INTEGER NOT NULL CHECK (value_cents > 0),
+        split INTEGER NOT NULL DEFAULT 0,
+        confirmed INTEGER NOT NULL DEFAULT 0,
+        recurring INTEGER NOT NULL DEFAULT 0,
+        series_id TEXT,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+        updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+      );
+      CREATE INDEX transactions_date ON transactions(date);
+      CREATE INDEX transactions_series ON transactions(series_id);
+      CREATE TABLE settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        partner_name TEXT NOT NULL,
+        partner_share INTEGER NOT NULL CHECK (partner_share BETWEEN 0 AND 100)
+      );
+      INSERT INTO settings (id, partner_name, partner_share) VALUES (1, 'Companheira', 50);
+      INSERT INTO categories (id, name, type, color) VALUES
+        ('c-salario', 'Salário', 'receita', '#2A78D6'),
+        ('c-aluguel', 'Aluguel', 'receita', '#1BAF7A'),
+        ('c-freela', 'Freelance', 'receita', '#6250D6'),
+        ('c-cartao', 'Cartão de crédito', 'despesa', '#2A78D6'),
+        ('c-moradia', 'Moradia', 'despesa', '#EB6834'),
+        ('c-mercado', 'Mercado', 'despesa', '#1BAF7A'),
+        ('c-saude', 'Saúde', 'despesa', '#EDA100'),
+        ('c-energia', 'Energia', 'despesa', '#E87BA4'),
+        ('c-agua', 'Água', 'despesa', '#008300'),
+        ('c-internet', 'Internet', 'despesa', '#6250D6'),
+        ('c-transporte', 'Transporte', 'despesa', '#E34948'),
+        ('c-lazer', 'Lazer', 'despesa', '#6250D6');
+    `,
+  },
 ];

@@ -11,7 +11,10 @@ export function openDatabase(path: string): Database {
 function migrate(db: Database): void {
   db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY)');
   const applied = new Set(
-    db.query<{ id: string }, []>('SELECT id FROM schema_migrations').all().map((row) => row.id),
+    db
+      .query<{ id: string }, []>('SELECT id FROM schema_migrations')
+      .all()
+      .map((row) => row.id),
   );
   for (const migration of MIGRATIONS) {
     if (applied.has(migration.id)) continue;

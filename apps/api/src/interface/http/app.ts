@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import type { Container } from '../../container';
 import { authRouter } from './auth-router';
 import { errorHandler } from './errors';
+import { ledgerRouter } from './ledger-router';
 
 export interface AppOptions {
   /** Built SPA to serve next to the API (production image only). */
@@ -22,6 +23,7 @@ export function createApp(container: Container, { staticDir }: AppOptions = {}):
     res.json({ ok: true });
   });
   app.use('/api/auth', authRouter(container));
+  app.use('/api', ledgerRouter(container));
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: { code: 'not_found', message: 'Rota não encontrada.' } });
   });
