@@ -24,28 +24,35 @@ export class Login {
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
     private readonly hasher: PasswordHasher,
-    private readonly throttle: LoginThrottle,
+    private readonly accountThrottle: LoginThrottle,
+    private readonly ipThrottle: LoginThrottle,
     private readonly clock: Clock,
   ) {}
 
   async execute(input: LoginRequest, clientKey: string): Promise<LoginResult> {
-    const throttleKey = `${input.email}|${clientKey}`;
-    this.assertNotLocked(throttleKey);
+    const accountKey = `${input.email}|${clientKey}`;
+    this.assertNotLocked(accountKey, clientKey);
 
     const user = this.users.findByEmail(input.email);
     const valid = await this.hasher.verify(input.password, user?.passwordHash ?? DUMMY_HASH);
     if (!user || !valid) {
-      const locked = this.throttle.registerFailure(throttleKey);
-      if (locked) this.assertNotLocked(throttleKey);
+      this.accountThrottle.registerFailure(accountKey);
+      this.ipThrottle.registerFailure(clientKey);
+      this.assertNotLocked(accountKey, clientKey);
       throw new ApplicationError('invalid_credentials', LOGIN_MESSAGES.invalidCredentials);
     }
 
-    this.throttle.reset(throttleKey);
+    // The IP counter is not reset on success: a sprayer who knows one valid login must
+    // not be able to clear its own failures with it.
+    this.accountThrottle.reset(accountKey);
     return this.openSession({ id: user.id, email: user.email, name: user.name }, input.remember);
   }
 
-  private assertNotLocked(key: string): void {
-    const seconds = this.throttle.secondsLocked(key);
+  private assertNotLocked(accountKey: string, clientKey: string): void {
+    const seconds = Math.max(
+      this.accountThrottle.secondsLocked(accountKey),
+      this.ipThrottle.secondsLocked(clientKey),
+    );
     if (seconds > 0) throw new ApplicationError('too_many_attempts', lockedOutMessage(seconds));
   }
 
