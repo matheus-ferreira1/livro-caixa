@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    image: livro-caixa
+    ports:
+      - '3000:3000'
+    environment:
+      # Creates the first account on an empty database. Remove after the first boot.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@livro-caixa.local}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD (min. 8 characters)}
+      # Set to true when serving over HTTPS behind a reverse proxy.
+      SECURE_COOKIES: ${SECURE_COOKIES:-false}
+    volumes:
+      - livro-caixa-data:/data
+    restart: unless-stopped
+
+volumes:
+  livro-caixa-data:

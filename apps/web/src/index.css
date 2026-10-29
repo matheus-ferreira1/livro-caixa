@@ -1,0 +1,130 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource/schibsted-grotesk/latin-400.css';
+@import '@fontsource/schibsted-grotesk/latin-500.css';
+@import '@fontsource/schibsted-grotesk/latin-600.css';
+@import '@fontsource/schibsted-grotesk/latin-700.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+@import '@fontsource/ibm-plex-mono/latin-600.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Design tokens from the Livro-caixa design (see CLAUDE.md › Design system). */
+:root {
+  --radius: 0.625rem;
+  --background: #f4f5f1;
+  --foreground: #17201c;
+  --card: #ffffff;
+  --card-foreground: #17201c;
+  --popover: #ffffff;
+  --popover-foreground: #17201c;
+  --primary: #17201c;
+  --primary-foreground: #ffffff;
+  --secondary: #e6e9e3;
+  --secondary-foreground: #17201c;
+  --muted: #f8f9f6;
+  --muted-foreground: #5b6560;
+  --accent: #f4f5f1;
+  --accent-foreground: #17201c;
+  --destructive: #a8401a;
+  --border: #dfe2dc;
+  --input: #c9cec6;
+  --ring: #2a4fb8;
+
+  --ink: #17201c;
+  --mint: #9fd8be;
+  --header-active: #2c3832;
+  --on-dark-muted: #c9d3cd;
+  --icon: #4a544f;
+  --divider: #eceee9;
+  --track: #e6e9e3;
+  --income: #136b4a;
+  --income-bg: #e3f1ea;
+  --income-border: #b9dcce;
+  --expense: #a8401a;
+  --expense-bg: #fbe9e0;
+  --expense-row: #fbf3ef;
+  --settlement: #2a4fb8;
+  --settlement-bg: #e5ebfa;
+  --info-text: #1f3c8f;
+  --pending: #8a5a00;
+  --pending-bg: #fbf1dc;
+  --pending-border: #d9b865;
+  --negative-on-dark: #f2a27e;
+  --disabled-text: #b5bbb6;
+  --neutral-swatch: #9aa29d;
+}
+
+@theme inline {
+  --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-mint: var(--mint);
+  --color-header-active: var(--header-active);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --color-icon: var(--icon);
+  --color-divider: var(--divider);
+  --color-track: var(--track);
+  --color-income: var(--income);
+  --color-income-bg: var(--income-bg);
+  --color-income-border: var(--income-border);
+  --color-expense: var(--expense);
+  --color-expense-bg: var(--expense-bg);
+  --color-expense-row: var(--expense-row);
+  --color-settlement: var(--settlement);
+  --color-settlement-bg: var(--settlement-bg);
+  --color-info-text: var(--info-text);
+  --color-pending: var(--pending);
+  --color-pending-bg: var(--pending-bg);
+  --color-pending-border: var(--pending-border);
+  --color-negative-on-dark: var(--negative-on-dark);
+  --color-disabled-text: var(--disabled-text);
+  --color-neutral-swatch: var(--neutral-swatch);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-[15px] antialiased;
+    margin: 0;
+    line-height: 1.45;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  /* Ledger-paper lines on the dark login panel. */
+  .ruled-panel {
+    background-color: var(--ink);
+    background-image: repeating-linear-gradient(to bottom, transparent 0 43px, rgb(159 216 190 / 0.09) 43px 44px);
+  }
+}
