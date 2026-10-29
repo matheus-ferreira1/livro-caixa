@@ -207,7 +207,7 @@ _Last updated: 2026-10-29, after PR #6 (CI) was merged into `main` and the Docke
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | 🚧 In progress (CI and Docker verification done) |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | 🚧 In progress (CI, Docker verification and session cleanup done) |
 | 2 — Configurações | US-11 Categories and partner split settings | ⏳ Planned |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
@@ -280,7 +280,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 56 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 33 | `bun run --filter '@livro-caixa/api' test` |
+| API integration | 36 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 28 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 1 flow (login error → login → create → confirm → edit → Todos → delete → logout) | `bun run test:e2e` |
 
@@ -294,6 +294,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
 - The month view loads the whole month and filters on the client, because the tiles need the full month anyway.
 - The login lockout counters live in memory, so a restart clears them. This is acceptable for a single container.
+- Expired sessions are purged on boot and then every hour (`startSessionPurge` in `apps/api/src/session-purge.ts`, use case `PurgeExpiredSessions`). `Authenticate` still drops an expired session as soon as its cookie comes back.
 - The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
 - Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
 - Demo data (`seed:demo`) is for development only and refuses to load into a non-empty database.
@@ -321,7 +322,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 - [x] **CI** (PR #6): `.github/workflows/ci.yml` runs on every PR and on pushes to `main`, pinned to Bun 1.3.4. Job "Lint, typecheck, test, build" runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test` and `build`; job "E2E (Playwright, Chromium)" runs `test:e2e` with cached browsers and uploads `test-results/` on failure.
   - [ ] Make both jobs required status checks on `main` (GitHub → Settings → Branches; repo admin only).
 - [x] **Verify the Docker image** (2026-10-29, Docker 28.4, image 283 MB): `docker compose up --build` with `ADMIN_PASSWORD` set creates the admin on first boot only; the healthcheck reports healthy; the SPA and `/api` are served from one port; login works and sets the session cookie; an entry and its session survive both `restart` and `down`/`up` (`/data` volume); `cli reset-password` (with `NEW_PASSWORD`) changes the password and signs out existing sessions; `cli create-user` works.
-- [ ] **Clean up expired sessions**: delete rows past `expires_at` on boot or periodically. Expired sessions are only removed when someone uses them.
+- [x] **Clean up expired sessions**: `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
 - [ ] **Rate limit by IP**: the current lockout keys on e-mail + IP, so add a coarse per-IP limit on `/api/auth/login`.
 - [ ] **Session expiry in the UI**: on any 401 from a data request, clear the user query and send the user to `/entrar` (today only `RequireAuth` handles a missing session on load).
 - [ ] **Bundle size**: the app chunk is ~377 kB minified (118 kB gzip); consider importing lucide icons per file and lazy-loading routes once more screens exist.
