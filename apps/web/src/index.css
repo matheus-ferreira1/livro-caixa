@@ -125,6 +125,10 @@
   /* Ledger-paper lines on the dark login panel. */
   .ruled-panel {
     background-color: var(--ink);
-    background-image: repeating-linear-gradient(to bottom, transparent 0 43px, rgb(159 216 190 / 0.09) 43px 44px);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 43px,
+      rgb(159 216 190 / 0.09) 43px 44px
+    );
   }
 }
