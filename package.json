@@ -7,6 +7,7 @@
     "dev": "bun run --filter '@livro-caixa/api' dev & bun run --filter '@livro-caixa/web' dev",
     "test": "bun run --filter '*' test",
     "test:e2e": "playwright test",
+    "seed:demo": "bun run --cwd=apps/api seed:demo",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "bun run --filter '*' typecheck",

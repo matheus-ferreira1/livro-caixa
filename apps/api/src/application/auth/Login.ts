@@ -2,7 +2,12 @@ import { LOGIN_MESSAGES, lockedOutMessage, type LoginRequest, type PublicUser } 
 import { ApplicationError } from '../errors';
 import type { Clock, PasswordHasher, SessionRepository, UserRepository } from '../ports';
 import type { LoginThrottle } from './LoginThrottle';
-import { BROWSER_SESSION_MS, hashSessionToken, newSessionToken, PERSISTENT_SESSION_MS } from './session-tokens';
+import {
+  BROWSER_SESSION_MS,
+  hashSessionToken,
+  newSessionToken,
+  PERSISTENT_SESSION_MS,
+} from './session-tokens';
 
 export interface LoginResult {
   user: PublicUser;

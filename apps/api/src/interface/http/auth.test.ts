@@ -77,7 +77,9 @@ describe('session lifecycle', () => {
 
   test('sessions expire', async () => {
     const { agent, clock } = await buildTestApp();
-    await agent.post('/api/auth/login').send({ email: TEST_USER.email, password: TEST_USER.password, remember: false });
+    await agent
+      .post('/api/auth/login')
+      .send({ email: TEST_USER.email, password: TEST_USER.password, remember: false });
     clock.advance(13 * 60 * 60 * 1000);
     await agent.get('/api/auth/me').expect(401);
   });

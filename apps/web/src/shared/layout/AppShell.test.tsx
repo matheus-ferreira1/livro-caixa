@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { routes } from '@/routes';
 import { mockApi, renderRoutes } from '@/test/render';
@@ -13,9 +13,14 @@ describe('AppShell', () => {
   });
 
   test('shows the header with the active section and the account menu', async () => {
-    mockApi(() => ({ status: 200, body: { user: USER } }));
+    mockApi((url) =>
+      url === '/api/auth/me' ? { status: 200, body: { user: USER } } : { status: 200, body: {} },
+    );
     renderRoutes(routes, '/');
-    expect(await screen.findByRole('link', { name: 'Lançamentos' })).toHaveAttribute('aria-current', 'page');
+    // "/" redirects to Lançamentos after the first render.
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Lançamentos' })).toHaveAttribute('aria-current', 'page'),
+    );
     expect(screen.getByRole('button', { name: 'Conta de Maria Silva' })).toHaveTextContent('MS');
   });
 

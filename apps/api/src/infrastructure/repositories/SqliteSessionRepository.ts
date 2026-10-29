@@ -22,7 +22,12 @@ export class SqliteSessionRepository implements SessionRepository {
       .query<SessionRow, [string]>('SELECT * FROM sessions WHERE token_hash = ?')
       .get(tokenHash);
     return row
-      ? { tokenHash: row.token_hash, userId: row.user_id, expiresAt: row.expires_at, persistent: row.persistent === 1 }
+      ? {
+          tokenHash: row.token_hash,
+          userId: row.user_id,
+          expiresAt: row.expires_at,
+          persistent: row.persistent === 1,
+        }
       : null;
   }
 

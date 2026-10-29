@@ -8,7 +8,9 @@ describe('validateLoginInput', () => {
   });
 
   test('rejects malformed e-mails', () => {
-    expect(validateLoginInput({ email: 'not-an-email', password: 'secret123' })).toBe(LOGIN_MESSAGES.invalidEmail);
+    expect(validateLoginInput({ email: 'not-an-email', password: 'secret123' })).toBe(
+      LOGIN_MESSAGES.invalidEmail,
+    );
   });
 
   test('accepts a well-formed e-mail with surrounding spaces', () => {

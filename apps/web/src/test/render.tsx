@@ -6,8 +6,13 @@ import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-rout
 import { vi } from 'vitest';
 import { Toaster } from '@/shared/ui/sonner';
 
-export function renderRoutes(routes: RouteObject[], initialEntry: string | { pathname: string; state?: unknown }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+export function renderRoutes(
+  routes: RouteObject[],
+  initialEntry: string | { pathname: string; state?: unknown },
+) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   const router = createMemoryRouter(routes, { initialEntries: [initialEntry] });
   const user = userEvent.setup();
   const view = render(

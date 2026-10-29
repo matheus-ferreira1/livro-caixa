@@ -22,8 +22,8 @@ export function BrandPanel() {
           Suas finanças, no seu servidor.
         </h1>
         <p className="m-0 text-[17px] text-pretty text-on-dark-muted">
-          Lançamentos, contas divididas e acerto do mês num app que você mesmo hospeda. Os dados ficam só na sua
-          instância.
+          Lançamentos, contas divididas e acerto do mês num app que você mesmo hospeda. Os dados ficam só na
+          sua instância.
         </p>
         <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {FEATURES.map(({ icon: Icon, text }) => (

@@ -1,4 +1,4 @@
-import type { PublicUser } from '@livro-caixa/domain';
+import type { Category, MonthKey, PublicUser, Settings, Transaction } from '@livro-caixa/domain';
 
 export interface Clock {
   now(): number;
@@ -33,4 +33,22 @@ export interface SessionRepository {
   findByTokenHash(tokenHash: string): Session | null;
   delete(tokenHash: string): void;
   deleteForUser(userId: string): void;
+}
+
+export interface TransactionRepository {
+  listByMonth(month: MonthKey): Transaction[];
+  listAll(): Transaction[];
+  findById(id: string): Transaction | null;
+  insert(transaction: Transaction): void;
+  update(transaction: Transaction): void;
+  delete(id: string): boolean;
+}
+
+export interface CategoryRepository {
+  list(): Category[];
+  findById(id: string): Category | null;
+}
+
+export interface SettingsRepository {
+  get(): Settings;
 }

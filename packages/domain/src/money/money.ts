@@ -1,0 +1,37 @@
+/** Money is always an integer number of cents (BRL). */
+export type Cents = number;
+
+export const MINUS = '−';
+
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const MONEY_PATTERN = /^\d+(?:\.\d{3})*(?:,\d{1,2})?$|^\d+(?:[.,]\d{1,2})?$/;
+
+/**
+ * Parses what people type in a pt-BR money field: "1.234,56", "180", "R$ 10,5", "10.5".
+ * Returns null for anything that is not an amount.
+ */
+export function parseMoney(input: string): Cents | null {
+  const raw = input.replace(/R\$/gi, '').replace(/\s/g, '');
+  if (!MONEY_PATTERN.test(raw)) return null;
+  const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+  const [whole = '0', fraction = ''] = normalized.split('.');
+  return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+}
+
+export function formatMoney(cents: Cents): string {
+  return BRL.format(cents / 100).replace('-', MINUS);
+}
+
+/** "+ R$ 10,00" / "− R$ 10,00", as in totals and group headers. */
+export function formatSignedMoney(cents: Cents): string {
+  return `${cents < 0 ? MINUS : '+'} ${formatMoney(Math.abs(cents))}`;
+}
+
+/** Value shown in an editable field: "1234,56". */
+export function toMoneyInput(cents: Cents): string {
+  return (cents / 100).toFixed(2).replace('.', ',');
+}
+
+export const sumCents = (values: Cents[]): Cents => values.reduce((acc, v) => acc + v, 0);
+
+export const percentOf = (cents: Cents, percent: number): Cents => Math.round((cents * percent) / 100);

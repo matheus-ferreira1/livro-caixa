@@ -28,5 +28,9 @@ export function NoticeBanner({ children }: { children: ReactNode }) {
 }
 
 export function InfoBox({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('rounded-[10px] bg-settlement-bg px-3.5 py-3 text-sm text-info-text', className)}>{children}</div>;
+  return (
+    <div className={cn('rounded-[10px] bg-settlement-bg px-3.5 py-3 text-sm text-info-text', className)}>
+      {children}
+    </div>
+  );
 }

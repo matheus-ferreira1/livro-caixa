@@ -7,6 +7,7 @@
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
     "cli": "bun src/cli.ts",
+    "seed:demo": "bun src/seed-demo.ts",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json"
   },

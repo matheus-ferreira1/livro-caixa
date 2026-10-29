@@ -13,7 +13,9 @@ const STATUS_BY_CODE: Record<ApplicationErrorCode, number> = {
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof ZodError) {
-    res.status(400).json({ error: { code: 'validation_error', message: 'Dados inválidos.', issues: err.issues } });
+    res
+      .status(400)
+      .json({ error: { code: 'validation_error', message: 'Dados inválidos.', issues: err.issues } });
     return;
   }
   if (err instanceof ApplicationError) {

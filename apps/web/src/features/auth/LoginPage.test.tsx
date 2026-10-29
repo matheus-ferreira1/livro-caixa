@@ -40,7 +40,10 @@ describe('LoginPage', () => {
   test('shows the server message and clears the password on wrong credentials', async () => {
     mockApi((url) =>
       url === '/api/auth/login'
-        ? { status: 401, body: { error: { code: 'invalid_credentials', message: 'E-mail ou senha incorretos.' } } }
+        ? {
+            status: 401,
+            body: { error: { code: 'invalid_credentials', message: 'E-mail ou senha incorretos.' } },
+          }
         : { status: 401 },
     );
     const { user } = renderLogin();
@@ -53,7 +56,9 @@ describe('LoginPage', () => {
   });
 
   test('signs in, sending "remember", and lands on Lançamentos', async () => {
-    const fetch = mockApi((url) => (url === '/api/auth/login' ? { status: 200, body: { user: USER } } : { status: 401 }));
+    const fetch = mockApi((url) =>
+      url === '/api/auth/login' ? { status: 200, body: { user: USER } } : { status: 401 },
+    );
     const { user } = renderLogin();
     await user.type(screen.getByLabelText('E-mail'), USER.email);
     await user.type(screen.getByLabelText('Senha'), 'senha-forte-123');
@@ -62,7 +67,11 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lançamentos page' })).toBeInTheDocument();
     const [, init] = fetch.mock.calls.find(([url]) => url === '/api/auth/login') ?? [];
-    expect(JSON.parse(String(init?.body))).toEqual({ email: USER.email, password: 'senha-forte-123', remember: false });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      email: USER.email,
+      password: 'senha-forte-123',
+      remember: false,
+    });
   });
 
   test('toggles password visibility and the forgot-password help', async () => {
@@ -87,6 +96,8 @@ describe('LoginPage', () => {
   test('redirects away when already signed in', async () => {
     mockApi(() => ({ status: 200, body: { user: USER } }));
     renderLogin();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Lançamentos page' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Lançamentos page' })).toBeInTheDocument(),
+    );
   });
 });

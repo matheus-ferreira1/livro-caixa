@@ -132,7 +132,11 @@ export function LoginPage() {
                 aria-pressed={showPassword}
                 className="flex size-10 items-center justify-center rounded-lg text-icon hover:bg-accent"
               >
-                {showPassword ? <EyeOff className="size-[18px]" aria-hidden="true" /> : <Eye className="size-[18px]" aria-hidden="true" />}
+                {showPassword ? (
+                  <EyeOff className="size-[18px]" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-[18px]" aria-hidden="true" />
+                )}
               </button>
             </div>
           </div>
@@ -161,8 +165,8 @@ export function LoginPage() {
 
           {showForgot && (
             <InfoBox>
-              Como cada instância é hospedada por você, a senha é redefinida pelo administrador do servidor, com o
-              comando de redefinição do container.
+              Como cada instância é hospedada por você, a senha é redefinida pelo administrador do servidor,
+              com o comando de redefinição do container.
             </InfoBox>
           )}
 
