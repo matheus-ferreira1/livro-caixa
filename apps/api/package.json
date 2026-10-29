@@ -1,0 +1,25 @@
+{
+  "name": "@livro-caixa/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts",
+    "cli": "bun src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "5",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.1"
+  },
+  "dependencies": {
+    "@livro-caixa/domain": "workspace:*",
+    "cookie-parser": "^1.4.7",
+    "express": "5",
+    "zod": "3"
+  }
+}
