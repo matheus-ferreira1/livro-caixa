@@ -199,7 +199,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`._
+_Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`; CI added on `chore/ci`._
 
 ## Summary
 
@@ -207,7 +207,7 @@ _Last updated: 2026-10-29, after PRs #1–#3 were merged into `main`._
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ⏳ Next |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | 🚧 In progress (CI done) |
 | 2 — Configurações | US-11 Categories and partner split settings | ⏳ Planned |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
@@ -315,12 +315,13 @@ Every item below gets its own branch and PR, following the Git workflow above.
 
 ### Phase 1.5 — Hardening (next)
 
-- [ ] **CI**: a GitHub Actions workflow on PRs that runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test`, `build` and `test:e2e` (install Chromium). Then make it a required check on `main`.
+- [x] **CI**: `.github/workflows/ci.yml` runs on every PR and on pushes to `main`, pinned to Bun 1.3.4. Job "Lint, typecheck, test, build" runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test` and `build`; job "E2E (Playwright, Chromium)" runs `test:e2e` with cached browsers and uploads `test-results/` on failure.
+  - [ ] Make both jobs required status checks on `main` (GitHub → Settings → Branches; repo admin only).
 - [ ] **Verify the Docker image**: `docker compose up --build` with `ADMIN_PASSWORD` set; the login works; data survives a container restart (`/data` volume); the healthcheck reports healthy; `docker compose exec app bun run cli reset-password` works. Not verified yet, because the Docker daemon was not running when Phase 1 was built.
 - [ ] **Clean up expired sessions**: delete rows past `expires_at` on boot or periodically. Expired sessions are only removed when someone uses them.
 - [ ] **Rate limit by IP**: the current lockout keys on e-mail + IP, so add a coarse per-IP limit on `/api/auth/login`.
 - [ ] **Session expiry in the UI**: on any 401 from a data request, clear the user query and send the user to `/entrar` (today only `RequireAuth` handles a missing session on load).
-- [ ] **Bundle size**: the app chunk is ~300 kB minified; consider importing lucide icons per file and lazy-loading routes once more screens exist.
+- [ ] **Bundle size**: the app chunk is ~377 kB minified (118 kB gzip); consider importing lucide icons per file and lazy-loading routes once more screens exist.
 
 ### Phase 2 — Configurações (US-11)
 
