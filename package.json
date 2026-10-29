@@ -1,0 +1,26 @@
+{
+  "name": "livro-caixa",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "bun run --filter '@livro-caixa/api' dev & bun run --filter '@livro-caixa/web' dev",
+    "test": "bun run --filter '*' test",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "bun run --filter '*' typecheck",
+    "build": "bun run --filter '@livro-caixa/web' build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9",
+    "@playwright/test": "^1.64.1",
+    "@types/bun": "^1.4.4",
+    "eslint": "9",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "5",
+    "prettier": "^3.9.10",
+    "typescript": "5",
+    "typescript-eslint": "^8.72.1"
+  }
+}
