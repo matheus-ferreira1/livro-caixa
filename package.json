@@ -10,13 +10,14 @@
     "seed:demo": "bun run --cwd=apps/api seed:demo",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "bun run --filter '*' typecheck",
+    "typecheck": "bun run --filter '*' typecheck && tsc -p e2e/tsconfig.json",
     "build": "bun run --filter '@livro-caixa/web' build"
   },
   "devDependencies": {
     "@eslint/js": "9",
     "@playwright/test": "^1.64.1",
     "@types/bun": "^1.4.4",
+    "@types/node": "22",
     "eslint": "9",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "5",
