@@ -294,6 +294,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 - The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
 - Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
 - Demo data (`seed:demo`) is for development only and refuses to load into a non-empty database.
+- **The app is individual (decided 2026-10-29).** One person uses each instance. The partner is only a name and a split share in `settings` and never gets a login. Do not add per-user data, partner accounts or sharing features. The CLI can still create more accounts, which all see the same ledger; keep that for admin and recovery only.
 
 ## Phase 1 placeholders to restore later
 
@@ -386,7 +387,6 @@ Every item below gets its own branch and PR, following the Git workflow above.
 
 ## Open questions
 
-- Single user or two users per instance? Phase 1 supports several accounts sharing one ledger, but there is no per-user data. Decide before Phase 2 whether the partner gets a login.
 - Where to store "Agora não" for the recurring banner (Phase 3): server-side per user, or `localStorage`.
 - Price source for automatic asset quotes (Phase 6).
 
