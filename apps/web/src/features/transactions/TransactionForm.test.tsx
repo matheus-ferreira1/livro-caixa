@@ -134,7 +134,8 @@ describe('Novo lançamento', () => {
       },
     });
     expect(await screen.findByText('Lançamento adicionado')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Novembro 2026' })).toBeInTheDocument();
+    // The month switch is a router navigation, so it can render after the toast.
+    expect(await screen.findByRole('heading', { name: 'Novembro 2026' })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
