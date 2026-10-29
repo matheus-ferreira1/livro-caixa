@@ -33,6 +33,8 @@ export interface SessionRepository {
   findByTokenHash(tokenHash: string): Session | null;
   delete(tokenHash: string): void;
   deleteForUser(userId: string): void;
+  /** Deletes the sessions that expired at or before `now` and returns how many there were. */
+  deleteExpired(now: number): number;
 }
 
 export interface TransactionRepository {

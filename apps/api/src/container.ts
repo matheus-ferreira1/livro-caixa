@@ -3,6 +3,7 @@ import { Authenticate } from './application/auth/Authenticate';
 import { Login } from './application/auth/Login';
 import { LoginThrottle } from './application/auth/LoginThrottle';
 import { Logout } from './application/auth/Logout';
+import { PurgeExpiredSessions } from './application/auth/PurgeExpiredSessions';
 import { CreateUser, ResetPassword } from './application/auth/user-admin';
 import type { Clock } from './application/ports';
 import {
@@ -41,6 +42,7 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     login: new Login(users, sessions, hasher, throttle, clock),
     logout: new Logout(sessions),
     authenticate: new Authenticate(users, sessions, clock),
+    purgeExpiredSessions: new PurgeExpiredSessions(sessions, clock),
     createUser: new CreateUser(users, hasher),
     resetPassword: new ResetPassword(users, sessions, hasher),
     transactions,
