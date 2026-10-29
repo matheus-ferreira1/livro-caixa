@@ -5,7 +5,11 @@ import { LoginThrottle } from './application/auth/LoginThrottle';
 import { Logout } from './application/auth/Logout';
 import { CreateUser, ResetPassword } from './application/auth/user-admin';
 import type { Clock } from './application/ports';
-import { DeleteTransaction, ToggleTransactionFlags } from './application/transactions/commands';
+import {
+  DeleteTransaction,
+  SaveTransaction,
+  ToggleTransactionFlags,
+} from './application/transactions/commands';
 import { ListMonthTransactions, SearchTransactions } from './application/transactions/queries';
 import {
   SqliteCategoryRepository,
@@ -29,6 +33,7 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
   const hasher = new BunPasswordHasher();
   const throttle = new LoginThrottle(clock);
   const transactions = new SqliteTransactionRepository(db);
+  const categories = new SqliteCategoryRepository(db);
 
   return {
     secureCookies,
@@ -39,12 +44,13 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     createUser: new CreateUser(users, hasher),
     resetPassword: new ResetPassword(users, sessions, hasher),
     transactions,
-    categories: new SqliteCategoryRepository(db),
+    categories,
     settings: new SqliteSettingsRepository(db),
     listMonthTransactions: new ListMonthTransactions(transactions),
     searchTransactions: new SearchTransactions(transactions),
     toggleTransactionFlags: new ToggleTransactionFlags(transactions),
     deleteTransaction: new DeleteTransaction(transactions),
+    saveTransaction: new SaveTransaction(transactions, categories),
   };
 }
 
