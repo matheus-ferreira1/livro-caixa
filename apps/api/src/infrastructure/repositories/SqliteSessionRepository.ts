@@ -38,4 +38,8 @@ export class SqliteSessionRepository implements SessionRepository {
   deleteForUser(userId: string): void {
     this.db.query('DELETE FROM sessions WHERE user_id = ?').run(userId);
   }
+
+  deleteExpired(now: number): number {
+    return this.db.query('DELETE FROM sessions WHERE expires_at <= ?').run(now).changes;
+  }
 }
