@@ -199,7 +199,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-29, after PRs #6–#10 were merged into `main` and the Docker image was verified._
+_Last updated: 2026-10-29, with Phase 2 (US-11 Configurações) in PR #__PR__._
 
 ## Summary
 
@@ -208,15 +208,15 @@ _Last updated: 2026-10-29, after PRs #6–#10 were merged into `main` and the Do
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
 | 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#10); two follow-ups and one admin step open |
-| 2 — Configurações | US-11 Categories and partner split settings | ⏳ Next |
-| 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
+| 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #__PR__) |
+| 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Next |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
 | 5 — Visão geral | US-09 (becomes the landing page) | ⏳ Planned |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ⏳ Planned |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phases 1 and 1.5)
+## What is built (Phases 1, 1.5 and 2)
 
 | PR | Branch | Delivered |
 |---|---|---|
@@ -228,6 +228,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#8](https://github.com/matheus-ferreira1/livro-caixa/pull/8) | `feat/session-expiry-redirect` | A 401 on any data request sends the user to `/entrar` and back after sign-in |
 | [#9](https://github.com/matheus-ferreira1/livro-caixa/pull/9) | `feat/login-ip-rate-limit` | Per-IP login limit on top of the per-account lock |
 | [#10](https://github.com/matheus-ferreira1/livro-caixa/pull/10) | `chore/bundle-size` | Lazy routes and a long-cached `framework` chunk |
+| [#__PR__](https://github.com/matheus-ferreira1/livro-caixa/pull/__PR__) | `feat/settings` | Category and partner split rules; category CRUD and settings endpoints; Configurações page; restored nav item, user-menu item and "Gerenciar categorias" |
 
 ### Web routes
 
@@ -236,6 +237,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | `/entrar` | Login (US-01) | Redirects to `/lancamentos` (or the page you came from) when already signed in. Shows the `notice` passed in router state after sign-out. |
 | `/` | — | Redirects to `/lancamentos` |
 | `/lancamentos` | Lançamentos (US-03, US-04, US-05) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
+| `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
 | any other path | — | Redirects to `/lancamentos`; every route except `/entrar` requires a session |
 
 ### API
@@ -248,8 +250,12 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `POST /api/auth/login` | `Login` | Body `{ email, password, remember }`. Locks e-mail + IP for 60 s after 5 failures. A cookie that lasts 30 days with `remember`, a browser-session cookie otherwise (the server still expires it after 12 h). |
 | `POST /api/auth/logout` | `Logout` | 204; deletes the session |
 | `GET /api/auth/me` | `Authenticate` | `{ user: { id, email, name } }` |
-| `GET /api/categories` | — | `{ categories }` |
+| `GET /api/categories` | `ListCategories` | `{ categories, usage }`; `usage` maps a category id to its number of entries |
+| `POST /api/categories` | `CreateCategory` | 201; body `{ name, type: receita\|despesa, color }`, color from the palette. 400 "Dê um nome para a categoria.", 409 "Já existe uma categoria com esse nome nesse tipo." (case-insensitive, per type) |
+| `PATCH /api/categories/:id` | `UpdateCategory` | Body `{ name, color }` only; the type cannot change. Same 400/409 rules. |
+| `DELETE /api/categories/:id` | `DeleteCategory` | 204; 409 "{nome} está em uso e não pode ser excluída" while any entry uses it |
 | `GET /api/settings` | — | `{ settings: { partnerName, partnerShare } }` |
+| `PUT /api/settings` | `UpdateSettings` | Body `{ partnerName, partnerShare }`; the name is trimmed, the share is an integer 0–100 in steps of 5 |
 | `GET /api/transactions?month=YYYY-MM` | `ListMonthTransactions` | The month's entries; the client filters and sorts them |
 | `GET /api/transactions/search` | `SearchTransactions` | Query params `type, status, category ('all' \| id \| 'none'), q, from, to, sort, dir, page, pageSize (25\|50\|100)`. Returns `{ items, page, totalPages, start, end, total, totals, groups[{ monthKey, count, netCents, ids }] }`. Filters run in the domain over all rows. |
 | `POST /api/transactions` | `SaveTransaction` | 201; body is `TransactionInput` (`valueCents` as an integer) |
@@ -277,15 +283,17 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
 - `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation, ready for US-06) and `monthTiles`
 - `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
+- `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
+- `settings/`: `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
 - `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
 
 ### Tests (all green on `main` and in CI)
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 56 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 43 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 32 | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 72 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 65 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 44 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 1 flow (login error → login → create → confirm → edit → Todos → delete → logout) | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
@@ -305,15 +313,21 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - Demo data (`seed:demo`) is for development only and refuses to load into a non-empty database.
 - **The app is individual (decided 2026-10-29).** One person uses each instance. The partner is only a name and a split share in `settings` and never gets a login. Do not add per-user data, partner accounts or sharing features. The CLI can still create more accounts, which all see the same ledger; keep that for admin and recovery only.
 
+### Decisions taken in Phase 2
+
+- Divisão de contas saves on its own, as in the design: there is no save button, and edits are sent 500 ms after the last change, so a slider drag makes one request. The settings query is updated from the response, so Lançamentos picks up the new share at once.
+- Category usage counts come from the domain over all entries (`categoryUsageCounts`), like the "Todos" filters. The delete check uses the same data.
+- New and edited categories take a color from the 8-color palette; the API rejects any other color. The type is fixed after creation.
+- Deleting an unused category needs no confirmation, as in the prototype.
+- `useCategories` and `useSettings` now live in `features/settings/api.ts`; `useCategoryCatalog` adds the usage counts for Configurações.
+
 ## Phase 1 placeholders to restore later
 
 These parts of the design were hidden on purpose in Phase 1. Each one comes back with the phase that builds its target.
 
 | Hidden element | Where | Restore in |
 |---|---|---|
-| Nav items "Visão geral", "Patrimônio", "Resumo mensal", "Configurações" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | The phase that builds each screen |
-| User-menu item "Configurações" | `apps/web/src/shared/layout/UserMenu.tsx` | Phase 2 |
-| "Gerenciar categorias" link in the form | `TransactionFormSheet.tsx`, category header | Phase 2 |
+| Nav items "Visão geral", "Patrimônio", "Resumo mensal" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | The phase that builds each screen |
 | "Gerar recorrentes" and "Gerar acerto" header buttons | `TransactionsPage.tsx` header actions, next to `NewEntryButton` | Phase 3 |
 | Recurring banner in month mode | `TransactionsPage.tsx`, between the header and the tiles | Phase 3 |
 | Landing on Visão geral after login | `HOME_PATH` in `LoginPage.tsx`, the index redirect in `routes.tsx` | Phase 5 |
@@ -337,17 +351,17 @@ Follow-ups found during Phase 1.5:
 - [ ] **`TRUST_PROXY` setting**: `app.ts` trusts only loopback proxies. Behind a reverse proxy in another container (the usual HTTPS setup), every request comes from the proxy's IP, so the per-IP login limit locks everyone out together. Make `trust proxy` configurable through an env var, defaulting to `loopback`.
 - [ ] **Smaller login bundle**: the `@livro-caixa/domain` barrel puts zod (~53 kB) on `/entrar` (try `sideEffects: false` or deep imports), and react-router resolves to its `development` build through its exports map.
 
-### Phase 2 — Configurações (US-11)
+### Phase 2 — Configurações (US-11) (done, PR #__PR__)
 
-- [ ] API:
+- [x] API:
   - `POST/PATCH/DELETE /api/categories`; a category in use cannot be deleted; names must be unique per type, case-insensitive
   - `PUT /api/settings` with `partnerName` and `partnerShare` (0–100, step 5)
-- [ ] Domain: category validation messages ("Dê um nome para a categoria.", "Já existe uma categoria com esse nome nesse tipo."), usage counts, the swatch palette.
-- [ ] Web `/configuracoes`:
+- [x] Domain: category validation messages ("Dê um nome para a categoria.", "Já existe uma categoria com esse nome nesse tipo."), usage counts, the swatch palette.
+- [x] Web `/configuracoes`:
   - categories card with create, inline edit and delete
   - Divisão de contas with the live preview text
-- [ ] Restore the nav item, the user-menu item and "Gerenciar categorias".
-- [ ] Invalidate the `categories` and `settings` queries after edits; the Lançamentos tiles and form must reflect the new share.
+- [x] Restore the nav item, the user-menu item and "Gerenciar categorias".
+- [x] Invalidate the `categories` and `settings` queries after edits; the Lançamentos tiles and form must reflect the new share.
 
 ### Phase 3 — Acerto and recorrentes (US-06, US-07)
 
@@ -545,6 +559,29 @@ As a user, I want to see one month of entries with totals, so I know where the m
 - Footer (`#F8F9F6`): "Cancelar" and the primary "Adicionar lançamento", or "Salvar alterações" when editing.
 - Edit (pencil) opens the same sheet prefilled. The value is shown as `0,00`.
 
+## Phase 2 — done
+
+### US-11 Settings (Configurações) — ✅ Done (Phase 2, PR #__PR__)
+- Eyebrow "Preferências", h1 "Configurações".
+- **Categorias**
+  - Intro: "Categorias organizam receitas e despesas. Acertos não usam categoria. Uma categoria em uso não pode ser excluída, só renomeada."
+  - Create form:
+    - "Nova categoria" (placeholder "Ex.: Pets, Academia, Gás")
+    - "Tipo": Receita / Despesa
+    - "Cor": 8 palette swatches, aria "Cor 1…8"
+    - "Adicionar"
+  - Errors: "Dê um nome para a categoria." and, for a case-insensitive duplicate within the type, "Já existe uma categoria com esse nome nesse tipo."
+  - Toast on create: "Categoria “{nome}” criada"
+  - Lists: one card each for "Receitas" and "Despesas", with "{n} categorias" and per-item usage ("{n} lançamentos" or "Sem lançamentos").
+  - Inline edit changes the name and color; the type cannot be changed. Toast: "Categoria atualizada".
+  - Deleting is blocked while the category is in use, with the title "{nome} está em uso e não pode ser excluída". Otherwise it deletes immediately, with the toast "Categoria “{nome}” excluída".
+- **Divisão de contas**
+  - Intro: "Define quem divide as contas marcadas como “dividido” e a parte de cada um. É a base do cálculo do acerto."
+  - "Nome do(a) companheiro(a)"
+  - the slider "Parte de {partnerName} nas contas divididas": 0–100, step 5
+  - example box: "Exemplo: numa conta dividida de R$ 100,00, {partnerName} paga {x} e você paga {y}."
+- Both the nav item and the user-menu item "Configurações" open this page. The form's "Gerenciar categorias" link also lands here.
+
 ## Backlog — not started
 
 ### US-06 Generate the settlement (Gerar acerto) — ⏳ Phase 3
@@ -698,24 +735,3 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - adds the flow to `invested`; a null `invested` stays null
   - appends a snapshot
   - toast: "Fechamento de {Mês} registrado"
-
-### US-11 Settings (Configurações) — ⏳ Phase 2
-- Eyebrow "Preferências", h1 "Configurações".
-- **Categorias**
-  - Intro: "Categorias organizam receitas e despesas. Acertos não usam categoria. Uma categoria em uso não pode ser excluída, só renomeada."
-  - Create form:
-    - "Nova categoria" (placeholder "Ex.: Pets, Academia, Gás")
-    - "Tipo": Receita / Despesa
-    - "Cor": 8 palette swatches, aria "Cor 1…8"
-    - "Adicionar"
-  - Errors: "Dê um nome para a categoria." and, for a case-insensitive duplicate within the type, "Já existe uma categoria com esse nome nesse tipo."
-  - Toast on create: "Categoria “{nome}” criada"
-  - Lists: one card each for "Receitas" and "Despesas", with "{n} categorias" and per-item usage ("{n} lançamentos" or "Sem lançamentos").
-  - Inline edit changes the name and color; the type cannot be changed. Toast: "Categoria atualizada".
-  - Deleting is blocked while the category is in use, with the title "{nome} está em uso e não pode ser excluída". Otherwise it deletes immediately, with the toast "Categoria “{nome}” excluída".
-- **Divisão de contas**
-  - Intro: "Define quem divide as contas marcadas como “dividido” e a parte de cada um. É a base do cálculo do acerto."
-  - "Nome do(a) companheiro(a)"
-  - the slider "Parte de {partnerName} nas contas divididas": 0–100, step 5
-  - example box: "Exemplo: numa conta dividida de R$ 100,00, {partnerName} paga {x} e você paga {y}."
-- Both the nav item and the user-menu item "Configurações" open this page. The form's "Gerenciar categorias" link also lands here.
