@@ -109,6 +109,43 @@ describe('POST /api/auth/login', () => {
       clock.advance(IP_LOCK_MS);
       expect((await attemptFrom(app, ATTACKER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(200);
     });
+
+    describe('honors X-Forwarded-For only as TRUST_PROXY allows', () => {
+      const sprayWithSpoofedClients = async (app: App) => {
+        for (let i = 0; i < IP_FAILURE_LIMIT; i++) {
+          await attemptFrom(app, `192.0.2.${i}, ${ATTACKER_IP}`, `alvo${i}@casa.dev`, 'errada');
+        }
+      };
+
+      test('by default, a spoofed entry left of the loopback proxy does not dodge the lock', async () => {
+        const { app } = await buildTestApp();
+        await sprayWithSpoofedClients(app);
+
+        expect((await attemptFrom(app, ATTACKER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(429);
+      });
+
+      test('with false, the header is ignored and every client shares the peer address', async () => {
+        const { app } = await buildTestApp({ trustProxy: false });
+        await sprayFailures(app, IP_FAILURE_LIMIT);
+
+        expect((await attemptFrom(app, OTHER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(429);
+      });
+
+      test('with 1, the address appended by the one trusted proxy is the client', async () => {
+        const { app } = await buildTestApp({ trustProxy: 1 });
+        await sprayWithSpoofedClients(app);
+
+        expect((await attemptFrom(app, ATTACKER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(429);
+        expect((await attemptFrom(app, OTHER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(200);
+      });
+
+      test('with 2, the entry left of the second trusted proxy is the client', async () => {
+        const { app } = await buildTestApp({ trustProxy: 2 });
+        await sprayWithSpoofedClients(app);
+
+        expect((await attemptFrom(app, ATTACKER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(200);
+      });
+    });
   });
 
   test('rejects malformed requests', async () => {
