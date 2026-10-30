@@ -200,7 +200,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-30, with Phase 3 US-06 (Gerar acerto) in PR #14._
+_Last updated: 2026-10-30, with Phase 3 in PRs #14 (US-06 Gerar acerto) and #15 (US-07 Gerar recorrentes, stacked on #14)._
 
 ## Summary
 
@@ -210,14 +210,14 @@ _Last updated: 2026-10-30, with Phase 3 US-06 (Gerar acerto) in PR #14._
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
 | 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#12); one admin step open |
 | 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
-| 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | 🚧 In progress: US-06 done (PR #14), US-07 next |
-| 4 — Resumo mensal | US-08 | ⏳ Planned |
+| 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
+| 4 — Resumo mensal | US-08 | ⏳ Next |
 | 5 — Visão geral | US-09 (becomes the landing page) | ⏳ Planned |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ⏳ Planned |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phases 1, 1.5, 2 and 3 so far)
+## What is built (Phases 1 to 3)
 
 | PR | Branch | Delivered |
 |---|---|---|
@@ -231,6 +231,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#10](https://github.com/matheus-ferreira1/livro-caixa/pull/10) | `chore/bundle-size` | Lazy routes and a long-cached `framework` chunk |
 | [#13](https://github.com/matheus-ferreira1/livro-caixa/pull/13) | `feat/settings` | Category and partner split rules; category CRUD and settings endpoints; Configurações page; restored nav item, user-menu item and "Gerenciar categorias" |
 | [#14](https://github.com/matheus-ferreira1/livro-caixa/pull/14) | `feat/settlement` | `buildShareText` and `settlementEntry`; themed shadcn `Dialog`; Acerto de contas dialog; restored "Gerar acerto" on Lançamentos |
+| [#15](https://github.com/matheus-ferreira1/livro-caixa/pull/15) | `feat/recurring` | Recurring candidate rules; candidates and generate endpoints (one SQLite transaction); Gerar recorrentes dialog; recurring banner with "Agora não"; restored "Gerar recorrentes" |
 
 ### Web routes
 
@@ -238,7 +239,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 |---|---|---|
 | `/entrar` | Login (US-01) | Redirects to `/lancamentos` (or the page you came from) when already signed in. Shows the `notice` passed in router state after sign-out. |
 | `/` | — | Redirects to `/lancamentos` |
-| `/lancamentos` | Lançamentos (US-03, US-04, US-05, US-06) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
+| `/lancamentos` | Lançamentos (US-03 to US-07) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
 | `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
 | any other path | — | Redirects to `/lancamentos`; every route except `/entrar` requires a session |
 
@@ -264,6 +265,8 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `PUT /api/transactions/:id` | `SaveTransaction` | Full replace; keeps `seriesId` |
 | `PATCH /api/transactions/:id` | `ToggleTransactionFlags` | `{ confirmed?, split? }`; only expenses can be split |
 | `DELETE /api/transactions/:id` | `DeleteTransaction` | 204 |
+| `GET /api/recurring/candidates?month=YYYY-MM` | `ListRecurringCandidates` | `{ candidates: [{ seriesId, date, valueCents, source }] }`; `source` is the latest earlier occurrence |
+| `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
 
 ### Database (SQLite, `apps/api/src/infrastructure/db/migrations.ts`)
 
@@ -284,8 +287,9 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `dates/`: `monthLabel`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `defaultDateForMonth`
 - `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
 - `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation) and `monthTiles`
+- `transactions/recurring.ts`: `recurringCandidates`, `validateRecurringSelection`, `RECURRING_MESSAGES`, `recurringEntry`; `recurring-request.ts` holds `recurringGenerateSchema`
 - `transactions/settlement-share.ts`: `buildShareText` (the WhatsApp message, worded as the prototype) and `settlementEntry` (the pending acerto that "Registrar acerto" creates)
-- `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
+- `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation, `compareByDate`), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
 - `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
 - `settings/`: `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
 - `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
@@ -294,10 +298,10 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 76 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 91 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 58 | `bun run --filter '@livro-caixa/web' test` |
-| E2E | 1 flow (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) | `bun run test:e2e` |
+| Domain unit | 88 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 102 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 74 | `bun run --filter '@livro-caixa/web' test` |
+| E2E | 2 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
 
@@ -330,7 +334,10 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The Acerto dialog follows the prototype where the story is silent: the share text says "Já combinado" for scheduled acertos, the copy-failure note is a `role="status"` in amber, and "Incluir contas previstas" resets to on each time the dialog opens.
 - "Gerar acerto" shows in month mode only, as in the prototype.
 - On phones the dialog's money columns shrink to 88px so bill names stay readable.
-- "Agora não" on the recurring banner will be stored in `localStorage`, per month and per browser (decided 2026-10-30, built with US-07).
+- "Agora não" on the recurring banner is stored in `localStorage` (`livro-caixa:recurring-dismissed:{YYYY-MM}`), per month and per browser. When storage is unavailable, the banner stays hidden until the page reloads.
+- `POST /api/recurring/generate` recomputes the candidates and refuses any series that is no longer one (409), so a second tab or a double click cannot duplicate entries. The 409 message "Esses lançamentos já foram gerados. Atualize a página e revise de novo." is not in the design; it was written for this case.
+- The recurring candidates query lives under the `transactions` query key, so any change to the ledger refreshes the banner.
+- On phones the Gerar recorrentes table scrolls sideways, like the prototype's 880px table.
 
 ## Phase 1 placeholders to restore later
 
@@ -339,8 +346,6 @@ These parts of the design were hidden on purpose in Phase 1. Each one comes back
 | Hidden element | Where | Restore in |
 |---|---|---|
 | Nav items "Visão geral", "Patrimônio", "Resumo mensal" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | The phase that builds each screen |
-| "Gerar recorrentes" header button ("Gerar acerto" is back since PR #14) | `TransactionsPage.tsx` header actions, before "Gerar acerto" | Phase 3 (US-07) |
-| Recurring banner in month mode | `TransactionsPage.tsx`, between the header and the tiles | Phase 3 |
 | Landing on Visão geral after login | `HOME_PATH` in `LoginPage.tsx`, the index redirect in `routes.tsx` | Phase 5 |
 
 ## Roadmap
@@ -374,19 +379,18 @@ Follow-ups found during Phase 1.5:
 - [x] Restore the nav item, the user-menu item and "Gerenciar categorias".
 - [x] Invalidate the `categories` and `settings` queries after edits; the Lançamentos tiles and form must reflect the new share.
 
-### Phase 3 — Acerto and recorrentes (US-06, US-07)
+### Phase 3 — Acerto and recorrentes (US-06, US-07) (done, PRs #14, #15)
 
 - [x] **US-06 Gerar acerto** (PR #14):
   - dialog with the print summary, "Incluir contas previstas", share text, "Copiar texto", "Enviar no WhatsApp" and "Registrar acerto"
   - `buildShareText` and `settlementEntry` in the domain, on top of `computeSettlement`
   - the acerto is registered through `POST /api/transactions`
-- [ ] **US-07 Gerar recorrentes**:
+- [x] **US-07 Gerar recorrentes** (PR #15):
   - domain `recurringCandidates(transactions, month)`
   - `GET /api/recurring/candidates?month=` and `POST /api/recurring/generate` (validated, transactional, keeps `seriesId`)
   - review dialog
   - the banner with a per-month "Agora não", stored in `localStorage`
-- [x] Restore the "Gerar acerto" button (PR #14).
-- [ ] Restore the "Gerar recorrentes" button and the banner on Lançamentos.
+- [x] Restore the "Gerar acerto" (PR #14) and "Gerar recorrentes" (PR #15) buttons and the banner on Lançamentos.
 
 ### Phase 4 — Resumo mensal (US-08)
 
@@ -593,7 +597,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - example box: "Exemplo: numa conta dividida de R$ 100,00, {partnerName} paga {x} e você paga {y}."
 - Both the nav item and the user-menu item "Configurações" open this page. The form's "Gerenciar categorias" link also lands here.
 
-## Phase 3 — in progress
+## Phase 3 — done
 
 ### US-06 Generate the settlement (Gerar acerto) — ✅ Done (Phase 3, PR #14)
 - A dialog (1000px, bg `#F4F5F1`) titled "Acerto de contas", with the sub-line "{Mês AAAA} · contas divididas com {partnerName}".
@@ -613,9 +617,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - "Enviar no WhatsApp": opens `https://wa.me/?text=…`
 - Blue box: "Quando {partnerName} enviar o valor" / "Registre o acerto como previsto agora e marque como confirmado quando o dinheiro cair." The button "Registrar acerto de {balance}" creates a pending acerto on the month's last day, described "Acerto das contas divididas", with the note "{partnerName} · {n} contas de {Mês}". Toast: "Acerto registrado como previsto. Confirme quando receber." When the balance is 0, the button is disabled and reads "Acerto do mês já registrado".
 
-## Backlog — not started
-
-### US-07 Generate recurring entries (Gerar recorrentes) — ⏳ Phase 3
+### US-07 Generate recurring entries (Gerar recorrentes) — ✅ Done (Phase 3, PR #15)
 - Candidates: for each `seriesId`, take the latest occurrence before the month. It is a candidate when it is still `recurring`, is not an acerto, and the series has no entry in the month yet. The candidate's day is the source's day, capped at the month's last day, and its value is the source's value.
 - Banner (month mode only, `#E5EBFA` / `#1F3C8F`):
   - text: "1 lançamento recorrente ainda não foi gerado para {Mês}." or "{n} lançamentos recorrentes ainda não foram gerados para {Mês}."
@@ -629,6 +631,8 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - Errors: "Selecione ao menos um lançamento." and "Revise “{descrição}”: a data deve ser em {Mês} e o valor maior que zero."
   - Empty state: "Tudo em dia" / "Todos os lançamentos recorrentes já estão em {Mês}."
 - Generated entries are pending, with an empty note and `recurring: true`, and keep their `seriesId`. Toast: "{n} lançamento(s) gerado(s) como previstos".
+
+## Backlog — not started
 
 ### US-08 Monthly summary (Resumo mensal) — ⏳ Phase 4
 - Eyebrow "Resumo mensal". Year navigation ("Ano anterior" / "Próximo ano") around a mono h1 with the year.
