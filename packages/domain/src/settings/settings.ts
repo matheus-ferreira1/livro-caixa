@@ -6,7 +6,10 @@ const MAX_PARTNER_NAME_LENGTH = 60;
 const EXAMPLE_BILL_CENTS: Cents = 10_000;
 
 export const settingsInputSchema = z.object({
-  partnerName: z.string().max(MAX_PARTNER_NAME_LENGTH).transform((name) => name.trim()),
+  partnerName: z
+    .string()
+    .max(MAX_PARTNER_NAME_LENGTH)
+    .transform((name) => name.trim()),
   partnerShare: z
     .number()
     .int()

@@ -41,14 +41,20 @@ describe('categoryInputSchema', () => {
   });
 
   test('rejects acerto and colors outside the palette', () => {
-    expect(categoryInputSchema.safeParse({ name: 'X', type: 'acerto', color: '#2A78D6' }).success).toBe(false);
-    expect(categoryInputSchema.safeParse({ name: 'X', type: 'despesa', color: '#000000' }).success).toBe(false);
+    expect(categoryInputSchema.safeParse({ name: 'X', type: 'acerto', color: '#2A78D6' }).success).toBe(
+      false,
+    );
+    expect(categoryInputSchema.safeParse({ name: 'X', type: 'despesa', color: '#000000' }).success).toBe(
+      false,
+    );
   });
 });
 
 describe('categoryPatchSchema', () => {
   test('does not allow changing the type', () => {
-    expect(categoryPatchSchema.safeParse({ name: 'X', color: '#2A78D6', type: 'receita' }).success).toBe(false);
+    expect(categoryPatchSchema.safeParse({ name: 'X', color: '#2A78D6', type: 'receita' }).success).toBe(
+      false,
+    );
   });
 });
 
