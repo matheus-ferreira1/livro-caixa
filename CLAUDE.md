@@ -208,7 +208,7 @@ _Last updated: 2026-10-29, after PRs #6–#10 were merged into `main` and the Do
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#10); one follow-up and one admin step open |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#12); one admin step open |
 | 2 — Configurações | US-11 Categories and partner split settings | ⏳ Next |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
@@ -336,7 +336,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 Follow-ups found during Phase 1.5:
 
 - [x] **`TRUST_PROXY` setting**: Express `trust proxy` comes from the `TRUST_PROXY` env var (default `loopback`), parsed and validated in `config.ts` and passed to `createApp`. Behind a reverse proxy in another container (the usual HTTPS setup), set it to `1` or `uniquelocal` so the per-IP login limit sees real client IPs instead of locking everyone out together.
-- [ ] **Smaller login bundle**: the `@livro-caixa/domain` barrel puts zod (~53 kB) on `/entrar` (try `sideEffects: false` or deep imports), and react-router resolves to its `development` build through its exports map.
+- [x] **Smaller login bundle**: initial JS on `/entrar` went from 508 kB / 158 kB gzip to 450 kB / 144 kB. `packages/domain` is `"sideEffects": false` and `loginRequestSchema` lives in `auth/login-request.ts`, so the login page no longer pulls zod in; keep module-level zod schemas out of modules the login page imports. Production builds alias `react-router` to its `dist/production` entry (`vite.config.ts`), since its exports map only offers the development build.
 
 ### Phase 2 — Configurações (US-11)
 
