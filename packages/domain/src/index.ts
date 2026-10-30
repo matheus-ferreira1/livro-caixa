@@ -1,4 +1,5 @@
 export * from './auth/credentials';
+export * from './auth/login-request';
 export * from './auth/user-display';
 export * from './categories/categories';
 export * from './dates/dates';

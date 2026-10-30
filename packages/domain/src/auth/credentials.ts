@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export const LOGIN_MESSAGES = {
   missingFields: 'Informe e-mail e senha.',
   invalidEmail: 'Digite um e-mail válido.',
@@ -10,7 +8,7 @@ export const LOGIN_MESSAGES = {
 export const lockedOutMessage = (secondsLeft: number): string =>
   `Muitas tentativas. Tente de novo em ${secondsLeft} s.`;
 
-const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+export const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 
 export interface LoginInput {
   email: string;
@@ -24,11 +22,3 @@ export function validateLoginInput({ email, password }: LoginInput): string | nu
   if (!EMAIL_PATTERN.test(trimmed)) return LOGIN_MESSAGES.invalidEmail;
   return null;
 }
-
-export const loginRequestSchema = z.object({
-  email: z.string().trim().toLowerCase().regex(EMAIL_PATTERN),
-  password: z.string().min(1),
-  remember: z.boolean().default(true),
-});
-
-export type LoginRequest = z.infer<typeof loginRequestSchema>;
