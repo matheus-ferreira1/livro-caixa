@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/shared/lib/utils';
+import { X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -77,8 +78,27 @@ function DialogDescription({
   );
 }
 
+/** The design's modal title bar: title, sub-line and the "Fechar" button. */
+function DialogTitleBar({ title, description }: { title: React.ReactNode; description: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b bg-card px-6 py-5">
+      <div className="flex flex-col">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </div>
+      <DialogClose
+        aria-label="Fechar"
+        className="flex size-11 flex-none items-center justify-center rounded-[10px] bg-background text-ink hover:bg-track"
+      >
+        <X className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
+      </DialogClose>
+    </div>
+  );
+}
+
 export {
   Dialog,
+  DialogTitleBar,
   DialogTrigger,
   DialogPortal,
   DialogClose,
