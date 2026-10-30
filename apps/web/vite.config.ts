@@ -1,5 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
@@ -21,9 +23,23 @@ function chunkFor(moduleId: string): string | undefined {
   return packageName && FRAMEWORK_PACKAGES.has(packageName) ? FRAMEWORK_CHUNK : undefined;
 }
 
-export default defineConfig({
+/**
+ * react-router's exports map only points at its development build, which keeps dev-only checks and
+ * warnings. Production builds take the production entry instead; dev and tests keep the warnings.
+ */
+function reactRouterProductionEntry(): string {
+  const packageJson = createRequire(import.meta.url).resolve('react-router/package.json');
+  return `${dirname(packageJson)}/dist/production/index.mjs`;
+}
+
+export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
-  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  resolve: {
+    alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      ...(command === 'build' ? [{ find: /^react-router$/, replacement: reactRouterProductionEntry() }] : []),
+    ],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -38,4 +54,4 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
   },
-});
+}));
