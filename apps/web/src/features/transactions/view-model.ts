@@ -82,6 +82,3 @@ const collator = new Intl.Collator('pt-BR');
 export function sortedCategoryChips(categories: Category[]): Category[] {
   return [...categories].sort((a, b) => b.type.localeCompare(a.type) || collator.compare(a.name, b.name));
 }
-
-export const pluralize = (n: number, singular: string, plural: string): string =>
-  `${n} ${n === 1 ? singular : plural}`;

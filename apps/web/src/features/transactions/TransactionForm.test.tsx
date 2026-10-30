@@ -140,6 +140,16 @@ describe('Novo lançamento', () => {
   });
 });
 
+test('links to Configurações to manage categories', async () => {
+  const { user } = setup();
+  await screen.findByText('Conta de luz');
+  await user.click(screen.getByRole('button', { name: 'Novo lançamento' }));
+  expect(within(dialog()).getByRole('link', { name: 'Gerenciar categorias' })).toHaveAttribute(
+    'href',
+    '/configuracoes',
+  );
+});
+
 describe('Editar lançamento', () => {
   test('prefills the entry and saves it with PUT', async () => {
     const { user, writes } = setup();

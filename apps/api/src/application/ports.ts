@@ -49,8 +49,12 @@ export interface TransactionRepository {
 export interface CategoryRepository {
   list(): Category[];
   findById(id: string): Category | null;
+  insert(category: Category): void;
+  update(category: Category): void;
+  delete(id: string): void;
 }
 
 export interface SettingsRepository {
   get(): Settings;
+  save(settings: Settings): void;
 }

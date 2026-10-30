@@ -1,5 +1,5 @@
 import { initialsOf, LOGIN_MESSAGES, type PublicUser } from '@livro-caixa/domain';
-import { ChevronDown, LogOut } from 'lucide-react';
+import { ChevronDown, LogOut, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useLogout } from '@/features/auth/api';
 import {
@@ -51,6 +51,13 @@ export function UserMenu({ user }: { user: PublicUser }) {
             <span className="truncate text-[13px] text-muted-foreground">{user.email}</span>
           </span>
         </DropdownMenuLabel>
+        <DropdownMenuItem
+          onSelect={() => navigate('/configuracoes')}
+          className="min-h-11 gap-2.5 rounded-none px-4 text-sm font-semibold text-ink focus:bg-background"
+        >
+          <SlidersHorizontal className="size-[17px] text-ink" aria-hidden="true" />
+          Configurações
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={signOut}
           className="min-h-11 gap-2.5 rounded-none px-4 text-sm font-semibold text-expense focus:bg-expense-row focus:text-expense"
