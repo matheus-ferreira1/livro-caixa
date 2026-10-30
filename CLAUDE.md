@@ -294,6 +294,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
 - The month view loads the whole month and filters on the client, because the tiles need the full month anyway.
 - The login lockout counters live in memory, so a restart clears them. This is acceptable for a single container.
+- Login throttling has two in-memory limits: 5 failures per e-mail + IP lock that pair for 60 s, and 20 failures per IP within 15 min lock that IP for 15 min. Only failures count, and a success does not clear the IP counter. Both answer 429 "Muitas tentativas. Tente de novo em {N} s.". `req.ip` honors `X-Forwarded-For` only from loopback proxies (`trust proxy: 'loopback'`).
 - Expired sessions are purged on boot and then every hour (`startSessionPurge` in `apps/api/src/session-purge.ts`, use case `PurgeExpiredSessions`). `Authenticate` still drops an expired session as soon as its cookie comes back.
 - The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
 - Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
@@ -323,7 +324,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
   - [ ] Make both jobs required status checks on `main` (GitHub → Settings → Branches; repo admin only).
 - [x] **Verify the Docker image** (2026-10-29, Docker 28.4, image 283 MB): `docker compose up --build` with `ADMIN_PASSWORD` set creates the admin on first boot only; the healthcheck reports healthy; the SPA and `/api` are served from one port; login works and sets the session cookie; an entry and its session survive both `restart` and `down`/`up` (`/data` volume); `cli reset-password` (with `NEW_PASSWORD`) changes the password and signs out existing sessions; `cli create-user` works.
 - [x] **Clean up expired sessions**: `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
-- [ ] **Rate limit by IP**: the current lockout keys on e-mail + IP, so add a coarse per-IP limit on `/api/auth/login`.
+- [x] **Rate limit by IP**: `POST /api/auth/login` also locks a client IP for 15 min after 20 failures within 15 min, across any e-mails (`IP_THROTTLE_POLICY` in `LoginThrottle.ts`).
 - [ ] **Session expiry in the UI**: on any 401 from a data request, clear the user query and send the user to `/entrar` (today only `RequireAuth` handles a missing session on load).
 - [ ] **Bundle size**: the app chunk is ~377 kB minified (118 kB gzip); consider importing lucide icons per file and lazy-loading routes once more screens exist.
 

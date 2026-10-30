@@ -59,6 +59,58 @@ describe('POST /api/auth/login', () => {
     expect((await attempt(TEST_USER.password)).status).toBe(200);
   });
 
+  describe('per-IP limit', () => {
+    const ATTACKER_IP = '203.0.113.7';
+    const OTHER_IP = '198.51.100.20';
+    const IP_FAILURE_LIMIT = 20;
+    const IP_LOCK_MS = 15 * 60_000;
+
+    type App = Parameters<typeof request>[0];
+
+    const attemptFrom = (app: App, ip: string, email: string, password: string) =>
+      request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({ email, password });
+
+    const sprayFailures = async (app: App, count: number) => {
+      const statuses: number[] = [];
+      for (let i = 0; i < count; i++) {
+        statuses.push((await attemptFrom(app, ATTACKER_IP, `alvo${i}@casa.dev`, 'errada')).status);
+      }
+      return statuses;
+    };
+
+    test('locks an IP for 15 min after 20 failures, even across different e-mails', async () => {
+      const { app } = await buildTestApp();
+
+      const statuses = await sprayFailures(app, IP_FAILURE_LIMIT - 1);
+      expect(statuses.every((status) => status === 401)).toBe(true);
+
+      const last = await attemptFrom(app, ATTACKER_IP, 'mais-um@casa.dev', 'errada');
+      expect(last.status).toBe(429);
+      expect(last.body.error).toEqual({
+        code: 'too_many_attempts',
+        message: 'Muitas tentativas. Tente de novo em 900 s.',
+      });
+
+      const validWhileLocked = await attemptFrom(app, ATTACKER_IP, TEST_USER.email, TEST_USER.password);
+      expect(validWhileLocked.status).toBe(429);
+    });
+
+    test('does not affect other IPs', async () => {
+      const { app } = await buildTestApp();
+      await sprayFailures(app, IP_FAILURE_LIMIT);
+
+      expect((await attemptFrom(app, OTHER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(200);
+    });
+
+    test('lifts the lock once the 15 min have passed', async () => {
+      const { app, clock } = await buildTestApp();
+      await sprayFailures(app, IP_FAILURE_LIMIT);
+
+      clock.advance(IP_LOCK_MS);
+      expect((await attemptFrom(app, ATTACKER_IP, TEST_USER.email, TEST_USER.password)).status).toBe(200);
+    });
+  });
+
   test('rejects malformed requests', async () => {
     const { app } = await buildTestApp();
     const res = await request(app).post('/api/auth/login').send({ email: 'x', password: '' }).expect(400);
