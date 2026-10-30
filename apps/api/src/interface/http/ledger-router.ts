@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { Container } from '../../container';
 import { requireAuth } from './require-auth';
+import { settingsRouter } from './settings-router';
 
 const monthQuery = z.object({ month: z.string().refine(isMonthKey) });
 
@@ -34,13 +35,7 @@ export function ledgerRouter(container: Container): Router {
   const router = Router();
   router.use(requireAuth(container));
 
-  router.get('/categories', (_req, res) => {
-    res.json({ categories: container.categories.list() });
-  });
-
-  router.get('/settings', (_req, res) => {
-    res.json({ settings: container.settings.get() });
-  });
+  router.use(settingsRouter(container));
 
   router.get('/transactions', (req, res) => {
     const { month } = monthQuery.parse(req.query);
