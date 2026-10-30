@@ -335,7 +335,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 Follow-ups found during Phase 1.5:
 
 - [ ] **`TRUST_PROXY` setting**: `app.ts` trusts only loopback proxies. Behind a reverse proxy in another container (the usual HTTPS setup), every request comes from the proxy's IP, so the per-IP login limit locks everyone out together. Make `trust proxy` configurable through an env var, defaulting to `loopback`.
-- [ ] **Smaller login bundle**: the `@livro-caixa/domain` barrel puts zod (~53 kB) on `/entrar` (try `sideEffects: false` or deep imports), and react-router resolves to its `development` build through its exports map.
+- [x] **Smaller login bundle**: initial JS on `/entrar` went from 508 kB / 158 kB gzip to 450 kB / 144 kB. `packages/domain` is `"sideEffects": false` and `loginRequestSchema` lives in `auth/login-request.ts`, so the login page no longer pulls zod in; keep module-level zod schemas out of modules the login page imports. Production builds alias `react-router` to its `dist/production` entry (`vite.config.ts`), since its exports map only offers the development build.
 
 ### Phase 2 — Configurações (US-11)
 
