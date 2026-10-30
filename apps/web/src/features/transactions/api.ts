@@ -1,11 +1,4 @@
-import type {
-  Category,
-  MonthKey,
-  Settings,
-  Totals,
-  Transaction,
-  TransactionInput,
-} from '@livro-caixa/domain';
+import type { MonthKey, Totals, Transaction, TransactionInput } from '@livro-caixa/domain';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch, jsonBody } from '@/shared/api/client';
@@ -35,22 +28,6 @@ export interface SearchResult {
   total: number;
   totals: Totals;
   groups: { monthKey: MonthKey; count: number; netCents: number; ids: string[] }[];
-}
-
-export function useCategories() {
-  return useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => (await apiFetch<{ categories: Category[] }>('/api/categories')).categories,
-    staleTime: Infinity,
-  });
-}
-
-export function useSettings() {
-  return useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => (await apiFetch<{ settings: Settings }>('/api/settings')).settings,
-    staleTime: Infinity,
-  });
 }
 
 export function useMonthTransactions(month: MonthKey, enabled: boolean) {

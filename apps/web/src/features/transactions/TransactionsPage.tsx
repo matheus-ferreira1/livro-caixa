@@ -19,15 +19,10 @@ import {
 } from '@livro-caixa/domain';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { pluralize } from '@/shared/lib/utils';
 import { Segmented } from '@/shared/Segmented';
-import {
-  useCategories,
-  useDeleteTransaction,
-  useMonthTransactions,
-  useSearchTransactions,
-  useSettings,
-  useToggleFlags,
-} from './api';
+import { useCategories, useSettings } from '@/features/settings/api';
+import { useDeleteTransaction, useMonthTransactions, useSearchTransactions, useToggleFlags } from './api';
 import { AllFiltersCard } from './components/AllFiltersCard';
 import { ListToolbar } from './components/ListToolbar';
 import { Pager } from './components/Pager';
@@ -35,7 +30,7 @@ import { TransactionFormSheet, type FormTarget } from './components/TransactionF
 import { SummaryTiles, type TileSpec } from './components/SummaryTiles';
 import { TransactionTable, type RowGroup } from './components/TransactionTable';
 import { useListState } from './useListState';
-import { pluralize, rowViewModel } from './view-model';
+import { rowViewModel } from './view-model';
 
 const MODE_OPTIONS = [
   ['month', 'Por mês'],

@@ -4,8 +4,11 @@ import { LedgerIcon } from '@/shared/brand/LedgerIcon';
 import { cn } from '@/shared/lib/utils';
 import { UserMenu } from './UserMenu';
 
-/** Phase 1 ships only Lançamentos; the other sections join this list as they are built. */
-const NAV_ITEMS = [{ to: '/lancamentos', label: 'Lançamentos' }];
+/** Sections join this list, in the design's order, as they are built. */
+const NAV_ITEMS = [
+  { to: '/lancamentos', label: 'Lançamentos' },
+  { to: '/configuracoes', label: 'Configurações' },
+];
 
 export function AppShell() {
   const { data: user } = useCurrentUser();

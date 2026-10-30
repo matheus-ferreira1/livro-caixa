@@ -16,6 +16,15 @@ export const CATEGORY_PALETTE = [
   '#E34948',
 ] as const;
 
+export type CategoryColor = (typeof CATEGORY_PALETTE)[number];
+
+const isPaletteColor = (color: string): color is CategoryColor =>
+  (CATEGORY_PALETTE as readonly string[]).includes(color);
+
+/** Older or hand-edited rows may hold any color; editing starts from a palette one. */
+export const toPaletteColor = (color: string): CategoryColor =>
+  isPaletteColor(color) ? color : CATEGORY_PALETTE[0];
+
 const MAX_CATEGORY_NAME_LENGTH = 60;
 
 export const CATEGORY_MESSAGES = {

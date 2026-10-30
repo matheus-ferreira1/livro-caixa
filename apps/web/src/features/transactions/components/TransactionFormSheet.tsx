@@ -9,6 +9,7 @@ import {
 import { X } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { ApiError } from '@/shared/api/client';
 import { cn } from '@/shared/lib/utils';
@@ -169,7 +170,12 @@ function TransactionForm({
 
         {type !== 'acerto' && (
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold">Categoria</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold">Categoria</span>
+              <Link to="/configuracoes" className="text-[13px] font-semibold text-settlement">
+                Gerenciar categorias
+              </Link>
+            </div>
             <div role="group" aria-label="Categoria" className="flex flex-wrap gap-2">
               {categories
                 .filter((c) => c.type === type)

@@ -7,6 +7,7 @@ import {
   categoryInputSchema,
   categoryPatchSchema,
   categoryUsageCounts,
+  toPaletteColor,
   validateCategoryName,
 } from './categories';
 
@@ -73,5 +74,12 @@ describe('categoryUsageCounts', () => {
 describe('categoriesOfType', () => {
   test('keeps one type sorted by name in pt-BR order', () => {
     expect(categoriesOfType(categories, 'despesa').map((c) => c.name)).toEqual(['Água', 'Mercado']);
+  });
+});
+
+describe('toPaletteColor', () => {
+  test('keeps a palette color and replaces any other with the first one', () => {
+    expect(toPaletteColor('#EDA100')).toBe('#EDA100');
+    expect(toPaletteColor('#123456')).toBe(CATEGORY_PALETTE[0]);
   });
 });

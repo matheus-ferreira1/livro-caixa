@@ -32,6 +32,12 @@ export const routes: RouteObject[] = [
                   Component: (await import('@/features/transactions/TransactionsPage')).TransactionsPage,
                 }),
               },
+              {
+                path: 'configuracoes',
+                lazy: async () => ({
+                  Component: (await import('@/features/settings/SettingsPage')).SettingsPage,
+                }),
+              },
               { path: '*', element: <Navigate to="/lancamentos" replace /> },
             ],
           },

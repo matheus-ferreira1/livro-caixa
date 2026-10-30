@@ -41,4 +41,25 @@ describe('AppShell', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Você saiu da sua conta.');
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
   });
+
+  test('opens Configurações from the nav and from the account menu', async () => {
+    mockApi((url) => {
+      if (url === '/api/auth/me') return { status: 200, body: { user: USER } };
+      if (url === '/api/categories') return { status: 200, body: { categories: [], usage: {} } };
+      if (url === '/api/settings')
+        return { status: 200, body: { settings: { partnerName: '', partnerShare: 50 } } };
+      return { status: 200, body: { transactions: [] } };
+    });
+    const { user, router } = renderRoutes(routes, '/configuracoes');
+    expect(await screen.findByRole('link', { name: 'Configurações' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(await screen.findByRole('heading', { level: 1, name: 'Configurações' })).toBeInTheDocument();
+
+    await router.navigate('/lancamentos');
+    await user.click(await screen.findByRole('button', { name: 'Conta de Maria Silva' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Configurações' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/configuracoes'));
+  });
 });
