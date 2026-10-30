@@ -11,6 +11,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD (min. 8 characters)}
       # Set to true when serving over HTTPS behind a reverse proxy.
       SECURE_COOKIES: ${SECURE_COOKIES:-false}
+      # Which proxies may set X-Forwarded-For (the client IP for the login limit).
+      # Behind a reverse proxy in another container, use 1 (one hop) or uniquelocal (Docker's private ranges).
+      TRUST_PROXY: ${TRUST_PROXY:-loopback}
     volumes:
       - livro-caixa-data:/data
     restart: unless-stopped
