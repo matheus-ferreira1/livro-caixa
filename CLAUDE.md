@@ -199,7 +199,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-29, after PR #6 (CI) was merged into `main` and the Docker image was verified._
+_Last updated: 2026-10-29, after PRs #6–#10 were merged into `main` and the Docker image was verified._
 
 ## Summary
 
@@ -207,8 +207,8 @@ _Last updated: 2026-10-29, after PR #6 (CI) was merged into `main` and the Docke
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | 🚧 In progress (CI, Docker verification and session cleanup done) |
-| 2 — Configurações | US-11 Categories and partner split settings | ⏳ Planned |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#10); two follow-ups and one admin step open |
+| 2 — Configurações | US-11 Categories and partner split settings | ⏳ Next |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Planned |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
 | 5 — Visão geral | US-09 (becomes the landing page) | ⏳ Planned |
@@ -216,7 +216,7 @@ _Last updated: 2026-10-29, after PR #6 (CI) was merged into `main` and the Docke
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phase 1 and 1.5 so far)
+## What is built (Phases 1 and 1.5)
 
 | PR | Branch | Delivered |
 |---|---|---|
@@ -224,6 +224,10 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#2](https://github.com/matheus-ferreira1/livro-caixa/pull/2) | `feat/transactions-list` | Money, date, settlement and list rules; ledger schema; read, toggle and delete endpoints; Lançamentos page in both modes; demo seed |
 | [#3](https://github.com/matheus-ferreira1/livro-caixa/pull/3) | `feat/transaction-form` | Form rules; create/replace endpoints; Novo/Editar lançamento sheet; Playwright e2e; SPA path fix |
 | [#6](https://github.com/matheus-ferreira1/livro-caixa/pull/6) | `chore/ci` | GitHub Actions CI (lint, typecheck, test, build, e2e); fixed a timing race in the web form test |
+| [#7](https://github.com/matheus-ferreira1/livro-caixa/pull/7) | `chore/purge-expired-sessions` | Expired sessions purged on boot and every hour |
+| [#8](https://github.com/matheus-ferreira1/livro-caixa/pull/8) | `feat/session-expiry-redirect` | A 401 on any data request sends the user to `/entrar` and back after sign-in |
+| [#9](https://github.com/matheus-ferreira1/livro-caixa/pull/9) | `feat/login-ip-rate-limit` | Per-IP login limit on top of the per-account lock |
+| [#10](https://github.com/matheus-ferreira1/livro-caixa/pull/10) | `chore/bundle-size` | Lazy routes and a long-cached `framework` chunk |
 
 ### Web routes
 
@@ -280,8 +284,8 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 56 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 36 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 28 | `bun run --filter '@livro-caixa/web' test` |
+| API integration | 43 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 32 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 1 flow (login error → login → create → confirm → edit → Todos → delete → logout) | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
@@ -318,15 +322,20 @@ These parts of the design were hidden on purpose in Phase 1. Each one comes back
 
 Every item below gets its own branch and PR, following the Git workflow above.
 
-### Phase 1.5 — Hardening (in progress)
+### Phase 1.5 — Hardening (done)
 
 - [x] **CI** (PR #6): `.github/workflows/ci.yml` runs on every PR and on pushes to `main`, pinned to Bun 1.3.4. Job "Lint, typecheck, test, build" runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test` and `build`; job "E2E (Playwright, Chromium)" runs `test:e2e` with cached browsers and uploads `test-results/` on failure.
   - [ ] Make both jobs required status checks on `main` (GitHub → Settings → Branches; repo admin only).
 - [x] **Verify the Docker image** (2026-10-29, Docker 28.4, image 283 MB): `docker compose up --build` with `ADMIN_PASSWORD` set creates the admin on first boot only; the healthcheck reports healthy; the SPA and `/api` are served from one port; login works and sets the session cookie; an entry and its session survive both `restart` and `down`/`up` (`/data` volume); `cli reset-password` (with `NEW_PASSWORD`) changes the password and signs out existing sessions; `cli create-user` works.
-- [x] **Clean up expired sessions**: `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
-- [x] **Rate limit by IP**: `POST /api/auth/login` also locks a client IP for 15 min after 20 failures within 15 min, across any e-mails (`IP_THROTTLE_POLICY` in `LoginThrottle.ts`).
-- [x] **Session expiry in the UI**: `createQueryClient` (`shared/api/query-client.ts`) clears the user query on any 401 from a query or mutation (except login and logout), so `RequireAuth` redirects to `/entrar` and back after sign-in; 401s are not retried and show no error toast.
-- [x] **Bundle size**: routes load lazily (React Router `lazy`), and react, react-dom and the router share one long-cached `framework` chunk. Initial JS on `/entrar` went from 670 kB minified / 210 kB gzip to 508 kB / 158 kB. `/lancamentos` stays at 662 kB / 211 kB, now in route chunks that new screens will not grow. lucide-react was already tree-shaken (~8.5 kB), so per-file icon imports would not help. Follow-ups: the domain barrel puts zod (~53 kB) on `/entrar`, and react-router only ships its `development` build through its exports map.
+- [x] **Clean up expired sessions** (PR #7): `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
+- [x] **Rate limit by IP** (PR #9): `POST /api/auth/login` also locks a client IP for 15 min after 20 failures within 15 min, across any e-mails (`IP_THROTTLE_POLICY` in `LoginThrottle.ts`).
+- [x] **Session expiry in the UI** (PR #8): `createQueryClient` (`shared/api/query-client.ts`) clears the user query on any 401 from a query or mutation (except login and logout), so `RequireAuth` redirects to `/entrar` and back after sign-in; 401s are not retried and show no error toast.
+- [x] **Bundle size** (PR #10): routes load lazily (React Router `lazy`), and react, react-dom and the router share one long-cached `framework` chunk. Initial JS on `/entrar` went from 670 kB minified / 210 kB gzip to 508 kB / 158 kB. `/lancamentos` stays at 662 kB / 211 kB, now in route chunks that new screens will not grow. lucide-react was already tree-shaken (~8.5 kB), so per-file icon imports would not help. Follow-ups: the domain barrel puts zod (~53 kB) on `/entrar`, and react-router only ships its `development` build through its exports map.
+
+Follow-ups found during Phase 1.5:
+
+- [ ] **`TRUST_PROXY` setting**: `app.ts` trusts only loopback proxies. Behind a reverse proxy in another container (the usual HTTPS setup), every request comes from the proxy's IP, so the per-IP login limit locks everyone out together. Make `trust proxy` configurable through an env var, defaulting to `loopback`.
+- [ ] **Smaller login bundle**: the `@livro-caixa/domain` barrel puts zod (~53 kB) on `/entrar` (try `sideEffects: false` or deep imports), and react-router resolves to its `development` build through its exports map.
 
 ### Phase 2 — Configurações (US-11)
 
