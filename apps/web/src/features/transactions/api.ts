@@ -54,7 +54,7 @@ export function useSearchTransactions(params: SearchParams, enabled: boolean) {
 }
 
 // An expired session redirects to sign-in instead of showing an error.
-const showError = (error: Error) => {
+export const showError = (error: Error) => {
   if (!isUnauthorized(error)) toast.error(error.message);
 };
 
