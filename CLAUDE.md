@@ -80,6 +80,7 @@ Environment variables (`apps/api/src/config.ts`):
 | `DATABASE_PATH` | `./data/livro-caixa.sqlite` (`/data/livro-caixa.sqlite` in Docker) | SQLite file; `:memory:` for tests |
 | `STATIC_DIR` | unset (`/app/apps/web/dist` in Docker) | Built SPA to serve; may be relative |
 | `SECURE_COOKIES` | `false` | Set `true` behind HTTPS |
+| `TRUST_PROXY` | `loopback` | Proxies allowed to set `X-Forwarded-For`, which decides the client IP for the per-IP login limit: `true`, `false`, a hop count, or a comma-separated list of IPs, CIDRs and `loopback` / `linklocal` / `uniquelocal`. Behind a reverse proxy in another container use `1` or `uniquelocal`. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | unset | First user, created only while the database has no users |
 
 ## Architecture
@@ -207,7 +208,7 @@ _Last updated: 2026-10-29, with Phase 2 (US-11 Configurações) in PR #13._
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#10); two follow-ups and one admin step open |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#10); one follow-up and one admin step open |
 | 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Next |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
@@ -292,7 +293,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 72 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 65 | `bun run --filter '@livro-caixa/api' test` |
+| API integration | 90 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 44 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 1 flow (login error → login → create → confirm → edit → Todos → delete → logout) | `bun run test:e2e` |
 
@@ -306,7 +307,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
 - The month view loads the whole month and filters on the client, because the tiles need the full month anyway.
 - The login lockout counters live in memory, so a restart clears them. This is acceptable for a single container.
-- Login throttling has two in-memory limits: 5 failures per e-mail + IP lock that pair for 60 s, and 20 failures per IP within 15 min lock that IP for 15 min. Only failures count, and a success does not clear the IP counter. Both answer 429 "Muitas tentativas. Tente de novo em {N} s.". `req.ip` honors `X-Forwarded-For` only from loopback proxies (`trust proxy: 'loopback'`).
+- Login throttling has two in-memory limits: 5 failures per e-mail + IP lock that pair for 60 s, and 20 failures per IP within 15 min lock that IP for 15 min. Only failures count, and a success does not clear the IP counter. Both answer 429 "Muitas tentativas. Tente de novo em {N} s.". `req.ip` honors `X-Forwarded-For` only from the proxies that `TRUST_PROXY` allows (default `loopback`).
 - Expired sessions are purged on boot and then every hour (`startSessionPurge` in `apps/api/src/session-purge.ts`, use case `PurgeExpiredSessions`). `Authenticate` still drops an expired session as soon as its cookie comes back.
 - The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
 - Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
@@ -348,7 +349,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 
 Follow-ups found during Phase 1.5:
 
-- [ ] **`TRUST_PROXY` setting**: `app.ts` trusts only loopback proxies. Behind a reverse proxy in another container (the usual HTTPS setup), every request comes from the proxy's IP, so the per-IP login limit locks everyone out together. Make `trust proxy` configurable through an env var, defaulting to `loopback`.
+- [x] **`TRUST_PROXY` setting**: Express `trust proxy` comes from the `TRUST_PROXY` env var (default `loopback`), parsed and validated in `config.ts` and passed to `createApp`. Behind a reverse proxy in another container (the usual HTTPS setup), set it to `1` or `uniquelocal` so the per-IP login limit sees real client IPs instead of locking everyone out together.
 - [ ] **Smaller login bundle**: the `@livro-caixa/domain` barrel puts zod (~53 kB) on `/entrar` (try `sideEffects: false` or deep imports), and react-router resolves to its `development` build through its exports map.
 
 ### Phase 2 — Configurações (US-11) (done, PR #13)
