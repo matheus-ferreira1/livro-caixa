@@ -326,7 +326,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 - [x] **Clean up expired sessions**: `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
 - [x] **Rate limit by IP**: `POST /api/auth/login` also locks a client IP for 15 min after 20 failures within 15 min, across any e-mails (`IP_THROTTLE_POLICY` in `LoginThrottle.ts`).
 - [x] **Session expiry in the UI**: `createQueryClient` (`shared/api/query-client.ts`) clears the user query on any 401 from a query or mutation (except login and logout), so `RequireAuth` redirects to `/entrar` and back after sign-in; 401s are not retried and show no error toast.
-- [ ] **Bundle size**: the app chunk is ~377 kB minified (118 kB gzip); consider importing lucide icons per file and lazy-loading routes once more screens exist.
+- [x] **Bundle size**: routes load lazily (React Router `lazy`), and react, react-dom and the router share one long-cached `framework` chunk. Initial JS on `/entrar` went from 670 kB minified / 210 kB gzip to 508 kB / 158 kB. `/lancamentos` stays at 662 kB / 211 kB, now in route chunks that new screens will not grow. lucide-react was already tree-shaken (~8.5 kB), so per-file icon imports would not help. Follow-ups: the domain barrel puts zod (~53 kB) on `/entrar`, and react-router only ships its `development` build through its exports map.
 
 ### Phase 2 — Configurações (US-11)
 
