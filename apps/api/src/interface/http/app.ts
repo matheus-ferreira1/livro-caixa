@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import type { TrustProxy } from '../../config';
 import type { Container } from '../../container';
 import { authRouter } from './auth-router';
 import { errorHandler } from './errors';
@@ -10,12 +11,14 @@ import { ledgerRouter } from './ledger-router';
 export interface AppOptions {
   /** Built SPA to serve next to the API (production image only). */
   staticDir?: string;
+  /** Which proxies may set `X-Forwarded-For`; decides `req.ip` and so the per-IP login limit. */
+  trustProxy: TrustProxy;
 }
 
-export function createApp(container: Container, { staticDir }: AppOptions = {}): Express {
+export function createApp(container: Container, { staticDir, trustProxy }: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 'loopback');
+  app.set('trust proxy', trustProxy);
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 

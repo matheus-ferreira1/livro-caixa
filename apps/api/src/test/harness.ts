@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { DEFAULT_TRUST_PROXY, type TrustProxy } from '../config';
 import { createContainer, type Container } from '../container';
 import { createApp } from '../interface/http/app';
 import { openDatabase } from '../infrastructure/db/database';
@@ -16,11 +17,11 @@ export class FakeClock implements Clock {
 
 export const TEST_USER = { email: 'ana@casa.dev', name: 'Ana Souza', password: 'senha-forte-123' };
 
-export async function buildTestApp() {
+export async function buildTestApp({ trustProxy = DEFAULT_TRUST_PROXY }: { trustProxy?: TrustProxy } = {}) {
   const clock = new FakeClock();
   const container: Container = createContainer({ db: openDatabase(':memory:'), clock, secureCookies: false });
   await container.createUser.execute(TEST_USER);
-  const app = createApp(container);
+  const app = createApp(container, { trustProxy });
   return { app, clock, container, agent: request.agent(app) };
 }
 
