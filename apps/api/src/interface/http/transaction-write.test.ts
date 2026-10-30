@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { computeSettlement, settlementEntry } from '@livro-caixa/domain';
 import { buildTestApp, signIn } from '../../test/harness';
 
 const input = {
@@ -40,6 +41,18 @@ describe('POST /api/transactions', () => {
       .send({ ...input, type: 'acerto', categoryId: 'c-moradia', recurring: true })
       .expect(201);
     expect(body.transaction).toMatchObject({ categoryId: null, split: false, recurring: false });
+  });
+
+  test('registers the pending acerto built by the Acerto dialog', async () => {
+    const { agent } = await signedIn();
+    await agent.post('/api/transactions').send(input).expect(201);
+    const month = await agent.get('/api/transactions?month=2026-11').expect(200);
+    const settlement = computeSettlement(month.body.transactions, 50, { includePending: true });
+    const entry = settlementEntry(settlement, { month: '2026-11', partnerName: 'Ana' });
+
+    const { body } = await agent.post('/api/transactions').send(entry).expect(201);
+
+    expect(body.transaction).toMatchObject({ ...entry, id: expect.any(String), valueCents: 9_000 });
   });
 
   test('starts a series for recurring entries', async () => {
