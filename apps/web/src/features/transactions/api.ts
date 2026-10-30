@@ -9,6 +9,7 @@ import type {
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch, jsonBody } from '@/shared/api/client';
+import { isUnauthorized } from '@/shared/api/query-client';
 
 export const TRANSACTIONS_KEY = ['transactions'] as const;
 
@@ -75,7 +76,10 @@ export function useSearchTransactions(params: SearchParams, enabled: boolean) {
   });
 }
 
-const showError = (error: Error) => toast.error(error.message);
+// An expired session redirects to sign-in instead of showing an error.
+const showError = (error: Error) => {
+  if (!isUnauthorized(error)) toast.error(error.message);
+};
 
 export function useToggleFlags() {
   const queryClient = useQueryClient();

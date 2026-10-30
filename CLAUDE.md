@@ -325,7 +325,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 - [x] **Verify the Docker image** (2026-10-29, Docker 28.4, image 283 MB): `docker compose up --build` with `ADMIN_PASSWORD` set creates the admin on first boot only; the healthcheck reports healthy; the SPA and `/api` are served from one port; login works and sets the session cookie; an entry and its session survive both `restart` and `down`/`up` (`/data` volume); `cli reset-password` (with `NEW_PASSWORD`) changes the password and signs out existing sessions; `cli create-user` works.
 - [x] **Clean up expired sessions**: `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
 - [x] **Rate limit by IP**: `POST /api/auth/login` also locks a client IP for 15 min after 20 failures within 15 min, across any e-mails (`IP_THROTTLE_POLICY` in `LoginThrottle.ts`).
-- [ ] **Session expiry in the UI**: on any 401 from a data request, clear the user query and send the user to `/entrar` (today only `RequireAuth` handles a missing session on load).
+- [x] **Session expiry in the UI**: `createQueryClient` (`shared/api/query-client.ts`) clears the user query on any 401 from a query or mutation (except login and logout), so `RequireAuth` redirects to `/entrar` and back after sign-in; 401s are not retried and show no error toast.
 - [ ] **Bundle size**: the app chunk is ~377 kB minified (118 kB gzip); consider importing lucide icons per file and lazy-loading routes once more screens exist.
 
 ### Phase 2 — Configurações (US-11)
