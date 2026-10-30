@@ -1,7 +1,7 @@
 import type { Database } from 'bun:sqlite';
 import { Authenticate } from './application/auth/Authenticate';
 import { Login } from './application/auth/Login';
-import { LoginThrottle } from './application/auth/LoginThrottle';
+import { ACCOUNT_THROTTLE_POLICY, IP_THROTTLE_POLICY, LoginThrottle } from './application/auth/LoginThrottle';
 import { Logout } from './application/auth/Logout';
 import { PurgeExpiredSessions } from './application/auth/PurgeExpiredSessions';
 import { CreateUser, ResetPassword } from './application/auth/user-admin';
@@ -32,14 +32,15 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
   const users = new SqliteUserRepository(db);
   const sessions = new SqliteSessionRepository(db);
   const hasher = new BunPasswordHasher();
-  const throttle = new LoginThrottle(clock);
+  const accountThrottle = new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY);
+  const ipThrottle = new LoginThrottle(clock, IP_THROTTLE_POLICY);
   const transactions = new SqliteTransactionRepository(db);
   const categories = new SqliteCategoryRepository(db);
 
   return {
     secureCookies,
     users,
-    login: new Login(users, sessions, hasher, throttle, clock),
+    login: new Login(users, sessions, hasher, accountThrottle, ipThrottle, clock),
     logout: new Logout(sessions),
     authenticate: new Authenticate(users, sessions, clock),
     purgeExpiredSessions: new PurgeExpiredSessions(sessions, clock),
