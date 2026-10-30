@@ -199,7 +199,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-29, with Phase 2 (US-11 Configurações) in PR #__PR__._
+_Last updated: 2026-10-29, with Phase 2 (US-11 Configurações) in PR #13._
 
 ## Summary
 
@@ -208,7 +208,7 @@ _Last updated: 2026-10-29, with Phase 2 (US-11 Configurações) in PR #__PR__._
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
 | 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#10); two follow-ups and one admin step open |
-| 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #__PR__) |
+| 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ⏳ Next |
 | 4 — Resumo mensal | US-08 | ⏳ Planned |
 | 5 — Visão geral | US-09 (becomes the landing page) | ⏳ Planned |
@@ -228,7 +228,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#8](https://github.com/matheus-ferreira1/livro-caixa/pull/8) | `feat/session-expiry-redirect` | A 401 on any data request sends the user to `/entrar` and back after sign-in |
 | [#9](https://github.com/matheus-ferreira1/livro-caixa/pull/9) | `feat/login-ip-rate-limit` | Per-IP login limit on top of the per-account lock |
 | [#10](https://github.com/matheus-ferreira1/livro-caixa/pull/10) | `chore/bundle-size` | Lazy routes and a long-cached `framework` chunk |
-| [#__PR__](https://github.com/matheus-ferreira1/livro-caixa/pull/__PR__) | `feat/settings` | Category and partner split rules; category CRUD and settings endpoints; Configurações page; restored nav item, user-menu item and "Gerenciar categorias" |
+| [#13](https://github.com/matheus-ferreira1/livro-caixa/pull/13) | `feat/settings` | Category and partner split rules; category CRUD and settings endpoints; Configurações page; restored nav item, user-menu item and "Gerenciar categorias" |
 
 ### Web routes
 
@@ -351,7 +351,7 @@ Follow-ups found during Phase 1.5:
 - [ ] **`TRUST_PROXY` setting**: `app.ts` trusts only loopback proxies. Behind a reverse proxy in another container (the usual HTTPS setup), every request comes from the proxy's IP, so the per-IP login limit locks everyone out together. Make `trust proxy` configurable through an env var, defaulting to `loopback`.
 - [ ] **Smaller login bundle**: the `@livro-caixa/domain` barrel puts zod (~53 kB) on `/entrar` (try `sideEffects: false` or deep imports), and react-router resolves to its `development` build through its exports map.
 
-### Phase 2 — Configurações (US-11) (done, PR #__PR__)
+### Phase 2 — Configurações (US-11) (done, PR #13)
 
 - [x] API:
   - `POST/PATCH/DELETE /api/categories`; a category in use cannot be deleted; names must be unique per type, case-insensitive
@@ -561,7 +561,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 
 ## Phase 2 — done
 
-### US-11 Settings (Configurações) — ✅ Done (Phase 2, PR #__PR__)
+### US-11 Settings (Configurações) — ✅ Done (Phase 2, PR #13)
 - Eyebrow "Preferências", h1 "Configurações".
 - **Categorias**
   - Intro: "Categorias organizam receitas e despesas. Acertos não usam categoria. Uma categoria em uso não pode ser excluída, só renomeada."
