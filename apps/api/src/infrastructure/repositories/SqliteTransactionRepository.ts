@@ -75,6 +75,10 @@ export class SqliteTransactionRepository implements TransactionRepository {
       .run(...toParams(t));
   }
 
+  insertMany(transactions: Transaction[]): void {
+    this.db.transaction(() => transactions.forEach((t) => this.insert(t)))();
+  }
+
   update(t: Transaction): void {
     this.db
       .query(

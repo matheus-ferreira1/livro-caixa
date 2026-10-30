@@ -2,6 +2,7 @@ import { isIsoDate, isMonthKey, PAGE_SIZES, transactionInputSchema } from '@livr
 import { Router } from 'express';
 import { z } from 'zod';
 import type { Container } from '../../container';
+import { recurringRouter } from './recurring-router';
 import { requireAuth } from './require-auth';
 import { settingsRouter } from './settings-router';
 
@@ -36,6 +37,7 @@ export function ledgerRouter(container: Container): Router {
   router.use(requireAuth(container));
 
   router.use(settingsRouter(container));
+  router.use(recurringRouter(container));
 
   router.get('/transactions', (req, res) => {
     const { month } = monthQuery.parse(req.query);
