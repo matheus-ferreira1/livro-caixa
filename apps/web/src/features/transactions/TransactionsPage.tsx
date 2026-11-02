@@ -17,10 +17,12 @@ import {
   type ListMode,
   type Transaction,
 } from '@livro-caixa/domain';
-import { ChevronLeft, ChevronRight, Plus, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Repeat, Users } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { pluralize } from '@/shared/lib/utils';
 import { Segmented } from '@/shared/Segmented';
+import { RecurringBanner } from '@/features/recurring/RecurringBanner';
+import { RecurringDialog } from '@/features/recurring/RecurringDialog';
 import { useCategories, useSettings } from '@/features/settings/api';
 import { SettlementDialog } from '@/features/settlement/SettlementDialog';
 import { useDeleteTransaction, useMonthTransactions, useSearchTransactions, useToggleFlags } from './api';
@@ -59,6 +61,7 @@ export function TransactionsPage() {
   const remove = useDeleteTransaction();
   const [formTarget, setFormTarget] = useState<FormTarget | null>(null);
   const [settlementOpen, setSettlementOpen] = useState(false);
+  const [recurringOpen, setRecurringOpen] = useState(false);
 
   const monthQuery = useMonthTransactions(state.month, !isAll);
   const range = periodRange(state.period, today, { from: state.from, to: state.to });
@@ -159,18 +162,30 @@ export function TransactionsPage() {
         </div>
         <div className="flex flex-wrap gap-2.5">
           {!isAll && (
-            <button
-              type="button"
-              onClick={() => setSettlementOpen(true)}
-              className="flex min-h-11 items-center gap-2 rounded-[10px] border border-settlement bg-card px-[18px] font-semibold text-settlement hover:bg-settlement-bg"
-            >
-              <Users className="size-[18px]" aria-hidden="true" />
-              Gerar acerto
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setRecurringOpen(true)}
+                className="flex min-h-11 items-center gap-2 rounded-[10px] border border-input bg-card px-[18px] font-semibold text-ink hover:bg-accent"
+              >
+                <Repeat className="size-[18px]" aria-hidden="true" />
+                Gerar recorrentes
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettlementOpen(true)}
+                className="flex min-h-11 items-center gap-2 rounded-[10px] border border-settlement bg-card px-[18px] font-semibold text-settlement hover:bg-settlement-bg"
+              >
+                <Users className="size-[18px]" aria-hidden="true" />
+                Gerar acerto
+              </button>
+            </>
           )}
           <NewEntryButton onClick={openNew} />
         </div>
       </div>
+
+      {!isAll && <RecurringBanner month={state.month} onReview={() => setRecurringOpen(true)} />}
 
       <SummaryTiles tiles={tiles} />
 
@@ -224,6 +239,7 @@ export function TransactionsPage() {
       />
 
       <SettlementDialog month={state.month} open={settlementOpen} onClose={() => setSettlementOpen(false)} />
+      <RecurringDialog month={state.month} open={recurringOpen} onClose={() => setRecurringOpen(false)} />
     </div>
   );
 }

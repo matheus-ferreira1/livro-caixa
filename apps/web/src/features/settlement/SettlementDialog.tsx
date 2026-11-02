@@ -5,13 +5,13 @@ import {
   type Category,
   type MonthKey,
 } from '@livro-caixa/domain';
-import { Copy, MessageCircle, X } from 'lucide-react';
+import { Copy, MessageCircle } from 'lucide-react';
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useCategories, useSettings } from '@/features/settings/api';
 import { showError, useMonthTransactions, useSaveTransaction } from '@/features/transactions/api';
 import { Checkbox } from '@/shared/ui/checkbox';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/dialog';
+import { Dialog, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { settlementViewModel, type SettlementViewModel } from './view-model';
 
 const COPIED_FEEDBACK_MS = 3_000;
@@ -71,20 +71,10 @@ function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 border-b bg-card px-6 py-5">
-        <div className="flex flex-col">
-          <DialogTitle>Acerto de contas</DialogTitle>
-          <DialogDescription>
-            {vm.monthLabel} · contas divididas com {partnerName}
-          </DialogDescription>
-        </div>
-        <DialogClose
-          aria-label="Fechar"
-          className="flex size-11 flex-none items-center justify-center rounded-[10px] bg-background text-ink hover:bg-track"
-        >
-          <X className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
-        </DialogClose>
-      </div>
+      <DialogTitleBar
+        title="Acerto de contas"
+        description={`${vm.monthLabel} · contas divididas com ${partnerName}`}
+      />
 
       <div className="flex flex-wrap gap-6 p-4 sm:p-6">
         <PrintSummary vm={vm} partnerName={partnerName} />

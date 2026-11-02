@@ -42,6 +42,8 @@ export interface TransactionRepository {
   listAll(): Transaction[];
   findById(id: string): Transaction | null;
   insert(transaction: Transaction): void;
+  /** Inserts all of them or, on any failure, none. */
+  insertMany(transactions: Transaction[]): void;
   update(transaction: Transaction): void;
   delete(id: string): boolean;
 }

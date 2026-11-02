@@ -62,6 +62,21 @@ const OCTOBER = [
   }),
 ];
 
+const RECURRING_CANDIDATES = [
+  {
+    seriesId: 's-net',
+    date: '2026-10-15',
+    valueCents: 11_990,
+    source: tx({
+      id: 'net',
+      date: '2026-09-15',
+      description: 'Internet fibra',
+      recurring: true,
+      seriesId: 's-net',
+    }),
+  },
+];
+
 function setup(path = '/lancamentos?mes=2026-10') {
   const calls: { method: string; url: string; body?: unknown }[] = [];
   const fetch = mockApi((url, init) => {
@@ -73,6 +88,9 @@ function setup(path = '/lancamentos?mes=2026-10') {
     if (url.startsWith('/api/transactions?month=2026-10'))
       return { status: 200, body: { transactions: OCTOBER } };
     if (url.startsWith('/api/transactions?month=')) return { status: 200, body: { transactions: [] } };
+    if (url === '/api/recurring/candidates?month=2026-10')
+      return { status: 200, body: { candidates: RECURRING_CANDIDATES } };
+    if (url.startsWith('/api/recurring/candidates')) return { status: 200, body: { candidates: [] } };
     if (url.startsWith('/api/transactions/search'))
       return {
         status: 200,
@@ -183,6 +201,30 @@ describe('TransactionsPage — month mode', () => {
     expect(dialog).toHaveTextContent('Valor a acertar por BiaR$ 238,20');
   });
 
+  test('offers the recurring entries not generated yet, until "Agora não"', async () => {
+    const { user, unmount } = setup();
+    const banner = await screen.findByText('1 lançamento recorrente ainda não foi gerado para Outubro 2026.');
+    expect(banner).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Revisar e gerar' }));
+    expect(screen.getByRole('dialog', { name: 'Gerar lançamentos recorrentes' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Fechar' }));
+
+    await user.click(screen.getByRole('button', { name: 'Agora não' }));
+    expect(screen.queryByText(/ainda não foi gerado/)).not.toBeInTheDocument();
+    unmount();
+
+    setup();
+    await screen.findByText('Condomínio');
+    expect(screen.queryByText(/ainda não foi gerado/)).not.toBeInTheDocument();
+  });
+
+  test('"Gerar recorrentes" opens the review of the viewed month', async () => {
+    const { user } = setup('/lancamentos?mes=2026-11');
+    await user.click(await screen.findByRole('button', { name: 'Gerar recorrentes' }));
+    expect(await screen.findByText('Tudo em dia')).toBeInTheDocument();
+    expect(screen.queryByText(/ainda não/)).not.toBeInTheDocument();
+  });
+
   test('sorts by value from the column header', async () => {
     const { user } = setup();
     await screen.findByText('Condomínio');
@@ -227,10 +269,12 @@ describe('TransactionsPage — Todos mode', () => {
     expect(calls.at(-1)?.url).toContain('page=3');
   });
 
-  test('hides "Gerar acerto" outside month mode', async () => {
+  test('hides "Gerar recorrentes", "Gerar acerto" and the recurring banner outside month mode', async () => {
     setup('/lancamentos?modo=all');
     await screen.findByText('Mostrando 1–25 de 60');
     expect(screen.queryByRole('button', { name: 'Gerar acerto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gerar recorrentes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Revisar e gerar' })).not.toBeInTheDocument();
   });
 
   test('"Abrir mês" goes back to that month', async () => {

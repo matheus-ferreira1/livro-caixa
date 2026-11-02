@@ -62,8 +62,14 @@ export function periodRange(
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
 
+type Dated = Pick<Transaction, 'date' | 'description'>;
+
+/** Calendar order, with the description (pt-BR collation) breaking ties within a day. */
+export const compareByDate = (a: Dated, b: Dated): number =>
+  a.date.localeCompare(b.date) || collator.compare(a.description, b.description);
+
 const COMPARATORS: Record<SortKey, (a: Transaction, b: Transaction) => number> = {
-  date: (a, b) => a.date.localeCompare(b.date) || collator.compare(a.description, b.description),
+  date: compareByDate,
   description: (a, b) => collator.compare(a.description, b.description) || a.date.localeCompare(b.date),
   value: (a, b) => a.valueCents - b.valueCents || a.date.localeCompare(b.date),
 };
