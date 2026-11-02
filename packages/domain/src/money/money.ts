@@ -4,6 +4,7 @@ export type Cents = number;
 export const MINUS = '−';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const COMPACT = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
 const MONEY_PATTERN = /^\d+(?:\.\d{3})*(?:,\d{1,2})?$|^\d+(?:[.,]\d{1,2})?$/;
 
 /**
@@ -25,6 +26,11 @@ export function formatMoney(cents: Cents): string {
 /** "+ R$ 10,00" / "− R$ 10,00", as in totals and group headers. */
 export function formatSignedMoney(cents: Cents): string {
   return `${cents < 0 ? MINUS : '+'} ${formatMoney(Math.abs(cents))}`;
+}
+
+/** Short amount without the currency, for chart labels: "1,2 mil". */
+export function formatCompactAmount(cents: Cents): string {
+  return COMPACT.format(cents / 100).replace('-', MINUS);
 }
 
 /** Value shown in an editable field: "1234,56". */

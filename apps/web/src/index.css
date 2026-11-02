@@ -41,7 +41,12 @@
   --track: #e6e9e3;
   --income: #136b4a;
   --income-bg: #e3f1ea;
-  --income-border: #b9dcce;
+  --income-border: #b9dccb;
+  --income-soft: #86bfa5;
+  --deficit: #c2561f;
+  --deficit-soft: #e8a887;
+  --accumulated: #2f6e57;
+  --current-row: #f7f8f4;
   --expense: #a8401a;
   --expense-bg: #fbe9e0;
   --expense-row: #fbf3ef;
@@ -92,6 +97,11 @@
   --color-income: var(--income);
   --color-income-bg: var(--income-bg);
   --color-income-border: var(--income-border);
+  --color-income-soft: var(--income-soft);
+  --color-deficit: var(--deficit);
+  --color-deficit-soft: var(--deficit-soft);
+  --color-accumulated: var(--accumulated);
+  --color-current-row: var(--current-row);
   --color-expense: var(--expense);
   --color-expense-bg: var(--expense-bg);
   --color-expense-row: var(--expense-row);

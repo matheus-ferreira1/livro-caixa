@@ -16,6 +16,7 @@ const MONTH_NAMES = [
   'Novembro',
   'Dezembro',
 ];
+const MONTH_SHORT_NAME_LENGTH = 3;
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
 export const pad2 = (n: number): string => String(n).padStart(2, '0');
@@ -27,10 +28,14 @@ function splitMonth(key: MonthKey): [number, number] {
 
 export const monthOf = (date: IsoDate): MonthKey => date.slice(0, 7);
 
-export function monthLabel(key: MonthKey): string {
-  const [y, m] = splitMonth(key);
-  return `${MONTH_NAMES[m - 1]} ${y}`;
+export function monthName(key: MonthKey): string {
+  const [, m] = splitMonth(key);
+  return MONTH_NAMES[m - 1] ?? '';
 }
+
+export const monthShortName = (key: MonthKey): string => monthName(key).slice(0, MONTH_SHORT_NAME_LENGTH);
+
+export const monthLabel = (key: MonthKey): string => `${monthName(key)} ${splitMonth(key)[0]}`;
 
 export function shiftMonth(key: MonthKey, delta: number): MonthKey {
   const [y, m] = splitMonth(key);

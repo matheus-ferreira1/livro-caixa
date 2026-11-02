@@ -1,0 +1,98 @@
+import { cn } from '@/shared/lib/utils';
+import type { BarTone, SummaryMonthRow } from '../view-model';
+
+const BAR_BACKGROUND: Record<BarTone, string> = {
+  surplus: 'bg-income',
+  'surplus-pending': 'bg-income-soft',
+  deficit: 'bg-deficit',
+  'deficit-pending': 'bg-deficit-soft',
+};
+
+const LEGEND = [
+  { label: 'Sobrou', background: 'bg-income' },
+  { label: 'Faltou', background: 'bg-deficit' },
+  { label: 'Mês com previstos', background: 'bg-income-soft' },
+];
+
+const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-2';
+// Leaves room above and below the bars for their value labels.
+const PLOT_AREA = 'absolute inset-x-0 top-7 bottom-7';
+
+export function BalanceChart({ months, zeroLineTop }: { months: SummaryMonthRow[]; zeroLineTop: string }) {
+  return (
+    <section
+      aria-labelledby="balance-chart-title"
+      className="flex flex-col gap-4 rounded-[14px] border bg-card px-5 pt-5 pb-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="balance-chart-title" className="m-0 text-base font-bold">
+          Balanço por mês
+        </h2>
+        <div className="flex flex-wrap gap-4 text-[13px] text-icon">
+          {LEGEND.map(({ label, background }) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span aria-hidden="true" className={cn('size-3 rounded-[3px]', background)} />
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="flex min-w-[640px] flex-col gap-2">
+          <div className="relative h-60">
+            <div aria-hidden="true" className={PLOT_AREA}>
+              <div className="absolute inset-x-0 h-px bg-neutral-swatch" style={{ top: zeroLineTop }} />
+            </div>
+            <div className={cn(MONTH_GRID, 'absolute inset-0')}>
+              {months.map((m) => (
+                <div key={m.month} className={cn('relative rounded-lg', m.isCurrent && 'bg-background')}>
+                  <div className={PLOT_AREA}>{m.bar && <Bar bar={m.bar} />}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className={MONTH_GRID}>
+            {months.map((m) => (
+              <span
+                key={m.month}
+                className={cn(
+                  'text-center text-[13px]',
+                  m.isCurrent ? 'font-bold text-ink' : 'font-medium text-muted-foreground',
+                )}
+              >
+                {m.shortName}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Bar({ bar }: { bar: NonNullable<SummaryMonthRow['bar']> }) {
+  return (
+    <>
+      <div
+        role="img"
+        aria-label={bar.ariaLabel}
+        className={cn(
+          'absolute inset-x-[22%]',
+          bar.positive ? 'rounded-t-[4px]' : 'rounded-b-[4px]',
+          BAR_BACKGROUND[bar.tone],
+        )}
+        style={{ top: bar.top, height: bar.height }}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute -inset-x-1 text-center font-mono text-[11.5px] font-semibold whitespace-nowrap',
+          bar.positive ? 'text-income' : 'text-expense',
+        )}
+        style={{ top: bar.labelTop }}
+      >
+        {bar.compactLabel}
+      </span>
+    </>
+  );
+}

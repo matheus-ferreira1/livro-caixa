@@ -1,4 +1,5 @@
-import { screen, waitFor } from '@testing-library/react';
+import { yearSummary } from '@livro-caixa/domain';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { routes } from '@/routes';
 import { mockApi, renderRoutes } from '@/test/render';
@@ -40,6 +41,22 @@ describe('AppShell', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Você saiu da sua conta.');
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+  });
+
+  test('Resumo mensal sits between Lançamentos and Configurações and is active on its page', async () => {
+    mockApi((url) => {
+      if (url === '/api/auth/me') return { status: 200, body: { user: USER } };
+      return { status: 200, body: yearSummary([], 2026, 'real', 50) };
+    });
+    renderRoutes(routes, '/resumo?ano=2026');
+    const link = await screen.findByRole('link', { name: 'Resumo mensal' });
+    expect(link).toHaveAttribute('aria-current', 'page');
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((item) => item.textContent),
+    ).toEqual(['Lançamentos', 'Resumo mensal', 'Configurações']);
   });
 
   test('opens Configurações from the nav and from the account menu', async () => {

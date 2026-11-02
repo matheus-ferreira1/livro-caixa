@@ -12,3 +12,4 @@ export * from './transactions/recurring-request';
 export * from './transactions/settlement-share';
 export * from './transactions/transaction';
 export * from './transactions/transaction-input';
+export * from './transactions/year-summary';
