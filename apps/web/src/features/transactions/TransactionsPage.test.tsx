@@ -174,6 +174,15 @@ describe('TransactionsPage — month mode', () => {
     expect(await screen.findByText('Lançamento excluído')).toBeInTheDocument();
   });
 
+  test('"Gerar acerto" opens the settlement of the viewed month', async () => {
+    const { user } = setup();
+    await screen.findByText('Condomínio');
+    await user.click(screen.getByRole('button', { name: 'Gerar acerto' }));
+    const dialog = screen.getByRole('dialog', { name: 'Acerto de contas' });
+    expect(dialog).toHaveTextContent('Outubro 2026 · contas divididas com Bia');
+    expect(dialog).toHaveTextContent('Valor a acertar por BiaR$ 238,20');
+  });
+
   test('sorts by value from the column header', async () => {
     const { user } = setup();
     await screen.findByText('Condomínio');
@@ -216,6 +225,12 @@ describe('TransactionsPage — Todos mode', () => {
 
     await user.click(screen.getByRole('button', { name: 'Página 3' }));
     expect(calls.at(-1)?.url).toContain('page=3');
+  });
+
+  test('hides "Gerar acerto" outside month mode', async () => {
+    setup('/lancamentos?modo=all');
+    await screen.findByText('Mostrando 1–25 de 60');
+    expect(screen.queryByRole('button', { name: 'Gerar acerto' })).not.toBeInTheDocument();
   });
 
   test('"Abrir mês" goes back to that month', async () => {

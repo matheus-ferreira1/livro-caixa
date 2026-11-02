@@ -10,7 +10,7 @@ async function signIn(page: Page, password = E2E_ADMIN.password) {
 
 const tile = (page: Page, name: string) => page.getByRole('region', { name });
 
-test('signs in, manages an entry through its lifecycle and signs out', async ({ page }) => {
+test('signs in, manages an entry through its lifecycle, settles it and signs out', async ({ page }) => {
   await signIn(page, 'senha-errada');
   await expect(page.getByRole('alert')).toHaveText('E-mail ou senha incorretos.');
 
@@ -51,10 +51,21 @@ test('signs in, manages an entry through its lifecycle and signs out', async ({ 
   await expect(page.getByText('Mostrando 1–1 de 1')).toBeVisible();
   await page.getByRole('button', { name: /na visão por mês$/ }).click();
 
+  // Register the partner's half as a pending acerto, then remove it again.
+  await page.getByRole('button', { name: 'Gerar acerto' }).click();
+  const settlement = page.getByRole('dialog', { name: 'Acerto de contas' });
+  await expect(settlement.getByText('Conserto do chuveiro', { exact: true })).toBeVisible();
+  await settlement.getByRole('button', { name: /^Registrar acerto de R\$\s100,00$/ }).click();
+  await expect(page.getByText('Acerto registrado como previsto. Confirme quando receber.')).toBeVisible();
+  await expect(page.getByText('Acerto das contas divididas')).toBeVisible();
+  await page.getByRole('button', { name: 'Excluir Acerto das contas divididas' }).click();
+  await page.getByRole('button', { name: 'Excluir', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Excluir Acerto das contas divididas' })).toBeHidden();
+
   // Delete with confirmation.
   await page.getByRole('button', { name: 'Excluir Conserto do chuveiro' }).click();
   await page.getByRole('button', { name: 'Excluir', exact: true }).click();
-  await expect(page.getByText('Lançamento excluído')).toBeVisible();
+  await expect(page.getByText('Lançamento excluído').last()).toBeVisible();
   await expect(page.getByText('Ainda não há lançamentos neste mês.')).toBeVisible();
 
   // Sign out.

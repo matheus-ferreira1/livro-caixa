@@ -17,11 +17,12 @@ import {
   type ListMode,
   type Transaction,
 } from '@livro-caixa/domain';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Users } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { pluralize } from '@/shared/lib/utils';
 import { Segmented } from '@/shared/Segmented';
 import { useCategories, useSettings } from '@/features/settings/api';
+import { SettlementDialog } from '@/features/settlement/SettlementDialog';
 import { useDeleteTransaction, useMonthTransactions, useSearchTransactions, useToggleFlags } from './api';
 import { AllFiltersCard } from './components/AllFiltersCard';
 import { ListToolbar } from './components/ListToolbar';
@@ -57,6 +58,7 @@ export function TransactionsPage() {
   const toggle = useToggleFlags();
   const remove = useDeleteTransaction();
   const [formTarget, setFormTarget] = useState<FormTarget | null>(null);
+  const [settlementOpen, setSettlementOpen] = useState(false);
 
   const monthQuery = useMonthTransactions(state.month, !isAll);
   const range = periodRange(state.period, today, { from: state.from, to: state.to });
@@ -156,6 +158,16 @@ export function TransactionsPage() {
           )}
         </div>
         <div className="flex flex-wrap gap-2.5">
+          {!isAll && (
+            <button
+              type="button"
+              onClick={() => setSettlementOpen(true)}
+              className="flex min-h-11 items-center gap-2 rounded-[10px] border border-settlement bg-card px-[18px] font-semibold text-settlement hover:bg-settlement-bg"
+            >
+              <Users className="size-[18px]" aria-hidden="true" />
+              Gerar acerto
+            </button>
+          )}
           <NewEntryButton onClick={openNew} />
         </div>
       </div>
@@ -210,6 +222,8 @@ export function TransactionsPage() {
           update({ month: monthOf(transaction.date) }, { resetPage: false });
         }}
       />
+
+      <SettlementDialog month={state.month} open={settlementOpen} onClose={() => setSettlementOpen(false)} />
     </div>
   );
 }

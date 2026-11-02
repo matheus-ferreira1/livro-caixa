@@ -7,5 +7,6 @@ export * from './money/money';
 export * from './settings/settings';
 export * from './transactions/list-query';
 export * from './transactions/month-summary';
+export * from './transactions/settlement-share';
 export * from './transactions/transaction';
 export * from './transactions/transaction-input';
