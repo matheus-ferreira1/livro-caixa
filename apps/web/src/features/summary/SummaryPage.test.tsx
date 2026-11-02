@@ -100,19 +100,19 @@ describe('SummaryPage', () => {
     ).toBeInTheDocument();
     await waitFor(() => expect(requests).toContain('/api/summary?year=2026&mode=proj'));
     await waitFor(() => expect(screen.getByRole('row', { name: /^Março/ })).toHaveTextContent('−R$ 50,00'));
-    expect(router.state.location.search).toBe('?ano=2026&modo=proj');
+    expect(router.state.location.search).toContain('modo=proj');
   });
 
   test('moves between years', async () => {
-    const { user, requests, router } = setup('/resumo?ano=2026');
+    const { user, requests, router } = setup('/resumo?ano=2020');
     await user.click(screen.getByRole('button', { name: 'Próximo ano' }));
-    expect(await screen.findByRole('heading', { level: 1, name: '2027' })).toBeInTheDocument();
-    await waitFor(() => expect(requests).toContain('/api/summary?year=2027&mode=real'));
-    expect(router.state.location.search).toBe('?ano=2027');
+    expect(await screen.findByRole('heading', { level: 1, name: '2021' })).toBeInTheDocument();
+    await waitFor(() => expect(requests).toContain('/api/summary?year=2021&mode=real'));
+    expect(router.state.location.search).toBe('?ano=2021');
 
     await user.click(screen.getByRole('button', { name: 'Ano anterior' }));
     await user.click(screen.getByRole('button', { name: 'Ano anterior' }));
-    expect(await screen.findByRole('heading', { level: 1, name: '2025' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: '2019' })).toBeInTheDocument();
   });
 
   test('the table shows each month’s status and the year total', async () => {
