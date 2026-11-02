@@ -25,7 +25,13 @@ export const routes: RouteObject[] = [
           {
             lazy: async () => ({ Component: (await import('@/shared/layout/AppShell')).AppShell }),
             children: [
-              { index: true, element: <Navigate to="/lancamentos" replace /> },
+              { index: true, element: <Navigate to="/visao-geral" replace /> },
+              {
+                path: 'visao-geral',
+                lazy: async () => ({
+                  Component: (await import('@/features/dashboard/DashboardPage')).DashboardPage,
+                }),
+              },
               {
                 path: 'lancamentos',
                 lazy: async () => ({
@@ -44,7 +50,7 @@ export const routes: RouteObject[] = [
                   Component: (await import('@/features/settings/SettingsPage')).SettingsPage,
                 }),
               },
-              { path: '*', element: <Navigate to="/lancamentos" replace /> },
+              { path: '*', element: <Navigate to="/visao-geral" replace /> },
             ],
           },
         ],

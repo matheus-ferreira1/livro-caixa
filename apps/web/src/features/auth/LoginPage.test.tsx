@@ -9,7 +9,7 @@ function renderLogin(state?: unknown) {
   return renderRoutes(
     [
       { path: '/entrar', element: <LoginPage /> },
-      { path: '/lancamentos', element: <h1>Lançamentos page</h1> },
+      { path: '/visao-geral', element: <h1>Visão geral page</h1> },
     ],
     { pathname: '/entrar', state },
   );
@@ -55,7 +55,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Senha')).toHaveValue('');
   });
 
-  test('signs in, sending "remember", and lands on Lançamentos', async () => {
+  test('signs in, sending "remember", and lands on Visão geral', async () => {
     const fetch = mockApi((url) =>
       url === '/api/auth/login' ? { status: 200, body: { user: USER } } : { status: 401 },
     );
@@ -65,7 +65,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Manter conectado neste dispositivo' }));
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByRole('heading', { name: 'Lançamentos page' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Visão geral page' })).toBeInTheDocument();
     const [, init] = fetch.mock.calls.find(([url]) => url === '/api/auth/login') ?? [];
     expect(JSON.parse(String(init?.body))).toEqual({
       email: USER.email,
@@ -97,7 +97,7 @@ describe('LoginPage', () => {
     mockApi(() => ({ status: 200, body: { user: USER } }));
     renderLogin();
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Lançamentos page' })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: 'Visão geral page' })).toBeInTheDocument(),
     );
   });
 });
