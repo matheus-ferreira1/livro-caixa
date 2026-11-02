@@ -10,6 +10,7 @@ import { ListCategories } from './application/categories/queries';
 import type { Clock } from './application/ports';
 import { GenerateRecurring, ListRecurringCandidates } from './application/recurring/recurring';
 import { UpdateSettings } from './application/settings/UpdateSettings';
+import { GetYearSummary } from './application/summary/queries';
 import {
   DeleteTransaction,
   SaveTransaction,
@@ -66,6 +67,7 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     saveTransaction: new SaveTransaction(transactions, categories),
     listRecurringCandidates: new ListRecurringCandidates(transactions),
     generateRecurring: new GenerateRecurring(transactions),
+    getYearSummary: new GetYearSummary(transactions, settings),
   };
 }
 

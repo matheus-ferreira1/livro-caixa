@@ -5,6 +5,7 @@ import type { Container } from '../../container';
 import { recurringRouter } from './recurring-router';
 import { requireAuth } from './require-auth';
 import { settingsRouter } from './settings-router';
+import { summaryRouter } from './summary-router';
 
 const monthQuery = z.object({ month: z.string().refine(isMonthKey) });
 
@@ -38,6 +39,7 @@ export function ledgerRouter(container: Container): Router {
 
   router.use(settingsRouter(container));
   router.use(recurringRouter(container));
+  router.use(summaryRouter(container));
 
   router.get('/transactions', (req, res) => {
     const { month } = monthQuery.parse(req.query);
