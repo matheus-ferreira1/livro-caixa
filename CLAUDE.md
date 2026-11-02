@@ -200,7 +200,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-10-30, with Phase 3 in PRs #14 (US-06 Gerar acerto) and #15 (US-07 Gerar recorrentes, stacked on #14)._
+_Last updated: 2026-11-02, after Phase 3 (PRs #14 and #15) merged into `main`. Next: Phase 4, US-08 Resumo mensal._
 
 ## Summary
 
