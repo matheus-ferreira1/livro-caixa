@@ -1,7 +1,21 @@
 import { describe, expect, test } from 'bun:test';
-import { dateParts, defaultDateForMonth, lastDayOfMonth, monthLabel, shiftMonth } from './dates';
+import {
+  dateParts,
+  defaultDateForMonth,
+  lastDayOfMonth,
+  monthLabel,
+  monthName,
+  monthShortName,
+  shiftMonth,
+} from './dates';
 
 describe('month helpers', () => {
+  test('names a month with or without abbreviating it', () => {
+    expect(monthName('2026-03')).toBe('Março');
+    expect(monthShortName('2026-03')).toBe('Mar');
+    expect(monthShortName('2026-12')).toBe('Dez');
+  });
+
   test('labels months in pt-BR', () => {
     expect(monthLabel('2026-10')).toBe('Outubro 2026');
     expect(monthLabel('2026-03')).toBe('Março 2026');

@@ -1,5 +1,16 @@
 import { describe, expect, test } from 'bun:test';
-import { formatMoney, formatSignedMoney, parseMoney, toMoneyInput } from './money';
+import { formatCompactAmount, formatMoney, formatSignedMoney, parseMoney, toMoneyInput } from './money';
+
+describe('formatCompactAmount', () => {
+  test('abbreviates thousands with one decimal, without the currency', () => {
+    expect(formatCompactAmount(123_456)).toBe('1,2 mil');
+    expect(formatCompactAmount(45_000)).toBe('450');
+  });
+
+  test('uses the design minus sign for negatives', () => {
+    expect(formatCompactAmount(-123_456)).toBe('−1,2 mil');
+  });
+});
 
 describe('parseMoney', () => {
   test.each([
