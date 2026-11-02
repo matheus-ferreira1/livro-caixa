@@ -5,7 +5,7 @@ export const MINUS = '−';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const COMPACT = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
-const MONEY_PATTERN =/^\d+(?:\.\d{3})*(?:,\d{1,2})?$|^\d+(?:[.,]\d{1,2})?$/;
+const MONEY_PATTERN = /^\d+(?:\.\d{3})*(?:,\d{1,2})?$|^\d+(?:[.,]\d{1,2})?$/;
 
 /**
  * Parses what people type in a pt-BR money field: "1.234,56", "180", "R$ 10,5", "10.5".

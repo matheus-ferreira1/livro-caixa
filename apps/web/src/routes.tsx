@@ -33,6 +33,12 @@ export const routes: RouteObject[] = [
                 }),
               },
               {
+                path: 'resumo',
+                lazy: async () => ({
+                  Component: (await import('@/features/summary/SummaryPage')).SummaryPage,
+                }),
+              },
+              {
                 path: 'configuracoes',
                 lazy: async () => ({
                   Component: (await import('@/features/settings/SettingsPage')).SettingsPage,

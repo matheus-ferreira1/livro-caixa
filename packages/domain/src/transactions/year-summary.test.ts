@@ -90,7 +90,12 @@ describe('summaryStatus', () => {
 
 describe('yearSummary', () => {
   test('returns the twelve months of the year in order, ignoring other years', () => {
-    const summary = yearSummary([income('2025-12-31', 1_000), income('2027-01-01', 2_000)], 2026, 'real', SHARE);
+    const summary = yearSummary(
+      [income('2025-12-31', 1_000), income('2027-01-01', 2_000)],
+      2026,
+      'real',
+      SHARE,
+    );
     expect(summary.months.map((m) => m.month)).toEqual([
       '2026-01',
       '2026-02',
