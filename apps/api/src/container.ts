@@ -7,6 +7,7 @@ import { PurgeExpiredSessions } from './application/auth/PurgeExpiredSessions';
 import { CreateUser, ResetPassword } from './application/auth/user-admin';
 import { CreateCategory, DeleteCategory, UpdateCategory } from './application/categories/commands';
 import { ListCategories } from './application/categories/queries';
+import { GetDashboard } from './application/dashboard/queries';
 import type { Clock } from './application/ports';
 import { GenerateRecurring, ListRecurringCandidates } from './application/recurring/recurring';
 import { UpdateSettings } from './application/settings/UpdateSettings';
@@ -68,6 +69,7 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     listRecurringCandidates: new ListRecurringCandidates(transactions),
     generateRecurring: new GenerateRecurring(transactions),
     getYearSummary: new GetYearSummary(transactions, settings),
+    getDashboard: new GetDashboard(transactions, categories, settings),
   };
 }
 
