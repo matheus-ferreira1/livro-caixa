@@ -90,7 +90,7 @@ function OpenRowItem({
 }) {
   return (
     // On phones the button takes a line of its own, or the description would have no room.
-    <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-t border-divider px-5 py-2.5 sm:grid-cols-[56px_minmax(0,1fr)_auto_auto]">
+    <div className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-t border-divider px-5 py-2.5 sm:grid-cols-[64px_minmax(0,1fr)_auto_auto]">
       <span className="flex flex-col font-mono text-[13px] font-medium">
         {row.day}
         <span className={cn('font-sans text-xs font-semibold', DUE_TEXT[row.whenTone])}>{row.when}</span>

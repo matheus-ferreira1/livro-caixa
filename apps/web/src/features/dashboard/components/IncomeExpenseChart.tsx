@@ -52,7 +52,8 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
           </Link>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      {/* The padding keeps the scroll container from clipping the top tick's label. */}
+      <div className="overflow-x-auto pt-2">
         <div className="flex min-w-[680px] gap-2.5">
           <div aria-hidden="true" className={cn('relative w-[52px] flex-none', PLOT_HEIGHT)}>
             {ticks.map((tick) => (
