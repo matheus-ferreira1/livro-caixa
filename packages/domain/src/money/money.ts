@@ -33,6 +33,13 @@ export function formatCompactAmount(cents: Cents): string {
   return COMPACT.format(cents / 100).replace('-', MINUS);
 }
 
+/** A ratio as a pt-BR percentage: 0.125 gives "12,5%". */
+export function formatPercent(ratio: number, fractionDigits = 1): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: fractionDigits })
+    .format(ratio)
+    .replace('-', MINUS);
+}
+
 /** Value shown in an editable field: "1234,56". */
 export function toMoneyInput(cents: Cents): string {
   return (cents / 100).toFixed(2).replace('.', ',');

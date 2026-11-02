@@ -17,6 +17,7 @@ const MONTH_NAMES = [
   'Dezembro',
 ];
 const MONTH_SHORT_NAME_LENGTH = 3;
+const MS_PER_DAY = 86_400_000;
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
 export const pad2 = (n: number): string => String(n).padStart(2, '0');
@@ -61,6 +62,15 @@ export function dateParts(date: IsoDate) {
 /** Local calendar date of the browser or caller, never the server's UTC clock. */
 export function todayIso(now = new Date()): IsoDate {
   return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+}
+
+/** Whole days from one date to another, counted on the calendar so no time zone shifts them. */
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  const dayNumber = (date: IsoDate) => {
+    const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
+    return Date.UTC(y, m - 1, d) / MS_PER_DAY;
+  };
+  return dayNumber(to) - dayNumber(from);
 }
 
 export const defaultDateForMonth = (key: MonthKey, today: IsoDate): IsoDate =>

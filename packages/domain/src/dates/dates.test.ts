@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   dateParts,
+  daysBetween,
   defaultDateForMonth,
   lastDayOfMonth,
   monthLabel,
@@ -47,5 +48,16 @@ describe('defaultDateForMonth', () => {
 
   test('uses the first day otherwise', () => {
     expect(defaultDateForMonth('2026-11', '2026-10-29')).toBe('2026-11-01');
+  });
+});
+
+describe('daysBetween', () => {
+  test('counts calendar days in either direction', () => {
+    expect(daysBetween('2026-10-10', '2026-10-13')).toBe(3);
+    expect(daysBetween('2026-10-10', '2026-10-09')).toBe(-1);
+  });
+
+  test('crosses a daylight-saving change as whole days', () => {
+    expect(daysBetween('2026-03-07', '2026-03-09')).toBe(2);
   });
 });

@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { formatCompactAmount, formatMoney, formatSignedMoney, parseMoney, toMoneyInput } from './money';
+import {
+  formatCompactAmount,
+  formatMoney,
+  formatPercent,
+  formatSignedMoney,
+  parseMoney,
+  toMoneyInput,
+} from './money';
 
 describe('formatCompactAmount', () => {
   test('abbreviates thousands with one decimal, without the currency', () => {
@@ -50,5 +57,19 @@ describe('toMoneyInput', () => {
   test('renders cents for an editable field', () => {
     expect(toMoneyInput(18_000)).toBe('180,00');
     expect(toMoneyInput(123_456)).toBe('1234,56');
+  });
+});
+
+describe('formatPercent', () => {
+  test('uses the pt-BR comma and one fraction digit by default', () => {
+    expect(formatPercent(0.125)).toBe('12,5%');
+  });
+
+  test('can round to whole percents', () => {
+    expect(formatPercent(0.126, 0)).toBe('13%');
+  });
+
+  test('uses U+2212 for negatives', () => {
+    expect(formatPercent(-0.5)).toBe('−50%');
   });
 });
