@@ -202,7 +202,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-02, with Phase 4 (PR #17). Next: Phase 5, US-09 Visão geral._
+_Last updated: 2026-11-02, after Phase 4 (PR #17) merged into `main`. Next: Phase 5, US-09 Visão geral._
 
 ## Summary
 
@@ -430,6 +430,14 @@ Follow-ups found during Phase 1.5:
   - "Em aberto no mês" with "Confirmar"
   - acerto card
 - [ ] Make Visão geral the landing page after login and the `/` redirect.
+
+Reuse from earlier phases:
+
+- `monthSummary` for each month's totals in both modes. Keep the prototype's "Realizado" and "Com previstos" rules there instead of recomputing them.
+- `computeSettlement` for the acerto card.
+- `SummaryTiles` in `shared/` for the KPI tiles; its deltas are new.
+- `/resumo?ano=YYYY` for "Ver tabela", and `RecurringBanner` for the banner in "Em aberto no mês".
+- The `TRANSACTIONS_KEY` query key, so "Confirmar" and other ledger changes refresh the dashboard.
 
 ### Phase 6 — Patrimônio and Fechamento (US-10)
 
