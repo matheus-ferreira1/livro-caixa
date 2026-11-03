@@ -205,7 +205,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23) and the quote status on Patrimônio (PR #25). All planned phases are built and merged. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25) and the closing's quote copy (PR #26). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -213,7 +213,7 @@ _Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` f
 |---|---|---|
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
-| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#12); one admin step open |
+| 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#12) |
 | 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
@@ -222,13 +222,15 @@ _Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` f
 
 ## What comes next
 
-Nothing is in progress and no PR is open. No phase is planned, so what follows is a choice among these:
+Nothing is in progress and no PR is open. No phase is planned. What is left is optional:
 
-1. **Decide the closing's copy (product decision).** It says automatic quotes are current ("As cotações automáticas já estão em dia", "Já atualizadas, nada a fazer"), but `cripto` and `cambio` are never quoted, nor is anything without a `BRAPI_TOKEN`. Until this changes, update those prices by editing the asset before closing a month.
-2. **Crypto and currency quotes.** They need brapi's paid plan or a second provider.
-3. **Required status checks on `main`.** Repo admin only: GitHub → Settings → Branches.
-
-The asset table now tells the truth about each quote (PR #25). The closing's copy does not use that status yet.
+1. **Add a license (owner's decision).** The repository is public, and the login page says "Código aberto", but there is no `LICENSE` file, so nobody else has the right to reuse the code yet.
+2. **Small cleanups left from the review of PR #25**, none of them a bug:
+   - the footer's "edite o ativo" also shows during a temporary provider failure
+   - `dayAndMonth` could be shared with the closing's date label
+   - `Date.now()` is read during render on Patrimônio and in the closing dialog
+   - one web test uses a made-up fixture value
+   - requests that join a refresh already running wait for it even when it started before their own read
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -254,6 +256,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#22](https://github.com/matheus-ferreira1/livro-caixa/pull/22) | `feat/wealth-quotes` | `QuoteProvider` port, brapi adapter, `RefreshQuotes` on `GET /api/wealth`, optional `BRAPI_TOKEN` |
 | [#23](https://github.com/matheus-ferreira1/livro-caixa/pull/23) | `fix/parse-money-thousands` | `parseMoney` reads a dot before three digits as a thousands separator |
 | [#25](https://github.com/matheus-ferreira1/livro-caixa/pull/25) | `feat/quote-status` | Migration `004_quote_status`; `quoteStatus` and `elapsedLabel`; the brapi quote time; "Atualizada há…" and "Cotação indisponível" on the assets table |
+| [#26](https://github.com/matheus-ferreira1/livro-caixa/pull/26) | `fix/closing-quote-copy` | The closing's copy and rows use the quote status; the sheet points cripto and câmbio to manual; quotes are requested one at a time |
 
 ### Web routes
 
@@ -294,7 +297,7 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
 | `GET /api/summary?year=YYYY&mode=real\|proj` | `GetYearSummary` | `{ year, mode, months[12], totals }` in cents; `mode` defaults to `real`. "Atual" and the default year come from the client. |
 | `GET /api/dashboard?month=YYYY-MM&mode=real\|proj` | `GetDashboard` | `{ month, mode, partnerName, kpis, series[12], categories, open, settlement }` in cents; `mode` defaults to `real`. `open` and `settlement` ignore the mode. Relative due labels come from the client, from `relativeDue` and its own "today". |
-| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, closingAvailable, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. Automatic assets carry `quotedAt` (epoch ms, null when never quoted) and `quoteFailed`. With a `BRAPI_TOKEN`, it first refreshes quotes older than 30 minutes (`RefreshQuotes`), waiting at most 3 s; a failure never fails the read. |
+| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, closingAvailable, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. Automatic assets carry `quotedAt` (epoch ms, null when never quoted) and `quoteFailed`. With a `BRAPI_TOKEN`, it first refreshes quotes older than 30 minutes (`RefreshQuotes`), one at a time, waiting at most 3 s; a failure never fails the read, and assets not reached stay due for the next read. |
 | `POST /api/wealth/closings` | `RegisterClosing` | 201 `{ snapshot }`; body `{ month, today, items: [{ assetId, flowCents, currentCents }] }`, one item per manual asset. The server recomputes the open month and total. 409 when the month is not open or the items do not match the manual assets, 400 "Revise os valores de “{nome}” ({instituição})." for a negative value. The snapshot and the assets are written in one transaction. |
 | `POST /api/assets` | `CreateAsset` | 201 `{ asset }`; body is `AssetInput` (amounts in cents, `quantityE8` scaled by 1e8, `today`). 400 with the design's messages. |
 | `PUT /api/assets/:id` | `UpdateAsset` | Full replace; may switch the pricing mode, which drops the old mode's fields |
@@ -335,7 +338,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
 - `settings/`: `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
 - `wealth/asset.ts`: the `Asset` and `Snapshot` types, `ASSET_CLASSES`, `assetValue`, `assetCost`, `valueAssets`, `institutionsOf`
-- `wealth/quote-status.ts`: `quoteStatus` (updated, or unavailable with the last quote's time)
+- `wealth/quote-status.ts`: `quoteStatus` (updated, or unavailable with the last quote's time), `unavailableQuoteCount`
 - `wealth/quantity.ts`: `QUANTITY_SCALE`, `parseQuantity`, `formatQuantity`, `toQuantityInput`
 - `wealth/asset-input.ts`: the sheet draft, `ASSET_MESSAGES`, `validateAssetFields`, `draftToAssetInput`, `assetInputSchema`, `toAsset`
 - `wealth/closing.ts`: `openMonth`, `closingAvailable`, `closingDraft`, `closingRequestFrom`, `applyClosing`, `closingRequestSchema`, `CLOSING_MESSAGES`
@@ -346,12 +349,12 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 295 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 206 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 182 | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 297 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 208 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
-CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
+CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
 ### Decisions taken in Phase 1
 
@@ -452,6 +455,14 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The label is computed at render and does not tick while the page stays open.
 - `seed:demo` stores no quote, so the demo portfolio's automatic assets read "Cotação indisponível" without a token.
 
+### Decisions taken for the closing's quote copy (PR #26)
+
+- **Quotes come only from brapi's free plan (decided 2026-11-03).** No paid plan and no second provider. What it does not cover, `cripto` and `cambio` included, is kept by hand.
+- The design's "As cotações automáticas já estão em dia" and "Já atualizadas, nada a fazer" show only when every automatic asset has a current quote. Otherwise the banner reads "{n} ativos sem cotação usam o último preço salvo." and the dialog adds "Para corrigir, edite o ativo antes de fechar.". This copy is not in the design. A missing quote warns and never blocks the closing, so a provider outage cannot stop one.
+- Each row of "2. Cotações automáticas" shows the same tag as the assets table.
+- The sheet's hints differ from the design because its promise was false: "Cotação automática" reads "FIIs e ETFs", and "Manual, no fechamento" adds "cripto e câmbio", since the closing asks for a manual asset's value each month. An automatic asset in a class with no quote is still allowed, and its price field reads "Esta classe não tem cotação automática. Mantenha o preço atualizado aqui ou use o modo manual.".
+- Quotes are requested one at a time, because brapi's free plan allows one simultaneous request. A real token took about 1.3 s for 6 lookups, so the 3 s limit covers around 14 assets per read. The lookup running when time runs out counts as failed, so a hung provider costs one page load per asset and not one per read forever; assets not reached stay due and are not marked.
+
 ## Roadmap
 
 Every item below gets its own branch and PR, following the Git workflow above.
@@ -459,7 +470,7 @@ Every item below gets its own branch and PR, following the Git workflow above.
 ### Phase 1.5 — Hardening (done)
 
 - [x] **CI** (PR #6): `.github/workflows/ci.yml` runs on every PR and on pushes to `main`, pinned to Bun 1.3.4. Job "Lint, typecheck, test, build" runs `bun install --frozen-lockfile`, `lint`, `typecheck`, `test` and `build`; job "E2E (Playwright, Chromium)" runs `test:e2e` with cached browsers and uploads `test-results/` on failure.
-  - [ ] Make both jobs required status checks on `main` (GitHub → Settings → Branches; repo admin only).
+  - [x] Both jobs are required status checks on `main`, for admins too (2026-11-03). GitHub only offers this on a private repository with a paid plan, so the repository was made public.
 - [x] **Verify the Docker image** (2026-10-29, Docker 28.4, image 283 MB): `docker compose up --build` with `ADMIN_PASSWORD` set creates the admin on first boot only; the healthcheck reports healthy; the SPA and `/api` are served from one port; login works and sets the session cookie; an entry and its session survive both `restart` and `down`/`up` (`/data` volume); `cli reset-password` (with `NEW_PASSWORD`) changes the password and signs out existing sessions; `cli create-user` works.
 - [x] **Clean up expired sessions** (PR #7): `PurgeExpiredSessions` deletes rows past `expires_at` on boot and every hour.
 - [x] **Rate limit by IP** (PR #9): `POST /api/auth/login` also locks a client IP for 15 min after 20 failures within 15 min, across any e-mails (`IP_THROTTLE_POLICY` in `LoginThrottle.ts`).
@@ -532,8 +543,8 @@ Follow-ups found during Phase 1.5:
 Follow-ups found during Phase 6:
 
 - [x] Verify the Docker image with a real `BRAPI_TOKEN` (2026-11-03, Docker 28.4): an ETF is quoted from `oven/bun:1.3-slim` with the token, and keeps its typed price without it.
-- [ ] Crypto and currency quotes, which need brapi's paid plan or a second provider.
-- [ ] The closing's copy says automatic quotes are current ("As cotações automáticas já estão em dia", "Já atualizadas, nada a fazer"), but `cripto` and `cambio` are never quoted, nor is anything without a token. Following it registers a month with old prices. The copy is verbatim from the design, so changing it is a product decision.
+- [x] Crypto and currency quotes: decided against (2026-11-03). They stay manual, and quotes come only from brapi's free plan.
+- [x] The closing's copy said automatic quotes were current even when they were not. It now follows each quote's status (PR #26).
 - [x] `parseMoney` read `1.234` (a dot with no comma) as R$ 3,34 instead of R$ 1.234,00. This predated Phase 6 and affected every money field (PR #23).
 
 ---
@@ -850,7 +861,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - toasts: "Ativo adicionado à carteira" / "Ativo atualizado"
 - Closing dialog "Fechamento de {Mês}":
   - section "1. Valores manuais", with an "Aporte / resgate" and a "Valor atual" for each manual asset
-  - section "2. Cotações automáticas", read-only
+  - section "2. Cotações automáticas", read-only, with each asset's quote status
   - footer totals: "Patrimônio no fechamento", "Variação no mês", "Aportes", "Rendimento"
   - error: "Revise os valores de “{nome}” ({instituição})."
 - Registering a closing:
