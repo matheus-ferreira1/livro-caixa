@@ -204,7 +204,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, `feat/wealth-quotes`). All planned phases are built; see the follow-ups under Phase 6._
+_Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, #22). All planned phases are built; see the follow-ups under Phase 6._
 
 ## Summary
 
@@ -217,7 +217,7 @@ _Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, `feat/wealth-quotes`). Al
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
-| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In review (`feat/wealth-assets`, `feat/wealth-closing`, `feat/wealth-quotes`) |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In review (PRs #20, #21, #22) |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -240,7 +240,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#19](https://github.com/matheus-ferreira1/livro-caixa/pull/19) | `feat/dashboard` | `buildDashboard` and its KPI, donut, open-item and acerto rules; dashboard endpoint; Visão geral page with tiles, bars chart, donut, "Em aberto" and acerto card; Visão geral as the landing page |
 | [#20](https://github.com/matheus-ferreira1/livro-caixa/pull/20) | `feat/wealth-assets` | Migration `003_wealth`; asset, quantity, KPI, evolution and allocation rules; asset CRUD and `GET /api/wealth`; Patrimônio page with tiles, chart, allocation, table and asset sheet; demo portfolio |
 | [#21](https://github.com/matheus-ferreira1/livro-caixa/pull/21) | `feat/wealth-closing` | Closing availability and math; `POST /api/wealth/closings`, atomic across the snapshot and its assets; closing dialog and banners; e2e flow |
-| `feat/wealth-quotes` (in review) | `feat/wealth-quotes` | `QuoteProvider` port, brapi adapter, `RefreshQuotes` on `GET /api/wealth`, optional `BRAPI_TOKEN` |
+| [#22](https://github.com/matheus-ferreira1/livro-caixa/pull/22) | `feat/wealth-quotes` | `QuoteProvider` port, brapi adapter, `RefreshQuotes` on `GET /api/wealth`, optional `BRAPI_TOKEN` |
 
 ### Web routes
 
@@ -763,7 +763,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 
 ## Phase 6 — in review
 
-### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — 🚧 In review (Phase 6, PRs #20, #21)
+### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — 🚧 In review (Phase 6, PRs #20, #21, #22)
 - Assets: `{ institution, name, assetClass, pricing: 'auto'|'manual', quantity, avgPrice, price, invested, current, dayChange, updatedAt }`.
   - Classes:
 
