@@ -3,7 +3,6 @@
  * Usage: bun run seed:demo   (refuses to touch a database that already has entries)
  */
 import {
-  BASIS_POINTS,
   pad2,
   QUANTITY_SCALE,
   type Asset,
@@ -220,7 +219,6 @@ function autoAsset(
   quantity: number,
   avgPrice: number | null,
   price: number,
-  dayChange: number,
 ): Asset {
   return {
     id,
@@ -231,7 +229,7 @@ function autoAsset(
     quantityE8: Math.round(quantity * QUANTITY_SCALE),
     avgPriceCents: avgPrice === null ? null : reais(avgPrice),
     priceCents: reais(price),
-    dayChangeBps: Math.round(dayChange * BASIS_POINTS),
+    dayChangeBps: null,
     quotedAt: null,
     quoteFailed: false,
     updatedAt: ASSET_DATE,
@@ -259,11 +257,11 @@ function manualAsset(
 }
 
 const ASSETS: Asset[] = [
-  autoAsset('a1', 'Binance', 'ETH-BRL', 'cripto', 0.0038961, 23076.24, 13937.69, -0.021),
-  autoAsset('a2', 'Coinext', 'ADA-BRL', 'cripto', 3.52, 7.07, 1.26, 0.034),
-  autoAsset('a3', 'Coinext', 'XRP-BRL', 'cripto', 1.28952, 7.8, 7.73, -0.008),
-  autoAsset('a4', 'XP', 'MXRF11', 'fii', 3, 10.25, 8.94, 0.002),
-  autoAsset('a5', 'Clear', 'LFTB11', 'etf', 6, 116.5, 128.3, 0.0003),
+  autoAsset('a1', 'Binance', 'ETH-BRL', 'cripto', 0.0038961, 23076.24, 13937.69),
+  autoAsset('a2', 'Coinext', 'ADA-BRL', 'cripto', 3.52, 7.07, 1.26),
+  autoAsset('a3', 'Coinext', 'XRP-BRL', 'cripto', 1.28952, 7.8, 7.73),
+  autoAsset('a4', 'XP', 'MXRF11', 'fii', 3, 10.25, 8.94),
+  autoAsset('a5', 'Clear', 'LFTB11', 'etf', 6, 116.5, 128.3),
   manualAsset('a6', 'Genial', 'Saldo', 'conta', 0, 0),
   manualAsset('a7', 'BB', 'Caução', 'garantia', 6850, 6850),
   manualAsset('a8', 'BB', 'Poupança', 'conta', 0.05, 0.05),
@@ -274,7 +272,7 @@ const ASSETS: Asset[] = [
   manualAsset('a13', 'Caixa', 'Poupança', 'conta', 0.01, 0.01),
   manualAsset('a14', 'Nubank', 'Reserva', 'reserva', 608.81, 1691.16),
   manualAsset('a15', 'Nubank', 'Reserva (uv)', 'reserva', 4531.01, 10012.19),
-  autoAsset('a16', 'Wise', 'Dólar', 'cambio', 4.89, null, 5.19, -0.004),
+  autoAsset('a16', 'Wise', 'Dólar', 'cambio', 4.89, null, 5.19),
 ];
 
 const SNAPSHOTS: Snapshot[] = (

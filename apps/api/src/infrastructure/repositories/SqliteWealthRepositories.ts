@@ -131,6 +131,13 @@ export class SqliteAssetRepository implements AssetRepository {
       .filter((asset): asset is AutoAsset => asset.pricing === 'auto');
   }
 
+  markQuotesUnavailable(): void {
+    this.db.exec(
+      `UPDATE assets SET quote_failed = 1, day_change_bps = NULL
+       WHERE pricing = 'auto' AND quoted_at IS NOT NULL AND quote_failed = 0`,
+    );
+  }
+
   // The name and pricing checks cover an asset edited while its quote was on the way.
   recordQuote({ id, name }: QuotedAsset, quote: Quote | null, checkedAt: number): void {
     this.db

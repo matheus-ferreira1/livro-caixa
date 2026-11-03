@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Quote, QuoteProvider } from '../../application/ports';
+import { RefreshQuotes } from '../../application/wealth/RefreshQuotes';
 import { buildTestApp, signIn } from '../../test/harness';
 
 const TODAY = '2026-11-03';
@@ -269,6 +270,37 @@ describe('quotes on GET /api/wealth', () => {
       const { assets } = await wealth();
 
       expect(assets[0]).toMatchObject({ quotedAt: null, quoteFailed: false });
+    });
+
+    test('marks an earlier quote unavailable once there is no provider', async () => {
+      const { agent, clock, container, wealth } = await setup();
+      const { body } = await agent.post('/api/assets').send(anAsset()).expect(201);
+      await wealth();
+
+      await new RefreshQuotes(container.assets, null, clock).execute();
+
+      expect(container.assets.findById(body.asset.id)).toMatchObject({
+        priceCents: 1000,
+        dayChangeBps: null,
+        quotedAt: MARKET_TIME,
+        quoteFailed: true,
+      });
+    });
+
+    test('keeps the quote when an edit leaves the ticker, class and price alone', async () => {
+      const quotes = new FakeQuotes();
+      const { agent, wealth } = await setup(quotes);
+      const { body } = await agent.post('/api/assets').send(anAsset()).expect(201);
+      await wealth();
+
+      quotes.answer = async () => null;
+      await agent
+        .put(`/api/assets/${body.asset.id}`)
+        .send(anAsset({ institution: 'Clear', priceCents: 1000, today: '2026-11-04' }))
+        .expect(200);
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: MARKET_TIME, quoteFailed: true, updatedAt: TODAY });
     });
 
     test('marks a failed check and keeps the time of the last quote', async () => {

@@ -85,6 +85,8 @@ export interface AssetRepository {
    * the asset's ticker changed meanwhile.
    */
   recordQuote(asset: QuotedAsset, quote: Quote | null, checkedAt: number): void;
+  /** For when nothing fetches quotes anymore: earlier quotes turn old, and their daily changes with them. */
+  markQuotesUnavailable(): void;
 }
 
 /** The asset as it was when its quote was requested. */
