@@ -232,6 +232,8 @@ function autoAsset(
     avgPriceCents: avgPrice === null ? null : reais(avgPrice),
     priceCents: reais(price),
     dayChangeBps: Math.round(dayChange * BASIS_POINTS),
+    quotedAt: null,
+    quoteFailed: false,
     updatedAt: ASSET_DATE,
   };
 }

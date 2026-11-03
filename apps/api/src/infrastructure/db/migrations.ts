@@ -105,4 +105,13 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    // Past checks do not say whether they found a quote, so the next read asks again.
+    id: '004_quote_status',
+    sql: `
+      ALTER TABLE assets ADD COLUMN quoted_at INTEGER;
+      ALTER TABLE assets ADD COLUMN quote_failed INTEGER NOT NULL DEFAULT 0;
+      UPDATE assets SET quote_checked_at = NULL;
+    `,
+  },
 ];

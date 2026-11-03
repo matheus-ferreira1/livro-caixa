@@ -4,6 +4,7 @@ import { buildTestApp, signIn } from '../../test/harness';
 
 const TODAY = '2026-11-03';
 const THIRTY_MINUTES_MS = 30 * 60_000;
+const MARKET_TIME = 1_790_000_000_000;
 
 const anAsset = (overrides = {}) => ({
   institution: 'XP',
@@ -24,6 +25,7 @@ class FakeQuotes implements QuoteProvider {
   answer: (ticker: string, signal?: AbortSignal) => Promise<Quote | null> = async () => ({
     priceCents: 1000,
     dayChangeBps: 25,
+    quotedAt: MARKET_TIME,
   });
 
   quote(ticker: string, signal?: AbortSignal): Promise<Quote | null> {
@@ -160,7 +162,7 @@ describe('quotes on GET /api/wealth', () => {
     });
     quotes.answer = async () => {
       await gate;
-      return { priceCents: 1000, dayChangeBps: null };
+      return { priceCents: 1000, dayChangeBps: null, quotedAt: null };
     };
     const { agent, container } = await setup(quotes);
     await agent.post('/api/assets').send(anAsset()).expect(201);
@@ -195,7 +197,7 @@ describe('quotes on GET /api/wealth', () => {
       .send(anAsset({ name: 'HGLG11' }))
       .expect(200);
 
-    container.assets.recordQuote(body.asset, { priceCents: 1, dayChangeBps: 1 }, 0);
+    container.assets.recordQuote(body.asset, { priceCents: 1, dayChangeBps: 1, quotedAt: null }, 0);
 
     expect(container.assets.findById(body.asset.id)).toMatchObject({ name: 'HGLG11', priceCents: 894 });
     expect(container.assets.listQuotesDue(0)).toHaveLength(1);
@@ -222,8 +224,108 @@ describe('quotes on GET /api/wealth', () => {
       .send(anAsset({ pricing: 'manual', quantityE8: null, priceCents: null, currentCents: 100 }))
       .expect(200);
 
-    container.assets.recordQuote(body.asset, { priceCents: 1, dayChangeBps: 1 }, 0);
+    container.assets.recordQuote(body.asset, { priceCents: 1, dayChangeBps: 1, quotedAt: null }, 0);
 
     expect(container.assets.findById(body.asset.id)).toMatchObject({ pricing: 'manual', currentCents: 100 });
+  });
+
+  describe('quote status', () => {
+    test('stores when the quote was current', async () => {
+      const { agent, wealth } = await setup();
+      await agent.post('/api/assets').send(anAsset()).expect(201);
+
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: MARKET_TIME, quoteFailed: false });
+    });
+
+    test('falls back on the time of the check when the source gives no time', async () => {
+      const quotes = new FakeQuotes();
+      quotes.answer = async () => ({ priceCents: 1000, dayChangeBps: null, quotedAt: null });
+      const { agent, clock, wealth } = await setup(quotes);
+      await agent.post('/api/assets').send(anAsset()).expect(201);
+
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: clock.now(), quoteFailed: false });
+    });
+
+    test('leaves a class that is never quoted with no quote', async () => {
+      const { agent, wealth } = await setup();
+      await agent
+        .post('/api/assets')
+        .send(anAsset({ name: 'ETH-BRL', assetClass: 'cripto' }))
+        .expect(201);
+
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: null, quoteFailed: false });
+    });
+
+    test('leaves every asset with no quote without a provider', async () => {
+      const { agent, wealth } = await setup(null);
+      await agent.post('/api/assets').send(anAsset()).expect(201);
+
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: null, quoteFailed: false });
+    });
+
+    test('marks a failed check and keeps the time of the last quote', async () => {
+      const quotes = new FakeQuotes();
+      const { agent, clock, wealth } = await setup(quotes);
+      await agent.post('/api/assets').send(anAsset()).expect(201);
+      await wealth();
+
+      quotes.answer = async () => null;
+      clock.advance(THIRTY_MINUTES_MS);
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: MARKET_TIME, quoteFailed: true });
+    });
+
+    test('marks a provider error the same way', async () => {
+      const quotes = new FakeQuotes();
+      quotes.answer = async () => {
+        throw new Error('network down');
+      };
+      const { agent, wealth } = await setup(quotes);
+      await agent.post('/api/assets').send(anAsset()).expect(201);
+
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: null, quoteFailed: true });
+    });
+
+    test('clears a failure once a quote is found again', async () => {
+      const quotes = new FakeQuotes();
+      const { agent, clock, wealth } = await setup(quotes);
+      const answer = quotes.answer;
+      quotes.answer = async () => null;
+      await agent.post('/api/assets').send(anAsset()).expect(201);
+      await wealth();
+
+      quotes.answer = answer;
+      clock.advance(THIRTY_MINUTES_MS);
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: MARKET_TIME, quoteFailed: false });
+    });
+
+    test('forgets the quote when the asset is edited and no new one is found', async () => {
+      const quotes = new FakeQuotes();
+      const { agent, wealth } = await setup(quotes);
+      const { body } = await agent.post('/api/assets').send(anAsset()).expect(201);
+      await wealth();
+
+      quotes.answer = async () => null;
+      await agent
+        .put(`/api/assets/${body.asset.id}`)
+        .send(anAsset({ name: 'HGLG11' }))
+        .expect(200);
+      const { assets } = await wealth();
+
+      expect(assets[0]).toMatchObject({ quotedAt: null, quoteFailed: true });
+    });
   });
 });
