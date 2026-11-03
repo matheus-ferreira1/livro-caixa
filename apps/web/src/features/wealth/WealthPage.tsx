@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { SummaryTiles } from '@/shared/SummaryTiles';
 import { useWealth } from './api';
+import { closingBanner, type ClosingBanner as ClosingBannerView } from './closing-view-model';
 import { AllocationCard } from './components/AllocationCard';
 import { AssetFormSheet, type AssetFormTarget } from './components/AssetFormSheet';
 import { AssetsTable } from './components/AssetsTable';
+import { ClosingDialog } from './components/ClosingDialog';
 import { EvolutionChart } from './components/EvolutionChart';
 import { wealthViewModel } from './view-model';
 
@@ -16,6 +18,7 @@ export function WealthPage() {
   const [grouping, setGrouping] = useState<WealthGrouping>('class');
   const [calm, setCalm] = useState(true);
   const [formTarget, setFormTarget] = useState<AssetFormTarget | null>(null);
+  const [closingOpen, setClosingOpen] = useState(false);
   const wealth = data && wealthViewModel(data, grouping, calm);
   const openNewAsset = () => setFormTarget({ id: null, draft: emptyAssetDraft() });
 
@@ -43,9 +46,18 @@ export function WealthPage() {
                 <Plus className="size-[18px]" aria-hidden="true" />
                 Novo ativo
               </button>
+              <button
+                type="button"
+                onClick={() => setClosingOpen(true)}
+                disabled={!data.closingAvailable}
+                className="min-h-11 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-neutral-swatch"
+              >
+                {data.closingAvailable ? 'Fazer fechamento' : 'Fechamento em dia'}
+              </button>
             </div>
           </div>
 
+          <ClosingBanner banner={closingBanner(data)} onOpen={() => setClosingOpen(true)} />
           <SummaryTiles tiles={wealth.tiles} />
           <EvolutionChart {...wealth.chart} />
           <AllocationCard allocation={wealth.allocation} grouping={grouping} onGroupingChange={setGrouping} />
@@ -63,8 +75,42 @@ export function WealthPage() {
             today={today}
             onClose={() => setFormTarget(null)}
           />
+          <ClosingDialog
+            wealth={data}
+            today={today}
+            open={closingOpen}
+            onClose={() => setClosingOpen(false)}
+          />
         </>
       )}
+    </div>
+  );
+}
+
+function ClosingBanner({ banner, onOpen }: { banner: ClosingBannerView; onOpen: () => void }) {
+  if (!banner) return null;
+  if (banner.kind === 'waiting') {
+    return <p className="m-0 rounded-xl border bg-card px-4 py-3 text-sm text-icon">{banner.label}</p>;
+  }
+  return (
+    <div
+      role="status"
+      className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl bg-settlement-bg px-4 py-3.5 text-info-text"
+    >
+      <span className="flex flex-[1_1_360px] flex-col gap-0.5">
+        <span className="font-semibold">{banner.title}</span>
+        <span className="text-sm">
+          Uma vez por mês: confira os valores manuais e informe aportes ou resgates. As cotações automáticas
+          já estão em dia.
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-white hover:bg-settlement/90"
+      >
+        Fazer fechamento
+      </button>
     </div>
   );
 }

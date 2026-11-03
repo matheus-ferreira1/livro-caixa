@@ -82,4 +82,6 @@ export interface SnapshotRepository {
   /** Oldest first. */
   list(): Snapshot[];
   insert(snapshot: Snapshot): void;
+  /** Adds the closing and updates its assets together or, on any failure, not at all. */
+  registerClosing(snapshot: Snapshot, assets: Asset[]): void;
 }

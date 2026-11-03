@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { ASSET_MESSAGES } from '@livro-caixa/domain';
+import { ASSET_MESSAGES, CLOSING_MESSAGES } from '@livro-caixa/domain';
 import request from 'supertest';
 import { buildTestApp, signIn } from '../../test/harness';
 
@@ -183,4 +183,147 @@ describe('DELETE /api/assets/:id', () => {
     const { agent } = await signedIn();
     await agent.delete('/api/assets/nope').expect(404);
   });
+});
+
+describe('POST /api/wealth/closings', () => {
+  async function withManualAsset() {
+    const ctx = await signedIn();
+    const { body } = await ctx.agent.post('/api/assets').send(manualAsset).expect(201);
+    return { ...ctx, assetId: body.asset.id as string };
+  }
+
+  const closing = (assetId: string, overrides = {}) => ({
+    month: '2026-10',
+    today: TODAY,
+    items: [{ assetId, flowCents: 5000, currentCents: 170_000 }],
+    ...overrides,
+  });
+
+  test('requires a session', async () => {
+    const { app } = await buildTestApp();
+    await request(app).post('/api/wealth/closings').send(closing('a')).expect(401);
+  });
+
+  test('registers the first closing and updates the manual asset', async () => {
+    const { agent, assetId } = await withManualAsset();
+    await agent.post('/api/assets').send(autoAsset).expect(201);
+
+    const { body } = await agent.post('/api/wealth/closings').send(closing(assetId)).expect(201);
+
+    expect(body.snapshot).toEqual({ month: '2026-10', totalCents: 170_000 + 2682, contributionsCents: 5000 });
+    const { body: wealth } = await agent.get(`/api/wealth?today=${TODAY}`).expect(200);
+    expect(wealth.openMonth).toBe('2026-11');
+    expect(wealth.closingAvailable).toBe(false);
+    expect(wealth.assets[0]).toMatchObject({
+      currentCents: 170_000,
+      investedCents: 98_080 + 5000,
+      updatedAt: TODAY,
+    });
+  });
+
+  test('refuses a second closing of the same month', async () => {
+    const { agent, assetId } = await withManualAsset();
+    await agent.post('/api/wealth/closings').send(closing(assetId)).expect(201);
+    const { body } = await agent.post('/api/wealth/closings').send(closing(assetId)).expect(409);
+    expect(body.error.message).toBe(CLOSING_MESSAGES.stale);
+  });
+
+  test('refuses the next closing before the 25th and accepts it from then on', async () => {
+    const { agent, assetId } = await withManualAsset();
+    await agent.post('/api/wealth/closings').send(closing(assetId)).expect(201);
+    const next = { month: '2026-11', today: '2026-11-24' };
+    await agent.post('/api/wealth/closings').send(closing(assetId, next)).expect(409);
+    await agent
+      .post('/api/wealth/closings')
+      .send(closing(assetId, { ...next, today: '2026-11-25' }))
+      .expect(201);
+  });
+
+  test('refuses a month that is not the open one', async () => {
+    const { agent, assetId } = await withManualAsset();
+    await agent
+      .post('/api/wealth/closings')
+      .send(closing(assetId, { month: '2026-09' }))
+      .expect(409);
+  });
+
+  test('refuses a portfolio with no assets and no closings', async () => {
+    const { agent } = await signedIn();
+    await agent.post('/api/wealth/closings').send({ month: '2026-10', today: TODAY, items: [] }).expect(409);
+  });
+
+  test.each([
+    ['misses a manual asset', () => []],
+    [
+      'repeats one',
+      (id: string) => [
+        { assetId: id, flowCents: 0, currentCents: 1 },
+        { assetId: id, flowCents: 0, currentCents: 1 },
+      ],
+    ],
+    ['names an unknown asset', () => [{ assetId: 'nope', flowCents: 0, currentCents: 1 }]],
+  ])('refuses items that %s', async (_, itemsOf) => {
+    const { agent, assetId } = await withManualAsset();
+    await agent
+      .post('/api/wealth/closings')
+      .send(closing(assetId, { items: itemsOf(assetId) }))
+      .expect(409);
+  });
+
+  test('names the asset with a negative value', async () => {
+    const { agent, assetId } = await withManualAsset();
+    const items = [{ assetId, flowCents: 0, currentCents: -1 }];
+    const { body } = await agent.post('/api/wealth/closings').send(closing(assetId, { items })).expect(400);
+    expect(body.error.message).toBe('Revise os valores de “Tesouro 27” (XP).');
+  });
+
+  test.each([
+    { month: 'abc' },
+    { today: 'abc' },
+    { items: [{ assetId: 'a', flowCents: 1.5, currentCents: 1 }] },
+  ])('rejects the malformed body %j', async (overrides) => {
+    const { agent, assetId } = await withManualAsset();
+    const { body } = await agent.post('/api/wealth/closings').send(closing(assetId, overrides)).expect(400);
+    expect(body.error.code).toBe('validation_error');
+  });
+
+  test('leaves nothing behind when the closing fails partway', async () => {
+    const { agent, container, assetId } = await withManualAsset();
+    container.snapshots.insert({ month: '2026-10', totalCents: 1, contributionsCents: 0 });
+    const changed = { ...manualAssetEntity(assetId), currentCents: 999 };
+
+    expect(() =>
+      container.snapshots.registerClosing({ month: '2026-10', totalCents: 2, contributionsCents: 0 }, [
+        changed,
+      ]),
+    ).toThrow();
+
+    const { body: wealth } = await agent.get(`/api/wealth?today=${TODAY}`).expect(200);
+    expect(wealth.assets[0].currentCents).toBe(161_511);
+  });
+
+  test('rolls back the closing when an asset cannot be saved', async () => {
+    const { container, assetId } = await withManualAsset();
+    // The table's CHECK refuses a manual asset with no current value.
+    const broken = { ...manualAssetEntity(assetId), currentCents: null as unknown as number };
+
+    expect(() =>
+      container.snapshots.registerClosing({ month: '2026-10', totalCents: 2, contributionsCents: 0 }, [
+        broken,
+      ]),
+    ).toThrow();
+
+    expect(container.snapshots.list()).toEqual([]);
+  });
+});
+
+const manualAssetEntity = (id: string) => ({
+  id,
+  institution: 'XP',
+  name: 'Tesouro 27',
+  assetClass: 'tesouro' as const,
+  pricing: 'manual' as const,
+  investedCents: 98_080,
+  currentCents: 161_511,
+  updatedAt: TODAY,
 });

@@ -5,6 +5,7 @@ import {
   formatPercent,
   formatSignedMoney,
   parseMoney,
+  parseSignedMoney,
   toMoneyInput,
 } from './money';
 
@@ -71,5 +72,23 @@ describe('formatPercent', () => {
 
   test('uses U+2212 for negatives', () => {
     expect(formatPercent(-0.5)).toBe('−50%');
+  });
+});
+
+describe('parseSignedMoney', () => {
+  test.each([
+    ['50,00', 5000],
+    ['+50,00', 5000],
+    ['-50,00', -5000],
+    ['−50,00', -5000],
+    ['− R$ 1.234,56', -123_456],
+    ['0,00', 0],
+    ['-0,00', 0],
+  ])('reads %s', (input, expected) => {
+    expect(parseSignedMoney(input)).toBe(expected);
+  });
+
+  test.each(['', 'abc', '--5', '5-'])('rejects %p', (input) => {
+    expect(parseSignedMoney(input)).toBeNull();
   });
 });

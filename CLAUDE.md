@@ -203,7 +203,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, with Phase 6 part 1 (PR #20). Next: the closing, then quotes._
+_Last updated: 2026-11-03, with Phase 6 part 2 (PR #21). Next: quotes._
 
 ## Summary
 
@@ -216,7 +216,7 @@ _Last updated: 2026-11-03, with Phase 6 part 1 (PR #20). Next: the closing, then
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
-| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In progress: assets and page in review; closing and quotes next |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In progress: assets, page and closing in review; quotes next |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -238,6 +238,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#17](https://github.com/matheus-ferreira1/livro-caixa/pull/17) | `feat/monthly-summary` | `monthSummary`, `summaryStatus` and `yearSummary`; summary endpoint; Resumo mensal page with tiles, balance chart and table; restored nav item |
 | [#19](https://github.com/matheus-ferreira1/livro-caixa/pull/19) | `feat/dashboard` | `buildDashboard` and its KPI, donut, open-item and acerto rules; dashboard endpoint; Visão geral page with tiles, bars chart, donut, "Em aberto" and acerto card; Visão geral as the landing page |
 | [#20](https://github.com/matheus-ferreira1/livro-caixa/pull/20) | `feat/wealth-assets` | Migration `003_wealth`; asset, quantity, KPI, evolution and allocation rules; asset CRUD and `GET /api/wealth`; Patrimônio page with tiles, chart, allocation, table and asset sheet; demo portfolio |
+| [#21](https://github.com/matheus-ferreira1/livro-caixa/pull/21) | `feat/wealth-closing` | Closing availability and math; `POST /api/wealth/closings`, atomic across the snapshot and its assets; closing dialog and banners; e2e flow |
 
 ### Web routes
 
@@ -278,7 +279,8 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
 | `GET /api/summary?year=YYYY&mode=real\|proj` | `GetYearSummary` | `{ year, mode, months[12], totals }` in cents; `mode` defaults to `real`. "Atual" and the default year come from the client. |
 | `GET /api/dashboard?month=YYYY-MM&mode=real\|proj` | `GetDashboard` | `{ month, mode, partnerName, kpis, series[12], categories, open, settlement }` in cents; `mode` defaults to `real`. `open` and `settlement` ignore the mode. Relative due labels come from the client, from `relativeDue` and its own "today". |
-| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. |
+| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, closingAvailable, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. |
+| `POST /api/wealth/closings` | `RegisterClosing` | 201 `{ snapshot }`; body `{ month, today, items: [{ assetId, flowCents, currentCents }] }`, one item per manual asset. The server recomputes the open month and total. 409 when the month is not open or the items do not match the manual assets, 400 "Revise os valores de “{nome}” ({instituição})." for a negative value. The snapshot and the assets are written in one transaction. |
 | `POST /api/assets` | `CreateAsset` | 201 `{ asset }`; body is `AssetInput` (amounts in cents, `quantityE8` scaled by 1e8, `today`). 400 with the design's messages. |
 | `PUT /api/assets/:id` | `UpdateAsset` | Full replace; may switch the pricing mode, which drops the old mode's fields |
 | `DELETE /api/assets/:id` | `DeleteAsset` | 204 |
@@ -301,7 +303,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 ### Domain (`packages/domain`)
 
 - `auth/`: login validation and messages, `nameFromEmail`, `initialsOf`
-- `money/`: `parseMoney` (pt-BR input → cents), `formatMoney`, `formatSignedMoney`, `formatCompactAmount`, `formatPercent`, `toMoneyInput`, `percentOf`
+- `money/`: `parseMoney` (pt-BR input → cents), `parseSignedMoney`, `formatMoney`, `formatSignedMoney`, `formatCompactAmount`, `formatPercent`, `toMoneyInput`, `percentOf`
 - `dates/`: `monthLabel`, `monthName`, `monthShortName`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `daysBetween`, `defaultDateForMonth`
 - `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
 - `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation) and `monthTiles`
@@ -318,7 +320,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `wealth/asset.ts`: the `Asset` and `Snapshot` types, `ASSET_CLASSES`, `assetValue`, `assetCost`, `valueAssets`, `institutionsOf`
 - `wealth/quantity.ts`: `QUANTITY_SCALE`, `parseQuantity`, `formatQuantity`, `toQuantityInput`
 - `wealth/asset-input.ts`: the sheet draft, `ASSET_MESSAGES`, `validateAssetFields`, `draftToAssetInput`, `assetInputSchema`, `toAsset`
-- `wealth/closing.ts`: `openMonth`
+- `wealth/closing.ts`: `openMonth`, `closingAvailable`, `closingDraft`, `closingRequestFrom`, `applyClosing`, `closingRequestSchema`, `CLOSING_MESSAGES`
 - `wealth/kpis.ts`, `wealth/evolution.ts`, `wealth/allocation.ts`, `wealth/wealth.ts`: `wealthKpis`, `evolutionSeries`, `groupAssets`, `allocationSegments`, `buildWealth`
 - `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
 
@@ -326,10 +328,10 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 231 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 144 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 167 | `bun run --filter '@livro-caixa/web' test` |
-| E2E | 4 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
+| Domain unit | 261 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 159 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 174 | `bun run --filter '@livro-caixa/web' test` |
+| E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
 
@@ -405,6 +407,13 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - `SummaryTiles` gained `valueTone` for colored values. On a dark tile, its hint and delta now use the on-dark color, because the muted gray was too low in contrast. No earlier dark tile has a hint or a delta, so Lançamentos and Resumo look the same.
 - Grouping and the "Hoje" column are computed on the client from the asset list, like the month view's filters.
 - Institution colors follow the order assets were added, so removing an institution's first asset can recolor the others, as in the prototype.
+- The first closing opens at once for the previous calendar month, and only once there is an asset, so an empty portfolio shows no banner and a disabled "Fechamento em dia". The first closing's dialog reads "Primeiro fechamento", with "—" for Variação and Rendimento.
+- `today` in a closing comes from the client, like every "today" here, so the 25th rule follows the user's calendar. The server's check is against double submits, not against a client that lies about the date.
+- The 409 message "Esse fechamento não está mais em aberto ou a carteira mudou. Atualize a página e revise de novo." is not in the design; it was written for this case.
+- Buying more of an automatic asset by editing it raises the total but is not a contribution, so it counts as rendimento in the next closing, as in the prototype. Only manual assets have an "Aporte / resgate" field.
+- A skipped month closes in sequence, with today's values, as in the prototype.
+- A withdrawal larger than the invested amount stops it at zero, where the prototype lets it go negative. What is left is all gain, and a negative cost would break the row's result and the sheet's validation. The full flow still counts in the closing's Aportes.
+- The "Aporte / resgate" input is plain text with no decimal keypad hint, because phone decimal keypads often have no minus key.
 - `seed:demo` checks the ledger and the portfolio separately, so a dev database from before this phase can still get its demo portfolio.
 
 ## Roadmap
@@ -477,11 +486,11 @@ Follow-ups found during Phase 1.5:
 
 - [x] Migration `003_wealth`: `assets` and `snapshots` tables.
 - [x] Domain: asset value and cost, KPIs, allocation by class and institution.
-- [ ] Domain: closing availability (from the 25th), closing math.
+- [x] Domain: closing availability (from the 25th), closing math.
 - [x] API: asset CRUD, `GET /api/wealth`.
-- [ ] API: `POST /api/wealth/closings`.
+- [x] API: `POST /api/wealth/closings`.
 - [x] Web `/patrimonio`: header with "Modo tranquilo", KPI tiles, evolution chart, allocation bar, assets table, asset sheet.
-- [ ] Web `/patrimonio`: banners, closing dialog.
+- [x] Web `/patrimonio`: banners, closing dialog.
 - [ ] Automatic quotes for `pricing: 'auto'` assets through brapi, with an optional `BRAPI_TOKEN` (decided 2026-11-03). A free token covers the `etf` and `fii` classes; crypto and currency need a paid plan, so those keep a typed price.
 
 ---

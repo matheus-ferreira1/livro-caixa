@@ -1,7 +1,7 @@
 import type { IsoDate, MonthKey } from '../dates/dates';
 import { sumCents, type Cents } from '../money/money';
 import { BASIS_POINTS, valueAssets, type Asset, type Snapshot, type ValuedAsset } from './asset';
-import { openMonth } from './closing';
+import { closingAvailable, openMonth } from './closing';
 import { evolutionSeries, type EvolutionSeries } from './evolution';
 import { wealthKpis, type WealthKpis } from './kpis';
 
@@ -10,6 +10,7 @@ export interface Wealth {
   investedCents: Cents;
   dayChangeCents: Cents;
   openMonth: MonthKey;
+  closingAvailable: boolean;
   assets: ValuedAsset[];
   kpis: WealthKpis;
   evolution: EvolutionSeries;
@@ -39,6 +40,7 @@ export function buildWealth({
     investedCents,
     dayChangeCents: sumCents(valued.map(dayChangeOf)),
     openMonth: open,
+    closingAvailable: closingAvailable(snapshots, assets.length, today),
     assets: valued,
     kpis: wealthKpis(snapshots, totalCents, investedCents),
     evolution: evolutionSeries(snapshots, open, totalCents),

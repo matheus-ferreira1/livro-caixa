@@ -19,6 +19,14 @@ export function parseMoney(input: string): Cents | null {
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
 }
 
+/** Like parseMoney for a field that also takes withdrawals: "-50,00" and "− 50,00" are negative. */
+export function parseSignedMoney(input: string): Cents | null {
+  const raw = input.trim();
+  const negative = raw.startsWith('-') || raw.startsWith(MINUS);
+  const cents = parseMoney(negative || raw.startsWith('+') ? raw.slice(1) : raw);
+  return cents !== null && negative && cents !== 0 ? -cents : cents;
+}
+
 export function formatMoney(cents: Cents): string {
   return BRL.format(cents / 100).replace('-', MINUS);
 }
