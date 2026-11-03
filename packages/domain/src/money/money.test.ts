@@ -25,16 +25,38 @@ describe('parseMoney', () => {
     ['180', 18_000],
     ['180,00', 18_000],
     ['1.234,56', 123_456],
+    ['1234,56', 123_456],
     ['R$ 10,5', 1_050],
     ['10.5', 1_050],
+    ['10.50', 1_050],
     [' 0,01 ', 1],
   ])('parses %p as %p cents', (input, cents) => {
     expect(parseMoney(input)).toBe(cents);
   });
 
-  test.each(['', '   ', 'abc', '1,2,3', 'R$'])('rejects %p', (input) => {
-    expect(parseMoney(input)).toBeNull();
+  test.each([
+    ['1.234', 123_400],
+    ['12.345', 1_234_500],
+    ['10.012', 1_001_200],
+    ['1.234.567', 123_456_700],
+    ['R$ 1.234', 123_400],
+  ])('reads the dots in %p as thousands separators, giving %p cents', (input, cents) => {
+    expect(parseMoney(input)).toBe(cents);
   });
+
+  test.each(['', '   ', 'abc', '1,2,3', 'R$', '1.2345', '1,234', '1..234', '.5', '10.5.123'])(
+    'rejects %p',
+    (input) => {
+      expect(parseMoney(input)).toBeNull();
+    },
+  );
+
+  test.each(['1234.567', '0.123', '012.345', '1234.567,89'])(
+    'rejects %p, whose first group cannot be thousands',
+    (input) => {
+      expect(parseMoney(input)).toBeNull();
+    },
+  );
 });
 
 describe('formatMoney', () => {

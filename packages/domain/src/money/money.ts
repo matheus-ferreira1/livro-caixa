@@ -5,17 +5,20 @@ export const MINUS = '−';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const COMPACT = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
-const MONEY_PATTERN = /^\d+(?:\.\d{3})*(?:,\d{1,2})?$|^\d+(?:[.,]\d{1,2})?$/;
+const DECIMAL_PATTERN = /^\d+(?:[.,]\d{1,2})?$/;
+const GROUPED_PATTERN = /^[1-9]\d{0,2}(?:\.\d{3})+(?:,\d{1,2})?$/;
 
 /**
- * Parses what people type in a pt-BR money field: "1.234,56", "180", "R$ 10,5", "10.5".
+ * Parses what people type in a pt-BR money field: "1.234,56", "1.234", "180", "R$ 10,5", "10.5".
+ * A dot before three digits separates thousands; before one or two it is the decimal mark.
  * Returns null for anything that is not an amount.
  */
 export function parseMoney(input: string): Cents | null {
   const raw = input.replace(/R\$/gi, '').replace(/\s/g, '');
-  if (!MONEY_PATTERN.test(raw)) return null;
-  const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
-  const [whole = '0', fraction = ''] = normalized.split('.');
+  const isDecimal = DECIMAL_PATTERN.test(raw);
+  if (!isDecimal && !GROUPED_PATTERN.test(raw)) return null;
+  const withoutGrouping = isDecimal ? raw : raw.replace(/\./g, '');
+  const [whole = '0', fraction = ''] = withoutGrouping.split(/[.,]/);
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
 }
 
