@@ -203,7 +203,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-02, with Phase 5 (PR #19). Next: Phase 6, US-10 Patrimônio._
+_Last updated: 2026-11-03, with Phase 6 part 1 (`feat/wealth-assets`). Next: the closing, then quotes._
 
 ## Summary
 
@@ -216,7 +216,7 @@ _Last updated: 2026-11-02, with Phase 5 (PR #19). Next: Phase 6, US-10 Patrimôn
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
-| 6 — Patrimônio | US-10 Net worth and monthly closing | ⏳ Next |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In progress: assets and page in review; closing and quotes next |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -237,6 +237,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#15](https://github.com/matheus-ferreira1/livro-caixa/pull/15) | `feat/recurring` | Recurring candidate rules; candidates and generate endpoints (one SQLite transaction); Gerar recorrentes dialog; recurring banner with "Agora não"; restored "Gerar recorrentes" |
 | [#17](https://github.com/matheus-ferreira1/livro-caixa/pull/17) | `feat/monthly-summary` | `monthSummary`, `summaryStatus` and `yearSummary`; summary endpoint; Resumo mensal page with tiles, balance chart and table; restored nav item |
 | [#19](https://github.com/matheus-ferreira1/livro-caixa/pull/19) | `feat/dashboard` | `buildDashboard` and its KPI, donut, open-item and acerto rules; dashboard endpoint; Visão geral page with tiles, bars chart, donut, "Em aberto" and acerto card; Visão geral as the landing page |
+| `feat/wealth-assets` (in review) | `feat/wealth-assets` | Migration `003_wealth`; asset, quantity, KPI, evolution and allocation rules; asset CRUD and `GET /api/wealth`; Patrimônio page with tiles, chart, allocation, table and asset sheet; demo portfolio |
 
 ### Web routes
 
@@ -246,6 +247,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | `/` | — | Redirects to `/visao-geral` |
 | `/visao-geral` | Visão geral (US-09) | The landing page. State lives in the URL: `mes` and `modo` (`proj`). Defaults (the current month, `real`) are left out of the URL. |
 | `/lancamentos` | Lançamentos (US-03 to US-07) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
+| `/patrimonio` | Patrimônio (US-10) | Grouping and "Modo tranquilo" are local state, and calm mode starts on at each visit. |
 | `/resumo` | Resumo mensal (US-08) | State lives in the URL: `ano` and `modo` (`proj`). Defaults (the current year, `real`) are left out of the URL. |
 | `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
 | any other path | — | Redirects to `/visao-geral`; every route except `/entrar` requires a session |
@@ -276,6 +278,10 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
 | `GET /api/summary?year=YYYY&mode=real\|proj` | `GetYearSummary` | `{ year, mode, months[12], totals }` in cents; `mode` defaults to `real`. "Atual" and the default year come from the client. |
 | `GET /api/dashboard?month=YYYY-MM&mode=real\|proj` | `GetDashboard` | `{ month, mode, partnerName, kpis, series[12], categories, open, settlement }` in cents; `mode` defaults to `real`. `open` and `settlement` ignore the mode. Relative due labels come from the client, from `relativeDue` and its own "today". |
+| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. |
+| `POST /api/assets` | `CreateAsset` | 201 `{ asset }`; body is `AssetInput` (amounts in cents, `quantityE8` scaled by 1e8, `today`). 400 with the design's messages. |
+| `PUT /api/assets/:id` | `UpdateAsset` | Full replace; may switch the pricing mode, which drops the old mode's fields |
+| `DELETE /api/assets/:id` | `DeleteAsset` | 204 |
 
 ### Database (SQLite, `apps/api/src/infrastructure/db/migrations.ts`)
 
@@ -288,6 +294,9 @@ Migrations are append-only and tracked in `schema_migrations`.
   - `categories(id, name, type receita|despesa, color, UNIQUE(type, name NOCASE))`, seeded with the 12 default categories from the design
   - `transactions(id, date YYYY-MM-DD, description, note, type, category_id, value_cents > 0, split, confirmed, recurring, series_id, created_at, updated_at)`
   - `settings(id = 1, partner_name, partner_share 0–100)`, seeded with `('Companheira', 50)`
+- `003_wealth`:
+  - `assets(id, institution, name, asset_class, pricing auto|manual, quantity_e8, avg_price_cents, price_cents, invested_cents, current_cents, day_change_bps, quote_checked_at, updated_at, created_at)`; a CHECK requires quantity and price for `auto` and the current value for `manual`
+  - `snapshots(month PK, total_cents, contributions_cents, created_at)`
 
 ### Domain (`packages/domain`)
 
@@ -306,15 +315,20 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `dashboard/dashboard.ts`: `buildDashboard`, `niceAxis`, `settlementCard`
 - `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
 - `settings/`: `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
+- `wealth/asset.ts`: the `Asset` and `Snapshot` types, `ASSET_CLASSES`, `assetValue`, `assetCost`, `valueAssets`, `institutionsOf`
+- `wealth/quantity.ts`: `QUANTITY_SCALE`, `parseQuantity`, `formatQuantity`, `toQuantityInput`
+- `wealth/asset-input.ts`: the sheet draft, `ASSET_MESSAGES`, `validateAssetFields`, `draftToAssetInput`, `assetInputSchema`, `toAsset`
+- `wealth/closing.ts`: `openMonth`
+- `wealth/kpis.ts`, `wealth/evolution.ts`, `wealth/allocation.ts`, `wealth/wealth.ts`: `wealthKpis`, `evolutionSeries`, `groupAssets`, `allocationSegments`, `buildWealth`
 - `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
 
 ### Tests (all green on `main` and in CI)
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 164 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 119 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 147 | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 231 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 144 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 167 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 4 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
@@ -380,13 +394,17 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - While another month loads, the cards keep the last data and name that data's month. The heading already shows the new month.
 - `SummaryTiles` gained `hint` and `delta`; tiles with a hint use the design's ink label and 28px value.
 
-## Phase 1 placeholders to restore later
+### Decisions taken in Phase 6
 
-These parts of the design were hidden on purpose in Phase 1. Each one comes back with the phase that builds its target.
-
-| Hidden element | Where | Restore in |
-|---|---|---|
-| Nav item "Patrimônio" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | Phase 6 |
+- Quantities are integers scaled by 1e8 (`quantity_e8`), so `0,0038961` needs no float math. In a quantity with no comma, a dot is the decimal separator (`4.89`), because many decimals are common and thousands are not.
+- Amounts stay in integer cents, so a quote below R$ 0,01 cannot be represented. Nothing in the prototype's classes needs one today.
+- The app can start with no closings, which the prototype cannot. The open month is then the previous calendar month. Tiles show "—" with "Primeiro fechamento", the labels drop the month ("Desde o fechamento", "Último fechamento"), the hint reads "Nenhum fechamento registrado", and the chart shows only the open month. None of this copy is in the design.
+- An empty portfolio reads "Nenhum ativo na carteira.", which is not in the design either.
+- "Modo tranquilo" is not saved, as in the prototype: it starts on at each visit.
+- Row buttons and the grouping control are 44px, not the prototype's 40px and 36px, because of the touch-target rule. The actions column grew from 84px to 92px to fit.
+- Grouping and the "Hoje" column are computed on the client from the asset list, like the month view's filters.
+- Institution colors follow the order assets were added, so removing an institution's first asset can recolor the others, as in the prototype.
+- `seed:demo` checks the ledger and the portfolio separately, so a dev database from before this phase can still get its demo portfolio.
 
 ## Roadmap
 
@@ -456,23 +474,14 @@ Follow-ups found during Phase 1.5:
 
 ### Phase 6 — Patrimônio and Fechamento (US-10)
 
-- [ ] Migration `003_wealth`: `assets` and `snapshots` tables.
-- [ ] Domain: asset value and cost, KPIs, allocation by class and institution, closing availability (from the 25th), closing math.
-- [ ] API: asset CRUD, `GET /api/wealth`, `POST /api/wealth/closings`.
-- [ ] Web `/patrimonio`:
-  - header with "Modo tranquilo"
-  - banners
-  - KPI tiles
-  - evolution chart
-  - allocation bar
-  - assets table
-  - asset sheet
-  - closing dialog
-- [ ] Automatic quotes for `pricing: 'auto'` assets need a price source. This is an open decision: pick a provider that needs no third-party account, or keep quotes manual.
-
-## Open questions
-
-- Price source for automatic asset quotes (Phase 6).
+- [x] Migration `003_wealth`: `assets` and `snapshots` tables.
+- [x] Domain: asset value and cost, KPIs, allocation by class and institution.
+- [ ] Domain: closing availability (from the 25th), closing math.
+- [x] API: asset CRUD, `GET /api/wealth`.
+- [ ] API: `POST /api/wealth/closings`.
+- [x] Web `/patrimonio`: header with "Modo tranquilo", KPI tiles, evolution chart, allocation bar, assets table, asset sheet.
+- [ ] Web `/patrimonio`: banners, closing dialog.
+- [ ] Automatic quotes for `pricing: 'auto'` assets through brapi, with an optional `BRAPI_TOKEN` (decided 2026-11-03). A free token covers the `etf` and `fii` classes; crypto and currency need a paid plan, so those keep a typed price.
 
 ---
 
@@ -734,7 +743,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 
 ## Backlog — not started
 
-### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — ⏳ Phase 6
+### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — 🚧 Phase 6
 - Assets: `{ institution, name, assetClass, pricing: 'auto'|'manual', quantity, avgPrice, price, invested, current, dayChange, updatedAt }`.
   - Classes:
 
