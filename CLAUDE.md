@@ -205,7 +205,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25) and the closing's quote copy (PR #26). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26) and the MIT license (PR #27). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -224,14 +224,13 @@ _Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` f
 
 Nothing is in progress and no PR is open. No phase is planned. What is left is optional:
 
-1. **Add a license (owner's decision).** The repository is public, and the login page says "Código aberto", but there is no `LICENSE` file, so nobody else has the right to reuse the code yet.
-2. **Small cleanups left from the review of PR #25**, none of them a bug:
+1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
    - `dayAndMonth` could be shared with the closing's date label
    - `Date.now()` is read during render on Patrimônio and in the closing dialog
    - one web test uses a made-up fixture value
    - requests that join a refresh already running wait for it even when it started before their own read
-3. **Keep typed values when leaving the closing to edit an asset.** The dialog restarts from stored values on each open, so following its advice loses what was typed. Editing the price inside the dialog would solve both.
+2. **Keep typed values when leaving the closing to edit an asset.** The dialog restarts from stored values on each open, so following its advice loses what was typed. Editing the price inside the dialog would solve both.
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -258,6 +257,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#23](https://github.com/matheus-ferreira1/livro-caixa/pull/23) | `fix/parse-money-thousands` | `parseMoney` reads a dot before three digits as a thousands separator |
 | [#25](https://github.com/matheus-ferreira1/livro-caixa/pull/25) | `feat/quote-status` | Migration `004_quote_status`; `quoteStatus` and `elapsedLabel`; the brapi quote time; "Atualizada há…" and "Cotação indisponível" on the assets table |
 | [#26](https://github.com/matheus-ferreira1/livro-caixa/pull/26) | `fix/closing-quote-copy` | The closing's copy and rows use the quote status; the sheet points cripto and câmbio to manual; quotes are requested one at a time |
+| [#27](https://github.com/matheus-ferreira1/livro-caixa/pull/27) | `chore/add-license` | MIT license, which makes the login page's "Código aberto" true |
 
 ### Web routes
 
