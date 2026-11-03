@@ -15,7 +15,13 @@ export const ASSET_CLASSES = [
 
 export type AssetClass = (typeof ASSET_CLASSES)[number]['key'];
 
+export const assetClassLabel = (key: AssetClass): string =>
+  ASSET_CLASSES.find((c) => c.key === key)?.label ?? key;
+
 export const ASSET_CLASS_KEYS = ASSET_CLASSES.map((c) => c.key) as [AssetClass, ...AssetClass[]];
+
+/** The scale of a quote's daily change: 100 basis points are 1%. */
+export const BASIS_POINTS = 10_000;
 
 export const PRICING_MODES = ['auto', 'manual'] as const;
 export type PricingMode = (typeof PRICING_MODES)[number];
