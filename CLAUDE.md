@@ -412,6 +412,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The 409 message "Esse fechamento não está mais em aberto ou a carteira mudou. Atualize a página e revise de novo." is not in the design; it was written for this case.
 - Buying more of an automatic asset by editing it raises the total but is not a contribution, so it counts as rendimento in the next closing, as in the prototype. Only manual assets have an "Aporte / resgate" field.
 - A skipped month closes in sequence, with today's values, as in the prototype.
+- A withdrawal larger than the invested amount stops it at zero, where the prototype lets it go negative. What is left is all gain, and a negative cost would break the row's result and the sheet's validation. The full flow still counts in the closing's Aportes.
 - The "Aporte / resgate" input is plain text with no decimal keypad hint, because phone decimal keypads often have no minus key.
 - `seed:demo` checks the ledger and the portfolio separately, so a dev database from before this phase can still get its demo portfolio.
 

@@ -118,7 +118,8 @@ export function closingRequestFrom(
 
 /**
  * The snapshot and the manual assets as they stand after the closing. A contribution raises
- * the invested amount, so it is not counted as yield. Call it with validated items.
+ * the invested amount, so it is not counted as yield. A withdrawal past the invested amount
+ * stops at zero, since what is left is all gain. Call it with validated items.
  */
 export function applyClosing(
   assets: Asset[],
@@ -131,7 +132,7 @@ export function applyClosing(
     return {
       ...asset,
       currentCents: item.currentCents,
-      investedCents: asset.investedCents === null ? null : asset.investedCents + item.flowCents,
+      investedCents: asset.investedCents === null ? null : Math.max(0, asset.investedCents + item.flowCents),
       updatedAt: today,
     };
   });

@@ -12,7 +12,7 @@ import { isUnauthorized } from '@/shared/api/query-client';
 import { cn } from '@/shared/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { useRegisterClosing } from '../api';
-import { closingView, type ClosingRowView } from '../closing-view-model';
+import { closingSubtitle, closingView, type ClosingRowView } from '../closing-view-model';
 
 const ROW_GRID = 'grid grid-cols-[minmax(180px,1fr)_130px_150px_150px] items-center gap-3 px-4';
 const AMOUNT_INPUT =
@@ -31,12 +31,13 @@ interface ClosingDialogProps {
 }
 
 export function ClosingDialog({ wealth, today, open, onClose }: ClosingDialogProps) {
-  const last = wealth.kpis.lastClosing;
-  const { subtitle } = closingView(wealth.assets, {}, wealth.openMonth, last);
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-[1000px] overflow-hidden bg-card">
-        <DialogTitleBar title={`Fechamento de ${monthLabel(wealth.openMonth)}`} description={subtitle} />
+        <DialogTitleBar
+          title={`Fechamento de ${monthLabel(wealth.openMonth)}`}
+          description={closingSubtitle(wealth.kpis.lastClosing)}
+        />
         {/* Remount on every open so the review starts from the stored values again. */}
         {open && <ClosingForm wealth={wealth} today={today} onClose={onClose} />}
       </DialogContent>
@@ -187,18 +188,19 @@ function ManualRow({
       <input
         type="text"
         aria-label={row.flowLabel}
+        aria-invalid={!row.flowValid}
         value={row.flowInput}
         onChange={(e) => onChange({ flow: e.target.value })}
-        className={cn(AMOUNT_INPUT, 'border-input')}
+        className={cn(AMOUNT_INPUT, row.flowValid ? 'border-input' : 'border-expense')}
       />
       <input
         type="text"
         inputMode="decimal"
         aria-label={row.valueLabel}
-        aria-invalid={!row.valid}
+        aria-invalid={!row.valueValid}
         value={row.valueInput}
         onChange={(e) => onChange({ value: e.target.value })}
-        className={cn(AMOUNT_INPUT, row.valid ? 'border-input' : 'border-expense')}
+        className={cn(AMOUNT_INPUT, row.valueValid ? 'border-input' : 'border-expense')}
       />
     </div>
   );
