@@ -9,8 +9,12 @@ async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/visao-geral/);
 }
 
-// Only the first closing does not depend on today's date, and no other spec touches the portfolio.
+// Mid-month, so the next closing is not open yet: from the 25th it would open right after the first.
+const MID_MONTH = new Date('2026-06-15T12:00:00');
+
+// No other spec touches the portfolio.
 test('adds an asset, registers the first closing and removes the asset', async ({ page }) => {
+  await page.clock.setFixedTime(MID_MONTH);
   await signIn(page);
   await page.getByRole('link', { name: 'Patrimônio' }).click();
   await expect(page.getByText('0 ativos em 0 instituições')).toBeVisible();
