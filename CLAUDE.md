@@ -231,6 +231,7 @@ Nothing is in progress and no PR is open. No phase is planned. What is left is o
    - `Date.now()` is read during render on Patrimônio and in the closing dialog
    - one web test uses a made-up fixture value
    - requests that join a refresh already running wait for it even when it started before their own read
+3. **Keep typed values when leaving the closing to edit an asset.** The dialog restarts from stored values on each open, so following its advice loses what was typed. Editing the price inside the dialog would solve both.
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -350,7 +351,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 297 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 208 | `bun run --filter '@livro-caixa/api' test` |
+| API integration | 209 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
@@ -458,10 +459,10 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 ### Decisions taken for the closing's quote copy (PR #26)
 
 - **Quotes come only from brapi's free plan (decided 2026-11-03).** No paid plan and no second provider. What it does not cover, `cripto` and `cambio` included, is kept by hand.
-- The design's "As cotações automáticas já estão em dia" and "Já atualizadas, nada a fazer" show only when every automatic asset has a current quote. Otherwise the banner reads "{n} ativos sem cotação usam o último preço salvo." and the dialog adds "Para corrigir, edite o ativo antes de fechar.". This copy is not in the design. A missing quote warns and never blocks the closing, so a provider outage cannot stop one.
+- The design's "As cotações automáticas já estão em dia" and "Já atualizadas, nada a fazer" show only when every automatic asset has a current quote. Otherwise the banner reads "{n} ativos sem cotação usam o último preço salvo." and the dialog adds "Para atualizar o preço, edite o ativo antes de fechar.". The status stays after that edit, because the price is still typed. This copy is not in the design. A missing quote warns and never blocks the closing, so a provider outage cannot stop one.
 - Each row of "2. Cotações automáticas" shows the same tag as the assets table.
 - The sheet's hints differ from the design because its promise was false: "Cotação automática" reads "FIIs e ETFs", and "Manual, no fechamento" adds "cripto e câmbio", since the closing asks for a manual asset's value each month. An automatic asset in a class with no quote is still allowed, and its price field reads "Esta classe não tem cotação automática. Mantenha o preço atualizado aqui ou use o modo manual.".
-- Quotes are requested one at a time, because brapi's free plan allows one simultaneous request. A real token took about 1.3 s for 6 lookups, so the 3 s limit covers around 14 assets per read. The lookup running when time runs out counts as failed, so a hung provider costs one page load per asset and not one per read forever; assets not reached stay due and are not marked.
+- Quotes are requested one at a time, because brapi's free plan allows one simultaneous request. A real token took about 1.3 s for 6 lookups, so the 3 s limit covers around 14 assets per read. Assets not reached stay due and are not marked, and so does a lookup cut short after an earlier one used the time, or a large portfolio would flag a healthy ticker on every round. The first lookup of a round had all 3 s, so it counts as failed; a hung provider costs one slow page load per asset and not one per read forever.
 
 ## Roadmap
 

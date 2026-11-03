@@ -338,7 +338,7 @@ describe('WealthPage', () => {
       expect(within(dialog).queryByText(/Já atualizadas/)).toBeNull();
       expect(
         within(dialog).getByText(
-          /1 ativo sem cotação usa o último preço salvo\. Para corrigir, edite o ativo antes de fechar\. Compras e vendas/,
+          /1 ativo sem cotação usa o último preço salvo\. Para atualizar o preço, edite o ativo antes de fechar\. Compras e vendas/,
         ),
       ).toBeTruthy();
       expect(within(dialog).getByText('Cotação indisponível')).toBeTruthy();

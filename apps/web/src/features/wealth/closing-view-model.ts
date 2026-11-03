@@ -67,7 +67,7 @@ function closingAutoNote(assets: Asset[]): string {
   const missing = unavailableQuoteCount(assets);
   return missing === 0
     ? `Já atualizadas, nada a fazer. ${AUTO_TRADES}`
-    : `${missingQuotes(missing)} Para corrigir, edite o ativo antes de fechar. ${AUTO_TRADES}`;
+    : `${missingQuotes(missing)} Para atualizar o preço, edite o ativo antes de fechar. ${AUTO_TRADES}`;
 }
 
 function closingBannerDetail(assets: Asset[]): string {
