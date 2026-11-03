@@ -60,6 +60,7 @@
   --disabled-text: #b5bbb6;
   --neutral-swatch: #9aa29d;
   --chart-income: #1a6e4e;
+  --chart-open-month: #8cc3a8;
   --chart-expense: #e8894a;
   --chart-income-on-dark: #5fbf94;
   --tooltip-divider: #3a4640;
@@ -120,6 +121,7 @@
   --color-disabled-text: var(--disabled-text);
   --color-neutral-swatch: var(--neutral-swatch);
   --color-chart-income: var(--chart-income);
+  --color-chart-open-month: var(--chart-open-month);
   --color-chart-expense: var(--chart-expense);
   --color-chart-income-on-dark: var(--chart-income-on-dark);
   --color-tooltip-divider: var(--tooltip-divider);

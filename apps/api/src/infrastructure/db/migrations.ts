@@ -72,4 +72,37 @@ export const MIGRATIONS: Migration[] = [
         ('c-lazer', 'Lazer', 'despesa', '#6250D6');
     `,
   },
+  {
+    id: '003_wealth',
+    sql: `
+      CREATE TABLE assets (
+        id TEXT PRIMARY KEY,
+        institution TEXT NOT NULL,
+        name TEXT NOT NULL,
+        asset_class TEXT NOT NULL CHECK (
+          asset_class IN ('reserva', 'tesouro', 'garantia', 'etf', 'fii', 'cripto', 'cambio', 'conta')
+        ),
+        pricing TEXT NOT NULL CHECK (pricing IN ('auto', 'manual')),
+        quantity_e8 INTEGER,
+        avg_price_cents INTEGER,
+        price_cents INTEGER,
+        invested_cents INTEGER,
+        current_cents INTEGER,
+        day_change_bps INTEGER,
+        quote_checked_at INTEGER,
+        updated_at TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+        CHECK (
+          (pricing = 'auto' AND quantity_e8 IS NOT NULL AND price_cents IS NOT NULL)
+          OR (pricing = 'manual' AND current_cents IS NOT NULL)
+        )
+      );
+      CREATE TABLE snapshots (
+        month TEXT PRIMARY KEY,
+        total_cents INTEGER NOT NULL,
+        contributions_cents INTEGER NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+      );
+    `,
+  },
 ];
