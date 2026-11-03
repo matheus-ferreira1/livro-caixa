@@ -13,6 +13,7 @@ import { cn } from '@/shared/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { useRegisterClosing } from '../api';
 import { closingSubtitle, closingView, type ClosingRowView } from '../closing-view-model';
+import { PricingTag } from './PricingTag';
 
 const ROW_GRID = 'grid grid-cols-[minmax(180px,1fr)_130px_150px_150px] items-center gap-3 px-4';
 const AMOUNT_INPUT =
@@ -50,7 +51,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
   const [error, setError] = useState('');
   const register = useRegisterClosing();
   const month = wealth.openMonth;
-  const view = closingView(wealth.assets, edits, month, wealth.kpis.lastClosing);
+  const view = closingView(wealth.assets, edits, month, wealth.kpis.lastClosing, Date.now());
 
   const edit = (id: string, patch: ClosingEdits[string]) => {
     setEdits((previous) => ({ ...previous, [id]: { ...previous[id], ...patch } }));
@@ -113,10 +114,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-col gap-0.5">
               <h3 className="m-0 text-base font-bold">2. Cotações automáticas</h3>
-              <span className="text-sm text-muted-foreground">
-                Já atualizadas, nada a fazer. Compras e vendas são registradas editando o ativo (quantidade e
-                preço médio).
-              </span>
+              <span className="text-sm text-muted-foreground">{view.autoNote}</span>
             </div>
             <div className="overflow-hidden rounded-xl border">
               {view.autoRows.map((row) => (
@@ -127,6 +125,10 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
                   <span className="flex min-w-0 flex-col">
                     <span className="font-semibold">{row.name}</span>
                     <span className="text-[13px] text-muted-foreground">{row.subtitle}</span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
+                      <PricingTag tag={row.pricingTag} />
+                      {row.priceNote && <span>{row.priceNote}</span>}
+                    </span>
                   </span>
                   <span className="font-mono text-sm font-semibold">{row.value}</span>
                 </div>

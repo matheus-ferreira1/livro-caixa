@@ -43,6 +43,9 @@ const auto = (overrides: Partial<Extract<Asset, { pricing: 'auto' }>> = {}): Ass
 
 const UNAVAILABLE_NOTICE = 'Sem cotação, o ativo usa o último preço salvo. Para atualizar, edite o ativo.';
 
+const UNQUOTED_CLASS_HINT =
+  'Esta classe não tem cotação automática. Mantenha o preço atualizado aqui ou use o modo manual.';
+
 const SNAPSHOTS: Snapshot[] = [
   { month: '2026-08', totalCents: 140_000, contributionsCents: 500 },
   { month: '2026-09', totalCents: 150_000, contributionsCents: 1000 },
@@ -197,6 +200,24 @@ describe('WealthPage', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  test('points cripto and câmbio to the manual mode and warns when they are left automatic', async () => {
+    const { user } = setup();
+    await screen.findAllByText('Nenhum ativo na carteira.');
+    await user.click(screen.getAllByRole('button', { name: 'Novo ativo' })[0] as HTMLElement);
+    const sheet = await screen.findByRole('dialog', { name: 'Novo ativo' });
+
+    expect(within(sheet).getByRole('button', { name: /Cotação automática.*FIIs e ETFs/ })).toBeTruthy();
+    expect(
+      within(sheet).getByRole('button', { name: /Manual, no fechamento.*cripto e câmbio/ }),
+    ).toBeTruthy();
+
+    await user.click(within(sheet).getByRole('button', { name: /Cotação automática/ }));
+    await user.click(within(sheet).getByRole('button', { name: 'Fundos imobiliários' }));
+    expect(within(sheet).queryByText(UNQUOTED_CLASS_HINT)).toBeNull();
+    await user.click(within(sheet).getByRole('button', { name: 'Cripto' }));
+    expect(within(sheet).getByText(UNQUOTED_CLASS_HINT)).toBeTruthy();
+  });
+
   test('switches the fields with the pricing mode and validates them', async () => {
     const { user, writes } = setup();
     await screen.findAllByText('Nenhum ativo na carteira.');
@@ -276,6 +297,52 @@ describe('WealthPage', () => {
         within(banner).getByText(`O fechamento de ${monthLabel(previousMonth)} está disponível.`),
       ).toBeTruthy();
       expect(within(banner).getByRole('button', { name: 'Fazer fechamento' })).toBeTruthy();
+    });
+
+    test('says the quotes are current only when they all are', async () => {
+      setup({ assets: [auto({ quotedAt: Date.now() - 60_000 })], snapshots: overdue });
+      const banner = await screen.findByRole('status');
+      expect(within(banner).getByText(/As cotações automáticas já estão em dia\./)).toBeTruthy();
+    });
+
+    test('warns about the quotes that are missing instead', async () => {
+      setup({ assets: [auto(), auto({ id: 'a-hglg', name: 'HGLG11' })], snapshots: overdue });
+      const banner = await screen.findByRole('status');
+      expect(within(banner).getByText(/2 ativos sem cotação usam o último preço salvo\./)).toBeTruthy();
+      expect(within(banner).queryByText(/já estão em dia/)).toBeNull();
+    });
+
+    test('uses the singular for one missing quote', async () => {
+      setup({ assets: [auto()], snapshots: overdue });
+      const banner = await screen.findByRole('status');
+      expect(within(banner).getByText(/1 ativo sem cotação usa o último preço salvo\./)).toBeTruthy();
+    });
+
+    const openClosing = async (user: ReturnType<typeof setup>['user']) => {
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
+      );
+      return screen.findByRole('dialog', { name: `Fechamento de ${monthLabel(previousMonth)}` });
+    };
+
+    test('shows each quote status in the dialog, with nothing to do when all are current', async () => {
+      const { user } = setup({ assets: [auto({ quotedAt: Date.now() - 60_000 })], snapshots: overdue });
+      const dialog = await openClosing(user);
+      expect(within(dialog).getByText(/Já atualizadas, nada a fazer\./)).toBeTruthy();
+      expect(within(dialog).getByText('Atualizada há 1 min')).toBeTruthy();
+    });
+
+    test('tells what to do in the dialog when a quote is missing', async () => {
+      const { user } = setup({ assets: [auto()], snapshots: overdue });
+      const dialog = await openClosing(user);
+      expect(within(dialog).queryByText(/Já atualizadas/)).toBeNull();
+      expect(
+        within(dialog).getByText(
+          /1 ativo sem cotação usa o último preço salvo\. Para corrigir, edite o ativo antes de fechar\. Compras e vendas/,
+        ),
+      ).toBeTruthy();
+      expect(within(dialog).getByText('Cotação indisponível')).toBeTruthy();
+      expect(within(dialog).getByText('em 28/10')).toBeTruthy();
     });
 
     test('says when the next closing opens and disables the button', async () => {

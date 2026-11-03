@@ -13,8 +13,10 @@ import {
   monthLabel,
   monthName,
   quoteStatus,
+  unavailableQuoteCount,
   assetClassLabel,
   BASIS_POINTS,
+  type Asset,
   type AssetGroup,
   type Cents,
   type EvolutionPoint,
@@ -239,7 +241,7 @@ function dayAndMonth(date: IsoDate): string {
   return `${dd}/${mm}`;
 }
 
-function pricingOf(asset: ValuedAsset, now: number): Pick<AssetRow, 'pricingTag' | 'priceNote'> {
+export function pricingOf(asset: Asset, now: number): Pick<AssetRow, 'pricingTag' | 'priceNote'> {
   if (asset.pricing !== 'auto') {
     return {
       pricingTag: { kind: 'manual', label: `Manual · ${dayAndMonth(asset.updatedAt)}` },
@@ -331,9 +333,7 @@ export function wealthViewModel(
     chart: chartOf(wealth.evolution),
     allocation: allocationOf(groups),
     groups: groups.map((group) => groupOf(group, grouping, now)),
-    hasUnavailableQuote: wealth.assets.some(
-      (asset) => asset.pricing === 'auto' && quoteStatus(asset).kind === 'unavailable',
-    ),
+    hasUnavailableQuote: unavailableQuoteCount(wealth.assets) > 0,
     institutions,
   };
 }

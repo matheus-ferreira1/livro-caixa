@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { anAutoAsset } from '../test/builders';
-import { quoteStatus } from './quote-status';
+import { aManualAsset, anAutoAsset } from '../test/builders';
+import { quoteStatus, unavailableQuoteCount } from './quote-status';
 
 const QUOTED_AT = 1_790_000_000_000;
 
@@ -24,5 +24,20 @@ describe('quoteStatus', () => {
       kind: 'unavailable',
       quotedAt: QUOTED_AT,
     });
+  });
+});
+
+describe('unavailableQuoteCount', () => {
+  test('counts the automatic assets with no current quote', () => {
+    const assets = [
+      anAutoAsset({ quotedAt: QUOTED_AT }),
+      anAutoAsset({ quotedAt: QUOTED_AT, quoteFailed: true }),
+      anAutoAsset({ quotedAt: null }),
+    ];
+    expect(unavailableQuoteCount(assets)).toBe(2);
+  });
+
+  test('ignores manual assets', () => {
+    expect(unavailableQuoteCount([aManualAsset()])).toBe(0);
   });
 });

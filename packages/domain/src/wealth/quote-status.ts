@@ -1,4 +1,4 @@
-import type { AutoAsset } from './asset';
+import type { Asset, AutoAsset } from './asset';
 
 export type QuoteStatus =
   | { kind: 'updated'; quotedAt: number }
@@ -11,4 +11,9 @@ export function quoteStatus({
 }: Pick<AutoAsset, 'quotedAt' | 'quoteFailed'>): QuoteStatus {
   if (quotedAt === null || quoteFailed) return { kind: 'unavailable', quotedAt };
   return { kind: 'updated', quotedAt };
+}
+
+export function unavailableQuoteCount(assets: readonly Asset[]): number {
+  return assets.filter((asset) => asset.pricing === 'auto' && quoteStatus(asset).kind === 'unavailable')
+    .length;
 }
