@@ -16,7 +16,8 @@ test('signs in, manages an entry through its lifecycle, settles it and signs out
 
   await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/lancamentos/);
+  await expect(page).toHaveURL(/\/visao-geral/);
+  await page.getByRole('link', { name: 'Lançamentos' }).click();
   await expect(page.getByText('Ainda não há lançamentos neste mês.')).toBeVisible();
 
   // Create a split, still pending expense in the current month.

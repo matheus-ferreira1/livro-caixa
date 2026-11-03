@@ -20,6 +20,7 @@ import {
 import { ChevronLeft, ChevronRight, Plus, Repeat, Users } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { pluralize } from '@/shared/lib/utils';
+import { ArrowButton } from '@/shared/ArrowButton';
 import { Segmented } from '@/shared/Segmented';
 import { SummaryTiles, type TileSpec } from '@/shared/SummaryTiles';
 import { RecurringBanner } from '@/features/recurring/RecurringBanner';
@@ -148,15 +149,18 @@ export function TransactionsPage() {
             </h1>
           ) : (
             <div className="flex items-center gap-2">
-              <MonthArrow label="Mês anterior" onClick={() => update({ month: shiftMonth(state.month, -1) })}>
+              <ArrowButton
+                label="Mês anterior"
+                onClick={() => update({ month: shiftMonth(state.month, -1) })}
+              >
                 <ChevronLeft className="size-[18px]" aria-hidden="true" />
-              </MonthArrow>
+              </ArrowButton>
               <h1 className="m-0 min-w-0 text-center text-[clamp(24px,7vw,32px)] font-bold whitespace-nowrap sm:min-w-[248px] tracking-[-0.02em]">
                 {monthLabel(state.month)}
               </h1>
-              <MonthArrow label="Próximo mês" onClick={() => update({ month: shiftMonth(state.month, 1) })}>
+              <ArrowButton label="Próximo mês" onClick={() => update({ month: shiftMonth(state.month, 1) })}>
                 <ChevronRight className="size-[18px]" aria-hidden="true" />
-              </MonthArrow>
+              </ArrowButton>
             </div>
           )}
         </div>
@@ -363,27 +367,6 @@ function NewEntryButton({ onClick, withIcon = true }: { onClick: () => void; wit
     >
       {withIcon && <Plus className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />}
       Novo lançamento
-    </button>
-  );
-}
-
-function MonthArrow({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="flex size-11 items-center justify-center rounded-[10px] border bg-card text-ink hover:bg-accent"
-    >
-      {children}
     </button>
   );
 }

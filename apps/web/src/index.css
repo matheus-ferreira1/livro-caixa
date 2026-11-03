@@ -59,6 +59,11 @@
   --negative-on-dark: #f2a27e;
   --disabled-text: #b5bbb6;
   --neutral-swatch: #9aa29d;
+  --chart-income: #1a6e4e;
+  --chart-expense: #e8894a;
+  --chart-income-on-dark: #5fbf94;
+  --tooltip-divider: #3a4640;
+  --hover-track: #f1f2ee;
 }
 
 @theme inline {
@@ -114,6 +119,11 @@
   --color-negative-on-dark: var(--negative-on-dark);
   --color-disabled-text: var(--disabled-text);
   --color-neutral-swatch: var(--neutral-swatch);
+  --color-chart-income: var(--chart-income);
+  --color-chart-expense: var(--chart-expense);
+  --color-chart-income-on-dark: var(--chart-income-on-dark);
+  --color-tooltip-divider: var(--tooltip-divider);
+  --color-hover-track: var(--hover-track);
 }
 
 @layer base {

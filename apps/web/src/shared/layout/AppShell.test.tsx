@@ -1,4 +1,4 @@
-import { yearSummary } from '@livro-caixa/domain';
+import { buildDashboard, yearSummary } from '@livro-caixa/domain';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { routes } from '@/routes';
@@ -14,13 +14,26 @@ describe('AppShell', () => {
   });
 
   test('shows the header with the active section and the account menu', async () => {
-    mockApi((url) =>
-      url === '/api/auth/me' ? { status: 200, body: { user: USER } } : { status: 200, body: {} },
-    );
+    mockApi((url) => {
+      if (url === '/api/auth/me') return { status: 200, body: { user: USER } };
+      if (url.startsWith('/api/dashboard')) {
+        return {
+          status: 200,
+          body: buildDashboard({
+            transactions: [],
+            categories: [],
+            settings: { partnerName: '', partnerShare: 50 },
+            month: '2026-03',
+            mode: 'real',
+          }),
+        };
+      }
+      return { status: 200, body: {} };
+    });
     renderRoutes(routes, '/');
-    // "/" redirects to Lançamentos after the first render.
+    // "/" redirects to Visão geral after the first render.
     await waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Lançamentos' })).toHaveAttribute('aria-current', 'page'),
+      expect(screen.getByRole('link', { name: 'Visão geral' })).toHaveAttribute('aria-current', 'page'),
     );
     expect(screen.getByRole('button', { name: 'Conta de Maria Silva' })).toHaveTextContent('MS');
   });
@@ -43,7 +56,7 @@ describe('AppShell', () => {
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
   });
 
-  test('Resumo mensal sits between Lançamentos and Configurações and is active on its page', async () => {
+  test('Resumo mensal follows Lançamentos and is active on its page', async () => {
     mockApi((url) => {
       if (url === '/api/auth/me') return { status: 200, body: { user: USER } };
       return { status: 200, body: yearSummary([], 2026, 'real', 50) };
@@ -56,7 +69,7 @@ describe('AppShell', () => {
       within(nav)
         .getAllByRole('link')
         .map((item) => item.textContent),
-    ).toEqual(['Lançamentos', 'Resumo mensal', 'Configurações']);
+    ).toEqual(['Visão geral', 'Lançamentos', 'Resumo mensal', 'Configurações']);
   });
 
   test('opens Configurações from the nav and from the account menu', async () => {

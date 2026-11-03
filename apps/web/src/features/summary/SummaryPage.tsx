@@ -1,6 +1,6 @@
 import { monthOf, todayIso, type SummaryMode } from '@livro-caixa/domain';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { ArrowButton } from '@/shared/ArrowButton';
 import { Segmented } from '@/shared/Segmented';
 import { SummaryTiles } from '@/shared/SummaryTiles';
 import { useYearSummary } from './api';
@@ -32,15 +32,15 @@ export function SummaryPage() {
             Resumo mensal
           </span>
           <div className="flex items-center gap-2">
-            <YearArrow label="Ano anterior" onClick={() => update({ year: year - 1 })}>
+            <ArrowButton label="Ano anterior" onClick={() => update({ year: year - 1 })}>
               <ChevronLeft className="size-[18px]" aria-hidden="true" />
-            </YearArrow>
+            </ArrowButton>
             <h1 className="m-0 min-w-[120px] text-center font-mono text-[32px] font-bold tracking-[-0.02em]">
               {year}
             </h1>
-            <YearArrow label="Próximo ano" onClick={() => update({ year: year + 1 })}>
+            <ArrowButton label="Próximo ano" onClick={() => update({ year: year + 1 })}>
               <ChevronRight className="size-[18px]" aria-hidden="true" />
-            </YearArrow>
+            </ArrowButton>
           </div>
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
@@ -67,26 +67,5 @@ export function SummaryPage() {
         </>
       )}
     </div>
-  );
-}
-
-function YearArrow({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="flex size-11 items-center justify-center rounded-[10px] border bg-card text-ink hover:bg-accent"
-    >
-      {children}
-    </button>
   );
 }

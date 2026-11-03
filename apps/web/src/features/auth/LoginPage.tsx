@@ -12,7 +12,7 @@ import { AlertBanner, InfoBox, NoticeBanner } from '@/shared/ui-kit';
 import { useCurrentUser, useLogin } from './api';
 import { BrandPanel } from './BrandPanel';
 
-const HOME_PATH = '/lancamentos';
+const HOME_PATH = '/visao-geral';
 
 interface LocationState {
   notice?: string;

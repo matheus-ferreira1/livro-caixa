@@ -94,7 +94,7 @@ function withRunningTotal(months: (MonthSummary & { month: MonthKey })[]): YearS
 }
 
 // Adding zero turns the -0 that Math.round gives small negatives into 0, which formats without a sign.
-const averageOf = (totalCents: Cents, count: number): Cents =>
+export const averageOf = (totalCents: Cents, count: number): Cents =>
   count === 0 ? 0 : Math.round(totalCents / count) + 0;
 
 function totalsOfYear(months: YearSummaryMonth[]): YearSummaryTotals {

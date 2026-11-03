@@ -6,6 +6,7 @@ import { UserMenu } from './UserMenu';
 
 /** Sections join this list, in the design's order, as they are built. */
 const NAV_ITEMS = [
+  { to: '/visao-geral', label: 'Visão geral' },
   { to: '/lancamentos', label: 'Lançamentos' },
   { to: '/resumo', label: 'Resumo mensal' },
   { to: '/configuracoes', label: 'Configurações' },

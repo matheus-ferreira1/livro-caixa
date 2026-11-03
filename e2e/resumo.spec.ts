@@ -6,7 +6,7 @@ async function signIn(page: Page) {
   await page.getByLabel('E-mail').fill(E2E_ADMIN.email);
   await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/lancamentos/);
+  await expect(page).toHaveURL(/\/visao-geral/);
 }
 
 // A year far from today, so this spec never shares data with the others.

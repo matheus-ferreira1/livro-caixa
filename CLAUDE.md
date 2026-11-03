@@ -175,6 +175,7 @@ Fonts: **Schibsted Grotesk** (400/500/600/700) for UI and **IBM Plex Mono** (400
 | disabled text | `#B5BBB6` | Disabled pager arrows |
 | neutral swatch | `#9AA29D` | "Sem categoria", chart zero line |
 | chart bars | `#86BFA5` surplus with previstos, `#C2561F` deficit, `#E8A887` deficit with previstos, `#2F6E57` Acumulado | Resumo mensal |
+| dashboard chart | `#1A6E4E` Receitas, `#E8894A` Despesas, `#5FBF94` Receitas swatch on the dark tooltip, `#3A4640` tooltip divider, `#F1F2EE` hovered month, donut track and neutral badge | Visão geral |
 | current row | `#F7F8F4` | Current month in the Resumo table |
 | overlay | `rgba(23, 32, 28, 0.45)` | Modal and sheet backdrop |
 
@@ -202,7 +203,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-02, with Phase 4 (PR #17). Next: Phase 5, US-09 Visão geral._
+_Last updated: 2026-11-02, with Phase 5 (PR #19). Next: Phase 6, US-10 Patrimônio._
 
 ## Summary
 
@@ -214,12 +215,12 @@ _Last updated: 2026-11-02, with Phase 4 (PR #17). Next: Phase 5, US-09 Visão ge
 | 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
-| 5 — Visão geral | US-09 (becomes the landing page) | ⏳ Next |
-| 6 — Patrimônio | US-10 Net worth and monthly closing | ⏳ Planned |
+| 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | ⏳ Next |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phases 1 to 4)
+## What is built (Phases 1 to 5)
 
 | PR | Branch | Delivered |
 |---|---|---|
@@ -235,17 +236,19 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#14](https://github.com/matheus-ferreira1/livro-caixa/pull/14) | `feat/settlement` | `buildShareText` and `settlementEntry`; themed shadcn `Dialog`; Acerto de contas dialog; restored "Gerar acerto" on Lançamentos |
 | [#15](https://github.com/matheus-ferreira1/livro-caixa/pull/15) | `feat/recurring` | Recurring candidate rules; candidates and generate endpoints (one SQLite transaction); Gerar recorrentes dialog; recurring banner with "Agora não"; restored "Gerar recorrentes" |
 | [#17](https://github.com/matheus-ferreira1/livro-caixa/pull/17) | `feat/monthly-summary` | `monthSummary`, `summaryStatus` and `yearSummary`; summary endpoint; Resumo mensal page with tiles, balance chart and table; restored nav item |
+| [#19](https://github.com/matheus-ferreira1/livro-caixa/pull/19) | `feat/dashboard` | `buildDashboard` and its KPI, donut, open-item and acerto rules; dashboard endpoint; Visão geral page with tiles, bars chart, donut, "Em aberto" and acerto card; Visão geral as the landing page |
 
 ### Web routes
 
 | Route | Screen | Notes |
 |---|---|---|
-| `/entrar` | Login (US-01) | Redirects to `/lancamentos` (or the page you came from) when already signed in. Shows the `notice` passed in router state after sign-out. |
-| `/` | — | Redirects to `/lancamentos` |
+| `/entrar` | Login (US-01) | Redirects to `/visao-geral` (or the page you came from) when already signed in. Shows the `notice` passed in router state after sign-out. |
+| `/` | — | Redirects to `/visao-geral` |
+| `/visao-geral` | Visão geral (US-09) | The landing page. State lives in the URL: `mes` and `modo` (`proj`). Defaults (the current month, `real`) are left out of the URL. |
 | `/lancamentos` | Lançamentos (US-03 to US-07) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
 | `/resumo` | Resumo mensal (US-08) | State lives in the URL: `ano` and `modo` (`proj`). Defaults (the current year, `real`) are left out of the URL. |
 | `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
-| any other path | — | Redirects to `/lancamentos`; every route except `/entrar` requires a session |
+| any other path | — | Redirects to `/visao-geral`; every route except `/entrar` requires a session |
 
 ### API
 
@@ -272,6 +275,7 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `GET /api/recurring/candidates?month=YYYY-MM` | `ListRecurringCandidates` | `{ candidates: [{ seriesId, date, valueCents, source }] }`; `source` is the latest earlier occurrence |
 | `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
 | `GET /api/summary?year=YYYY&mode=real\|proj` | `GetYearSummary` | `{ year, mode, months[12], totals }` in cents; `mode` defaults to `real`. "Atual" and the default year come from the client. |
+| `GET /api/dashboard?month=YYYY-MM&mode=real\|proj` | `GetDashboard` | `{ month, mode, partnerName, kpis, series[12], categories, open, settlement }` in cents; `mode` defaults to `real`. `open` and `settlement` ignore the mode. Relative due labels come from the client, from `relativeDue` and its own "today". |
 
 ### Database (SQLite, `apps/api/src/infrastructure/db/migrations.ts`)
 
@@ -288,14 +292,18 @@ Migrations are append-only and tracked in `schema_migrations`.
 ### Domain (`packages/domain`)
 
 - `auth/`: login validation and messages, `nameFromEmail`, `initialsOf`
-- `money/`: `parseMoney` (pt-BR input → cents), `formatMoney`, `formatSignedMoney`, `formatCompactAmount`, `toMoneyInput`, `percentOf`
-- `dates/`: `monthLabel`, `monthName`, `monthShortName`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `defaultDateForMonth`
+- `money/`: `parseMoney` (pt-BR input → cents), `formatMoney`, `formatSignedMoney`, `formatCompactAmount`, `formatPercent`, `toMoneyInput`, `percentOf`
+- `dates/`: `monthLabel`, `monthName`, `monthShortName`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `daysBetween`, `defaultDateForMonth`
 - `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
 - `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation) and `monthTiles`
 - `transactions/recurring.ts`: `recurringCandidates`, `validateRecurringSelection`, `RECURRING_MESSAGES`, `recurringEntry`; `recurring-request.ts` holds `recurringGenerateSchema`
 - `transactions/settlement-share.ts`: `buildShareText` (the WhatsApp message, worded as the prototype) and `settlementEntry` (the pending acerto that "Registrar acerto" creates)
 - `transactions/year-summary.ts`: `monthSummary`, `summaryStatus`, `yearSummary` (the Resumo mensal, with the running total and year totals)
 - `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation, `compareByDate`), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
+- `dashboard/kpis.ts`: `compareToAverage` and `dashboardKpis`
+- `dashboard/category-breakdown.ts`: `categoryBreakdown` (top 6 plus "Outras (n)", compared with the history)
+- `dashboard/open-items.ts`: `openItems`, `relativeDue`
+- `dashboard/dashboard.ts`: `buildDashboard`, `niceAxis`, `settlementCard`
 - `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
 - `settings/`: `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
 - `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
@@ -304,16 +312,16 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 107 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 110 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 98 | `bun run --filter '@livro-caixa/web' test` |
-| E2E | 3 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) | `bun run test:e2e` |
+| Domain unit | 164 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 119 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 147 | `bun run --filter '@livro-caixa/web' test` |
+| E2E | 4 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
 
 ### Decisions taken in Phase 1
 
-- After sign-in the user lands on **Lançamentos** instead of Visão geral, because US-09 was not built yet. Switch the landing page in Phase 5.
+- After sign-in the user landed on **Lançamentos** until US-09 existed. Since Phase 5 the landing page is Visão geral.
 - The money parser accepts `1.234,56`, `1234,56`, `180`, `10.5` and `R$ 10,5`, and rejects anything else.
 - Currency formatting keeps Intl's no-break space after `R$`, and negatives use U+2212 (`−R$ 50,00`).
 - The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
@@ -356,14 +364,29 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - `SummaryTiles` moved to `shared/` now that two screens use it.
 - Like the other screens, Resumo shows no page-level message when its query fails, and the design has no copy for one.
 
+### Decisions taken in Phase 5
+
+- The averages use the 12 months before the viewed month, while the bars use the 12 months ending at it, as in the prototype. Averages skip months with no data, and the donut's history divides by the months that had a counted expense.
+- "Abrir acerto" and "Revisar e gerar" open their dialogs in place on Visão geral, so closing returns to the dashboard. The prototype goes to Lançamentos instead; this departure was approved for Phase 5.
+- The banner in "Em aberto no mês" is the prototype's compact one, not `RecurringBanner`. It has no "Agora não" and ignores a dismissal made on Lançamentos.
+- Unknown paths redirect to Visão geral, the same home as `/` and the login.
+- "Confirmar", "Ver tabela" and "Revisar e gerar" are 44px, not the prototype's 36px, and "Abrir acerto" is 44px, not 40px, because of the touch-target rule.
+- "{n} contas divididas" reads "1 conta dividida" for one bill, where the prototype always uses the plural.
+- A negative net-spend average divides by its absolute value, so "acima" and "abaixo" stay correct where the prototype would invert them.
+- On phones "Confirmar" takes its own line in each row, or the description would have no room. The date column is 64px, not 56px, so "Em 10 dias" stays on one line.
+- The axis scale starts at R$ 4, not the prototype's R$ 1, so an empty chart shows whole reais instead of rounded quarters.
+- The bars take keyboard focus and show the tooltip, and their aria label adds acertos and balanço, which the prototype leaves to the mouse.
+- The acerto badge keeps the prototype's rule: a 0% share with split bills reads "Sem contas divididas".
+- While another month loads, the cards keep the last data and name that data's month. The heading already shows the new month.
+- `SummaryTiles` gained `hint` and `delta`; tiles with a hint use the design's ink label and 28px value.
+
 ## Phase 1 placeholders to restore later
 
 These parts of the design were hidden on purpose in Phase 1. Each one comes back with the phase that builds its target.
 
 | Hidden element | Where | Restore in |
 |---|---|---|
-| Nav items "Visão geral", "Patrimônio" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | The phase that builds each screen |
-| Landing on Visão geral after login | `HOME_PATH` in `LoginPage.tsx`, the index redirect in `routes.tsx` | Phase 5 |
+| Nav item "Patrimônio" | `NAV_ITEMS` in `apps/web/src/shared/layout/AppShell.tsx` | Phase 6 |
 
 ## Roadmap
 
@@ -419,17 +442,17 @@ Follow-ups found during Phase 1.5:
   - diverging "Balanço por mês" chart
   - table with Acumulado bars, Situação and links to each month
 
-### Phase 5 — Visão geral (US-09)
+### Phase 5 — Visão geral (US-09) (done, PR #19)
 
-- [ ] Domain: KPIs and deltas against the 12-month average, the 12-month series, the category donut with the "Outras" bucket, open items with relative due labels.
-- [ ] API `GET /api/dashboard?month=&mode=`.
-- [ ] Web `/visao-geral`:
+- [x] Domain: KPIs and deltas against the 12-month average, the 12-month series, the category donut with the "Outras" bucket, open items with relative due labels.
+- [x] API `GET /api/dashboard?month=&mode=`.
+- [x] Web `/visao-geral`:
   - KPI tiles
   - bars chart with tooltip
   - donut and legend
   - "Em aberto no mês" with "Confirmar"
   - acerto card
-- [ ] Make Visão geral the landing page after login and the `/` redirect.
+- [x] Make Visão geral the landing page after login and the `/` redirect.
 
 ### Phase 6 — Patrimônio and Fechamento (US-10)
 
@@ -496,7 +519,7 @@ As the instance owner, I want to sign in with the account my admin created, so m
 - While submitting, the button reads "Entrando…" with bg `#4A544F` and is disabled.
 - "Esqueceu a senha?" (blue link button, `aria-expanded`) reveals the info box "Como cada instância é hospedada por você, a senha é redefinida pelo administrador do servidor, com o comando de redefinição do container."
 - Footnote with a lock icon: "Ainda sem conta? O primeiro acesso é criado pelo administrador ao configurar a instância."
-- On success, the user lands on **Lançamentos**. (Once Visão geral exists, it becomes the landing page.)
+- On success, the user lands on **Visão geral**.
 - "Manter conectado" checked gives a persistent session cookie (30 days); unchecked gives a browser-session cookie. The cookie is httpOnly and SameSite=Lax.
 
 ### US-02 Sign out and the app shell — ✅ Done (Phase 1, PR #1)
@@ -672,9 +695,9 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - the last row is "Total {ano}"
 - Footnote: "Balanço = receitas + acertos − despesas. O acerto entra no balanço porque compensa a parte das contas divididas que você pagou, mas não conta como receita."
 
-## Backlog — not started
+## Phase 5 — done
 
-### US-09 Dashboard (Visão geral) — ⏳ Phase 5
+### US-09 Dashboard (Visão geral) — ✅ Done (Phase 5, PR #19)
 - Same month navigation and "Realizado | Com previstos" mode as US-08. The hint reads "Só lançamentos confirmados." or "Inclui previstos e o acerto esperado."
 - KPI tiles; each delta is colored good, bad or neutral and shows an arrow:
   - **"Balanço do mês"**, hint "Receitas + acertos − despesas".
@@ -708,6 +731,8 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - the pending amount in blue, followed by "a receber de {esperado} esperados"
   - progress bar, then "{recebido} recebido · {n} contas divididas ({total})"
   - "Abrir acerto" opens US-06
+
+## Backlog — not started
 
 ### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — ⏳ Phase 6
 - Assets: `{ institution, name, assetClass, pricing: 'auto'|'manual', quantity, avgPrice, price, invested, current, dayChange, updatedAt }`.
