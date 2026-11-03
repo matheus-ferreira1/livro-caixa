@@ -108,6 +108,16 @@ describe('applyClosing', () => {
     ]);
   });
 
+  test('stops the invested amount at zero when more is withdrawn than was invested', () => {
+    const { assets, snapshot } = applyClosing([aManualAsset({ id: 'm', investedCents: 1000 })], {
+      month: '2026-10',
+      today: '2026-11-03',
+      items: [{ assetId: 'm', flowCents: -1500, currentCents: 2000 }],
+    });
+    expect(assets[0]).toMatchObject({ investedCents: 0 });
+    expect(snapshot.contributionsCents).toBe(-1500);
+  });
+
   test('keeps an unknown invested amount unknown', () => {
     const { assets } = applyClosing([aManualAsset({ id: 'm', investedCents: null })], {
       month: '2026-10',

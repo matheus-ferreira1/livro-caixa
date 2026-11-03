@@ -3,6 +3,7 @@
  * Usage: bun run seed:demo   (refuses to touch a database that already has entries)
  */
 import {
+  BASIS_POINTS,
   pad2,
   QUANTITY_SCALE,
   type Asset,
@@ -230,7 +231,7 @@ function autoAsset(
     quantityE8: Math.round(quantity * QUANTITY_SCALE),
     avgPriceCents: avgPrice === null ? null : reais(avgPrice),
     priceCents: reais(price),
-    dayChangeBps: Math.round(dayChange * 10_000),
+    dayChangeBps: Math.round(dayChange * BASIS_POINTS),
     updatedAt: ASSET_DATE,
   };
 }

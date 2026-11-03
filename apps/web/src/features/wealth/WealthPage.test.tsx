@@ -350,6 +350,22 @@ describe('WealthPage', () => {
       expect(writes).toHaveLength(0);
     });
 
+    test('marks only the field with the problem', async () => {
+      const { user } = setup({ assets: [manual()], snapshots: overdue });
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      const flow = within(dialog).getByLabelText('Aporte ou resgate em Tesouro 27');
+      await user.clear(flow);
+      await user.type(flow, 'abc');
+
+      expect(flow.getAttribute('aria-invalid')).toBe('true');
+      expect(within(dialog).getByLabelText('Valor atual de Tesouro 27').getAttribute('aria-invalid')).toBe(
+        'false',
+      );
+    });
+
     test('shows the server message when the closing is refused', async () => {
       const { user } = setup({ assets: [manual()], snapshots: overdue });
       await user.click(

@@ -1,6 +1,6 @@
 import {
   assetValue,
-  ASSET_CLASSES,
+  assetClassLabel,
   CLOSING_OPEN_DAY,
   closingDraft,
   dateParts,
@@ -17,6 +17,8 @@ import {
 
 const NO_VALUE = '—';
 
+type LastClosing = { month: MonthKey; totalCents: number };
+
 export type ClosingBanner = { kind: 'open'; title: string } | { kind: 'waiting'; label: string } | null;
 
 export interface ClosingRowView {
@@ -29,7 +31,8 @@ export interface ClosingRowView {
   valueInput: string;
   flowLabel: string;
   valueLabel: string;
-  valid: boolean;
+  flowValid: boolean;
+  valueValid: boolean;
 }
 
 export interface ClosingView {
@@ -58,19 +61,22 @@ export function closingBanner(wealth: Wealth): ClosingBanner {
   };
 }
 
-const classLabel = (key: string): string => ASSET_CLASSES.find((c) => c.key === key)?.label ?? key;
-
 function differenceOf(totalCents: number, contributionsCents: number, previousCents: number | null) {
   if (previousCents === null) return { changeCents: null, yieldCents: null };
   const changeCents = totalCents - previousCents;
   return { changeCents, yieldCents: changeCents - contributionsCents };
 }
 
+export const closingSubtitle = (last: LastClosing | null): string =>
+  last
+    ? `Comparado ao fechamento de ${monthName(last.month)} (${formatMoney(last.totalCents)})`
+    : 'Primeiro fechamento';
+
 export function closingView(
   assets: Asset[],
   edits: ClosingEdits,
   month: MonthKey,
-  last: { month: MonthKey; totalCents: number } | null,
+  last: LastClosing | null,
 ): ClosingView {
   const draft = closingDraft(assets, edits);
   const { changeCents, yieldCents } = differenceOf(
@@ -79,22 +85,21 @@ export function closingView(
     last?.totalCents ?? null,
   );
   return {
-    subtitle: last
-      ? `Comparado ao fechamento de ${monthName(last.month)} (${formatMoney(last.totalCents)})`
-      : 'Primeiro fechamento',
-    manualRows: draft.rows.map(({ asset, flowInput, valueInput, valid }) => {
+    subtitle: closingSubtitle(last),
+    manualRows: draft.rows.map(({ asset, flowInput, valueInput, flowCents, valueCents }) => {
       const { dd, mm } = dateParts(asset.updatedAt);
       return {
         id: asset.id,
         name: asset.name,
-        subtitle: `${asset.institution} · ${classLabel(asset.assetClass)}`,
+        subtitle: `${asset.institution} · ${assetClassLabel(asset.assetClass)}`,
         last: formatMoney(asset.currentCents),
         lastDate: `em ${dd}/${mm}`,
         flowInput,
         valueInput,
         flowLabel: `Aporte ou resgate em ${asset.name}`,
         valueLabel: `Valor atual de ${asset.name}`,
-        valid,
+        flowValid: flowCents !== null,
+        valueValid: valueCents !== null,
       };
     }),
     autoRows: draft.autoAssets.map((asset) => ({

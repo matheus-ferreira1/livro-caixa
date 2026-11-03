@@ -7,7 +7,6 @@ import {
   MINUS,
   monthLabel,
   monthName,
-  monthShortName,
   niceAxis,
   OTHERS_SLICE_ID,
   relativeDue,
@@ -25,12 +24,11 @@ import {
   type SettlementCardStatus,
 } from '@livro-caixa/domain';
 import { TYPE_META } from '@/features/transactions/view-model';
+import { monthAxisLabel, tooltipAlignOf, type TooltipAlign } from '@/shared/lib/month-chart';
 import { pluralize } from '@/shared/lib/utils';
 import type { TileDelta, TileSpec } from '@/shared/SummaryTiles';
 
 const NO_VALUE = '—';
-const JANUARY = '01';
-const TOOLTIP_EDGE_MONTHS = 2;
 
 export const DONUT_RADIUS = 80;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
@@ -51,7 +49,7 @@ export interface ChartGroup {
   current: boolean;
   incomeHeight: string;
   expenseHeight: string;
-  tooltipAlign: 'start' | 'center' | 'end';
+  tooltipAlign: TooltipAlign;
   title: string;
   hasData: boolean;
   income: string;
@@ -216,16 +214,6 @@ function tilesOf({ kpis, month, partnerName }: Dashboard): TileSpec[] {
       delta: neutral(hasYear ? `Média de ${formatMoney(yearToDate.averageCents)} por mês` : ''),
     },
   ];
-}
-
-function tooltipAlignOf(index: number, count: number): ChartGroup['tooltipAlign'] {
-  if (index < TOOLTIP_EDGE_MONTHS) return 'start';
-  return index >= count - TOOLTIP_EDGE_MONTHS ? 'end' : 'center';
-}
-
-function monthAxisLabel(month: MonthKey, index: number): string {
-  const showYear = index === 0 || month.slice(5) === JANUARY;
-  return showYear ? `${monthShortName(month)} ’${month.slice(2, 4)}` : monthShortName(month);
 }
 
 function chartOf(series: DashboardMonth[]): DashboardViewModel['chart'] {
