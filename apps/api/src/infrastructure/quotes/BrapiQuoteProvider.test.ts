@@ -69,6 +69,7 @@ describe('BrapiQuoteProvider', () => {
     { results: [{ regularMarketPrice: 'abc' }] },
     { results: [{ regularMarketPrice: 0 }] },
     { results: [{ regularMarketPrice: -1 }] },
+    { results: [{ regularMarketPrice: 0.004 }] },
   ])('finds no quote in the unusable body %j', async (body) => {
     expect(await providerWith(respondWith(body)).quote('MXRF11')).toBeNull();
   });

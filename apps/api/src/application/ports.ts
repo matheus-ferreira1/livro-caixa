@@ -79,9 +79,15 @@ export interface AssetRepository {
   delete(id: string): boolean;
   /** The quotable assets last checked at or before `checkedBefore`, or never. */
   listQuotesDue(checkedBefore: number): AutoAsset[];
-  /** Stamps the check and, when there is a quote, stores it. A null quote keeps the price. */
-  recordQuote(id: string, quote: Quote | null, checkedAt: number): void;
+  /**
+   * Stamps the check and stores the quote. A null quote keeps the price and clears the daily
+   * change, which would be an old one. Ignored if the asset's ticker changed meanwhile.
+   */
+  recordQuote(asset: QuotedAsset, quote: Quote | null, checkedAt: number): void;
 }
+
+/** The asset as it was when its quote was requested. */
+export type QuotedAsset = Pick<AutoAsset, 'id' | 'name'>;
 
 export interface Quote {
   priceCents: number;

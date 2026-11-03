@@ -6,7 +6,7 @@ import {
   type AutoAsset,
   type Snapshot,
 } from '@livro-caixa/domain';
-import type { AssetRepository, Quote, SnapshotRepository } from '../../application/ports';
+import type { AssetRepository, Quote, QuotedAsset, SnapshotRepository } from '../../application/ports';
 
 interface AssetRow {
   id: string;
@@ -125,20 +125,14 @@ export class SqliteAssetRepository implements AssetRepository {
       .filter((asset): asset is AutoAsset => asset.pricing === 'auto');
   }
 
-  // The pricing check covers an asset switched to manual while its quote was on the way.
-  recordQuote(id: string, quote: Quote | null, checkedAt: number): void {
-    if (!quote) {
-      this.db
-        .query("UPDATE assets SET quote_checked_at = ? WHERE id = ? AND pricing = 'auto'")
-        .run(checkedAt, id);
-      return;
-    }
+  // The name and pricing checks cover an asset edited while its quote was on the way.
+  recordQuote({ id, name }: QuotedAsset, quote: Quote | null, checkedAt: number): void {
     this.db
       .query(
-        `UPDATE assets SET price_cents = ?, day_change_bps = ?, quote_checked_at = ?
-         WHERE id = ? AND pricing = 'auto'`,
+        `UPDATE assets SET price_cents = COALESCE(?, price_cents), day_change_bps = ?, quote_checked_at = ?
+         WHERE id = ? AND name = ? AND pricing = 'auto'`,
       )
-      .run(quote.priceCents, quote.dayChangeBps, checkedAt, id);
+      .run(quote?.priceCents ?? null, quote?.dayChangeBps ?? null, checkedAt, id, name);
   }
 }
 

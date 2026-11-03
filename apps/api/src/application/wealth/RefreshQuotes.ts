@@ -40,6 +40,6 @@ export class RefreshQuotes {
       console.warn(`Could not refresh the quote of ${asset.name}:`, error);
       return null;
     });
-    this.assets.recordQuote(asset.id, quote, this.clock.now());
+    this.assets.recordQuote(asset, quote, this.clock.now());
   }
 }

@@ -330,9 +330,9 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 261 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 189 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 174 | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 262 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 192 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 175 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
@@ -417,7 +417,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - A withdrawal larger than the invested amount stops it at zero, where the prototype lets it go negative. What is left is all gain, and a negative cost would break the row's result and the sheet's validation. The full flow still counts in the closing's Aportes.
 - The "Aporte / resgate" input is plain text with no decimal keypad hint, because phone decimal keypads often have no minus key.
 - Quotes come from brapi and only with `BRAPI_TOKEN` (decided 2026-11-03). With no token nothing leaves the instance, so "sem conta em serviço de terceiros" stays true. Only the `etf` and `fii` classes are quoted, which is what the free token covers; `cripto` and `cambio` keep a typed price although the design's "Cotação automática" tag stays on them. This is a known gap in the copy.
-- Quotes refresh when Patrimônio is read, not on a timer: at one request per asset, a 30-minute timer costs 1,440 requests per asset per month against the free plan's 15,000. A failed lookup still stamps `quote_checked_at`, so a bad ticker is not retried on every page load. Editing an asset clears the stamp, since its ticker may have changed, so a found quote replaces a price typed by hand.
+- Quotes refresh when Patrimônio is read, not on a timer: at one request per asset, a 30-minute timer costs 1,440 requests per asset per month against the free plan's 15,000. A failed lookup still stamps `quote_checked_at`, so a bad ticker is not retried on every page load, and it clears the daily change, which would be an old one. A daily change stored before a token was removed stays until the asset is switched to manual. Editing an asset clears the stamp, since its ticker may have changed, so a found quote replaces a price typed by hand.
 - The ticker is the asset's name, upper-cased, as the sheet's placeholder suggests.
 - The closing uses the stored quotes and does not refresh them: the page has already done so when it loaded.
 - `seed:demo` checks the ledger and the portfolio separately, so a dev database from before this phase can still get its demo portfolio.
@@ -501,8 +501,9 @@ Follow-ups found during Phase 1.5:
 
 Follow-ups found during Phase 6:
 
-- [ ] Verify the Docker image with a real `BRAPI_TOKEN`: outbound HTTPS and CA certificates from `oven/bun:1.3-slim`, an ETF updating with the token, and no outbound request without it. Not done yet: the Docker daemon was not running, and a token needs a brapi account.
+- [x] Verify the Docker image with a real `BRAPI_TOKEN` (2026-11-03, Docker 28.4): an ETF is quoted from `oven/bun:1.3-slim` with the token, and keeps its typed price without it.
 - [ ] Crypto and currency quotes, which need brapi's paid plan or a second provider.
+- [ ] The closing's copy says automatic quotes are current ("As cotações automáticas já estão em dia", "Já atualizadas, nada a fazer"), but `cripto` and `cambio` are never quoted, nor is anything without a token. Following it registers a month with old prices. The copy is verbatim from the design, so changing it is a product decision.
 - [ ] `parseMoney` reads `1.234` (a dot with no comma) as R$ 3,34 instead of R$ 1.234,00. This predates Phase 6 and affects every money field.
 
 ---

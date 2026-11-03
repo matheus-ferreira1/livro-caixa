@@ -187,6 +187,33 @@ describe('quotes on GET /api/wealth', () => {
     expect(quotes.tickers).toEqual(['MXRF11', 'HGLG11']);
   });
 
+  test('keeps a late quote from landing on an asset whose ticker changed', async () => {
+    const { agent, container } = await setup();
+    const { body } = await agent.post('/api/assets').send(anAsset()).expect(201);
+    await agent
+      .put(`/api/assets/${body.asset.id}`)
+      .send(anAsset({ name: 'HGLG11' }))
+      .expect(200);
+
+    container.assets.recordQuote(body.asset, { priceCents: 1, dayChangeBps: 1 }, 0);
+
+    expect(container.assets.findById(body.asset.id)).toMatchObject({ name: 'HGLG11', priceCents: 894 });
+    expect(container.assets.listQuotesDue(0)).toHaveLength(1);
+  });
+
+  test('clears the daily change when no quote is found, since it would be an old one', async () => {
+    const quotes = new FakeQuotes();
+    const { agent, clock, wealth } = await setup(quotes);
+    await agent.post('/api/assets').send(anAsset()).expect(201);
+    await wealth();
+
+    quotes.answer = async () => null;
+    clock.advance(THIRTY_MINUTES_MS);
+    const { assets } = await wealth();
+
+    expect(assets[0]).toMatchObject({ priceCents: 1000, dayChangeBps: null });
+  });
+
   test('keeps a quote from overwriting an asset switched to manual meanwhile', async () => {
     const { agent, container } = await setup();
     const { body } = await agent.post('/api/assets').send(anAsset()).expect(201);
@@ -195,7 +222,7 @@ describe('quotes on GET /api/wealth', () => {
       .send(anAsset({ pricing: 'manual', quantityE8: null, priceCents: null, currentCents: 100 }))
       .expect(200);
 
-    container.assets.recordQuote(body.asset.id, { priceCents: 1, dayChangeBps: 1 }, 0);
+    container.assets.recordQuote(body.asset, { priceCents: 1, dayChangeBps: 1 }, 0);
 
     expect(container.assets.findById(body.asset.id)).toMatchObject({ pricing: 'manual', currentCents: 100 });
   });

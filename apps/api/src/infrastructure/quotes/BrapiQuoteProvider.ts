@@ -38,9 +38,12 @@ export class BrapiQuoteProvider implements QuoteProvider {
     const parsed = quoteResponse.safeParse(await response.json());
     const result = parsed.success ? parsed.data.results[0] : undefined;
     if (!result) return null;
+    // A price that rounds to nothing would zero the asset's value, so it counts as no quote.
+    const priceCents = Math.round(result.regularMarketPrice * CENTS_PER_REAL);
+    if (priceCents === 0) return null;
     const percent = result.regularMarketChangePercent;
     return {
-      priceCents: Math.round(result.regularMarketPrice * CENTS_PER_REAL),
+      priceCents,
       dayChangeBps: percent == null ? null : Math.round(percent * BASIS_POINTS_PER_PERCENT),
     };
   }
