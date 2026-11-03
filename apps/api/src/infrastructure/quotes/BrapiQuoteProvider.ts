@@ -12,10 +12,17 @@ const quoteResponse = z.object({
       z.object({
         regularMarketPrice: z.number().positive(),
         regularMarketChangePercent: z.number().nullish(),
+        // Only a label depends on it, so a bad value must not cost the quote.
+        regularMarketTime: z.string().nullish().catch(null),
       }),
     )
     .min(1),
 });
+
+function epochOf(time: string | null | undefined): number | null {
+  const epoch = Date.parse(time ?? '');
+  return Number.isNaN(epoch) ? null : epoch;
+}
 
 /** Quotes from brapi.dev. The free plan answers one asset per request, for B3 stocks, ETFs and FIIs. */
 export class BrapiQuoteProvider implements QuoteProvider {
@@ -45,6 +52,7 @@ export class BrapiQuoteProvider implements QuoteProvider {
     return {
       priceCents,
       dayChangeBps: percent == null ? null : Math.round(percent * BASIS_POINTS_PER_PERCENT),
+      quotedAt: epochOf(result.regularMarketTime),
     };
   }
 }

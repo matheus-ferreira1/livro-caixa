@@ -21,7 +21,10 @@ export class RefreshQuotes {
   ) {}
 
   execute(): Promise<void> {
-    if (!this.provider) return Promise.resolve();
+    if (!this.provider) {
+      this.assets.markQuotesUnavailable();
+      return Promise.resolve();
+    }
     this.inFlight ??= this.refreshDue(this.provider).finally(() => {
       this.inFlight = null;
     });

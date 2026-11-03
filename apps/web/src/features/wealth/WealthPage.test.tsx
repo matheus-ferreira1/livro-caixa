@@ -35,9 +35,13 @@ const auto = (overrides: Partial<Extract<Asset, { pricing: 'auto' }>> = {}): Ass
   avgPriceCents: 1025,
   priceCents: 894,
   dayChangeBps: 20,
+  quotedAt: null,
+  quoteFailed: false,
   updatedAt: '2026-10-28',
   ...overrides,
 });
+
+const UNAVAILABLE_NOTICE = 'Sem cotação, o ativo usa o último preço salvo. Para atualizar, edite o ativo.';
 
 const SNAPSHOTS: Snapshot[] = [
   { month: '2026-08', totalCents: 140_000, contributionsCents: 500 },
@@ -151,6 +155,21 @@ describe('WealthPage', () => {
 
     expect(within(table).queryByText('Tesouro Direto', { selector: '.font-bold' })).toBeNull();
     expect(within(table).getByText('Clear', { selector: '.font-bold' })).toBeTruthy();
+  });
+
+  test('shows the age of an updated quote, with no notice', async () => {
+    setup({ assets: [auto({ quotedAt: Date.now() - 12 * 60_000 })] });
+    expect(await screen.findByText('Atualizada há 12 min')).toBeInTheDocument();
+    expect(screen.queryByText('Cotação indisponível')).not.toBeInTheDocument();
+    expect(screen.queryByText(UNAVAILABLE_NOTICE)).not.toBeInTheDocument();
+  });
+
+  test('flags an unavailable quote, dates its price and explains what to do', async () => {
+    setup({ assets: [auto()] });
+    expect(await screen.findByText('Cotação indisponível')).toBeInTheDocument();
+    expect(screen.getByText('em 28/10')).toBeInTheDocument();
+    expect(screen.getByText(UNAVAILABLE_NOTICE)).toBeInTheDocument();
+    expect(screen.queryByText('Cotação automática')).not.toBeInTheDocument();
   });
 
   test('shows a dash for an unknown result', async () => {

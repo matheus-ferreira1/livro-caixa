@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { isIsoDate } from '../dates/dates';
 import { parseMoney, toMoneyInput, type Cents } from '../money/money';
-import { ASSET_CLASS_KEYS, PRICING_MODES, type Asset, type AssetClass, type PricingMode } from './asset';
+import {
+  ASSET_CLASS_KEYS,
+  PRICING_MODES,
+  type Asset,
+  type AssetClass,
+  type AutoAsset,
+  type PricingMode,
+} from './asset';
 import { parseQuantity, toQuantityInput } from './quantity';
 
 export const ASSET_MESSAGES = {
@@ -131,6 +138,15 @@ export function draftToAssetInput(
   return error ? { error } : { input };
 }
 
+/** Whether an edit left the price as it was, so its quote and date still describe it. */
+function sameQuotedPrice(
+  existing: AutoAsset,
+  { name, assetClass }: Pick<AutoAsset, 'name' | 'assetClass'>,
+  priceCents: Cents,
+): boolean {
+  return existing.name === name && existing.assetClass === assetClass && existing.priceCents === priceCents;
+}
+
 /**
  * Keeps only the fields of the input's pricing mode. Call it with a validated input,
  * which is why a missing required amount can default to zero.
@@ -151,12 +167,17 @@ export function toAsset(id: string, input: AssetInput, existing: Asset | null): 
       currentCents: input.currentCents ?? 0,
     };
   }
+  const priceCents = input.priceCents ?? 0;
+  const kept = existing?.pricing === 'auto' && sameQuotedPrice(existing, base, priceCents) ? existing : null;
   return {
     ...base,
+    updatedAt: kept?.updatedAt ?? base.updatedAt,
     pricing: 'auto',
     quantityE8: input.quantityE8 ?? 0,
     avgPriceCents: input.avgPriceCents,
-    priceCents: input.priceCents ?? 0,
-    dayChangeBps: existing?.pricing === 'auto' ? existing.dayChangeBps : null,
+    priceCents,
+    dayChangeBps: kept?.dayChangeBps ?? null,
+    quotedAt: kept?.quotedAt ?? null,
+    quoteFailed: kept?.quoteFailed ?? false,
   };
 }

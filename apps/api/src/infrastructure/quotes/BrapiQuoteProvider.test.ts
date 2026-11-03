@@ -11,6 +11,7 @@ const QUOTE_RESPONSE = {
       regularMarketChange: 0.51,
       regularMarketChangePercent: 0.98,
       regularMarketPreviousClose: 52.2,
+      regularMarketTime: '2026-11-03T13:10:00.000Z',
     },
   ],
   requestedAt: '2026-11-03T13:12:49.461Z',
@@ -26,7 +27,16 @@ const providerWith = (fetchQuote: ReturnType<typeof respondWith>) =>
 describe('BrapiQuoteProvider', () => {
   test('converts the price to cents and the percent change to basis points', async () => {
     const quote = await providerWith(respondWith(QUOTE_RESPONSE)).quote('PETR4');
-    expect(quote).toEqual({ priceCents: 5271, dayChangeBps: 98 });
+    expect(quote).toEqual({
+      priceCents: 5271,
+      dayChangeBps: 98,
+      quotedAt: Date.UTC(2026, 10, 3, 13, 10),
+    });
+  });
+
+  test.each([[undefined], [null], ['not a date']])('has no quote time for %j', async (regularMarketTime) => {
+    const body = { results: [{ regularMarketPrice: 10, regularMarketTime }] };
+    expect(await providerWith(respondWith(body)).quote('MXRF11')).toMatchObject({ quotedAt: null });
   });
 
   test('rounds a float price to the nearest cent', async () => {
@@ -34,6 +44,7 @@ describe('BrapiQuoteProvider', () => {
     expect(await providerWith(respondWith(body)).quote('MXRF11')).toEqual({
       priceCents: 895,
       dayChangeBps: -4,
+      quotedAt: null,
     });
   });
 
@@ -42,6 +53,7 @@ describe('BrapiQuoteProvider', () => {
     expect(await providerWith(respondWith(body)).quote('MXRF11')).toEqual({
       priceCents: 1000,
       dayChangeBps: null,
+      quotedAt: null,
     });
   });
 

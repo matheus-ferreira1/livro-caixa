@@ -157,9 +157,43 @@ describe('toAsset', () => {
     });
   });
 
-  test('keeps the daily change of an asset that stays automatic', () => {
-    const existing = anAutoAsset({ dayChangeBps: -210 });
-    expect(toAsset(existing.id, inputOf(autoDraft()), existing)).toMatchObject({ dayChangeBps: -210 });
+  describe('editing an automatic asset', () => {
+    const quoted = () =>
+      anAutoAsset({
+        name: 'MXRF11',
+        assetClass: 'fii',
+        priceCents: 894,
+        dayChangeBps: -210,
+        quotedAt: 1_790_000_000_000,
+        quoteFailed: true,
+        updatedAt: '2026-10-28',
+      });
+
+    test.each([[{ institution: 'Clear' }], [{ quantity: '5' }], [{ avgPrice: '9,00' }]])(
+      'keeps the quote and the date of its price when only %j changes',
+      (overrides) => {
+        const existing = quoted();
+        expect(toAsset(existing.id, inputOf(autoDraft(overrides)), existing)).toMatchObject({
+          dayChangeBps: -210,
+          quotedAt: 1_790_000_000_000,
+          quoteFailed: true,
+          updatedAt: '2026-10-28',
+        });
+      },
+    );
+
+    test.each([[{ price: '9,50' }], [{ name: 'HGLG11' }], [{ assetClass: 'cripto' as const }]])(
+      'forgets the quote and dates the price today when %j changes',
+      (overrides) => {
+        const existing = quoted();
+        expect(toAsset(existing.id, inputOf(autoDraft(overrides)), existing)).toMatchObject({
+          dayChangeBps: null,
+          quotedAt: null,
+          quoteFailed: false,
+          updatedAt: TODAY,
+        });
+      },
+    );
   });
 
   test('drops the fields of the previous pricing mode', () => {

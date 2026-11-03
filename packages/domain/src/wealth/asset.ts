@@ -34,6 +34,7 @@ interface AssetBase {
   institution: string;
   name: string;
   assetClass: AssetClass;
+  /** When the value was last typed. An automatic asset keeps it through edits that leave the price alone. */
   updatedAt: IsoDate;
 }
 
@@ -44,8 +45,12 @@ export interface AutoAsset extends AssetBase {
   /** Null when the cost is unknown. */
   avgPriceCents: Cents | null;
   priceCents: Cents;
-  /** Change of the quote today, in basis points. Null until a quote provides it. */
+  /** Change of the quote today, in basis points. Null whenever the last check found no quote. */
   dayChangeBps: number | null;
+  /** When the last quote found was current, in epoch ms. Null when the price was only ever typed. */
+  quotedAt: number | null;
+  /** The last check found no quote, so the price may be old. */
+  quoteFailed: boolean;
 }
 
 /** Valued by what is typed at each closing. */

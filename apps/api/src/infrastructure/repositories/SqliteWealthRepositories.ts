@@ -20,11 +20,13 @@ interface AssetRow {
   invested_cents: number | null;
   current_cents: number | null;
   day_change_bps: number | null;
+  quoted_at: number | null;
+  quote_failed: number;
   updated_at: string;
 }
 
 const ASSET_COLUMNS = `id, institution, name, asset_class, pricing, quantity_e8, avg_price_cents,
-  price_cents, invested_cents, current_cents, day_change_bps, updated_at`;
+  price_cents, invested_cents, current_cents, day_change_bps, quoted_at, quote_failed, updated_at`;
 
 function toAsset(row: AssetRow): Asset {
   const base = {
@@ -50,6 +52,8 @@ function toAsset(row: AssetRow): Asset {
     avgPriceCents: row.avg_price_cents,
     priceCents: row.price_cents ?? 0,
     dayChangeBps: row.day_change_bps,
+    quotedAt: row.quoted_at,
+    quoteFailed: row.quote_failed === 1,
   };
 }
 
@@ -66,6 +70,8 @@ function toParams(asset: Asset) {
     isAuto ? null : asset.investedCents,
     isAuto ? null : asset.currentCents,
     isAuto ? asset.dayChangeBps : null,
+    isAuto ? asset.quotedAt : null,
+    isAuto && asset.quoteFailed ? 1 : 0,
     asset.updatedAt,
     asset.id,
   ] as const;
@@ -90,8 +96,8 @@ export class SqliteAssetRepository implements AssetRepository {
     this.db
       .query(
         `INSERT INTO assets (institution, name, asset_class, pricing, quantity_e8, avg_price_cents,
-           price_cents, invested_cents, current_cents, day_change_bps, updated_at, id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           price_cents, invested_cents, current_cents, day_change_bps, quoted_at, quote_failed, updated_at, id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(...toParams(asset));
   }
@@ -101,7 +107,7 @@ export class SqliteAssetRepository implements AssetRepository {
       .query(
         `UPDATE assets SET institution = ?, name = ?, asset_class = ?, pricing = ?, quantity_e8 = ?,
            avg_price_cents = ?, price_cents = ?, invested_cents = ?, current_cents = ?,
-           day_change_bps = ?, updated_at = ?, quote_checked_at = NULL
+           day_change_bps = ?, quoted_at = ?, quote_failed = ?, updated_at = ?, quote_checked_at = NULL
          WHERE id = ?`,
       )
       .run(...toParams(asset));
@@ -125,14 +131,30 @@ export class SqliteAssetRepository implements AssetRepository {
       .filter((asset): asset is AutoAsset => asset.pricing === 'auto');
   }
 
+  markQuotesUnavailable(): void {
+    this.db.exec(
+      `UPDATE assets SET quote_failed = 1, day_change_bps = NULL
+       WHERE pricing = 'auto' AND quoted_at IS NOT NULL AND quote_failed = 0`,
+    );
+  }
+
   // The name and pricing checks cover an asset edited while its quote was on the way.
   recordQuote({ id, name }: QuotedAsset, quote: Quote | null, checkedAt: number): void {
     this.db
       .query(
-        `UPDATE assets SET price_cents = COALESCE(?, price_cents), day_change_bps = ?, quote_checked_at = ?
+        `UPDATE assets SET price_cents = COALESCE(?, price_cents), day_change_bps = ?,
+           quoted_at = COALESCE(?, quoted_at), quote_failed = ?, quote_checked_at = ?
          WHERE id = ? AND name = ? AND pricing = 'auto'`,
       )
-      .run(quote?.priceCents ?? null, quote?.dayChangeBps ?? null, checkedAt, id, name);
+      .run(
+        quote?.priceCents ?? null,
+        quote?.dayChangeBps ?? null,
+        quote ? (quote.quotedAt ?? checkedAt) : null,
+        quote ? 0 : 1,
+        checkedAt,
+        id,
+        name,
+      );
   }
 }
 

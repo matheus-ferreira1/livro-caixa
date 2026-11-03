@@ -35,6 +35,8 @@ export function anAutoAsset(overrides: Partial<AutoAsset> = {}): AutoAsset {
     avgPriceCents: null,
     priceCents: 10_000,
     dayChangeBps: null,
+    quotedAt: null,
+    quoteFailed: false,
     updatedAt: '2026-10-28',
     ...overrides,
   };
