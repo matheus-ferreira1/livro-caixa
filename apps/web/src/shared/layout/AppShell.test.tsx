@@ -69,7 +69,7 @@ describe('AppShell', () => {
       within(nav)
         .getAllByRole('link')
         .map((item) => item.textContent),
-    ).toEqual(['Visão geral', 'Lançamentos', 'Resumo mensal', 'Configurações']);
+    ).toEqual(['Visão geral', 'Lançamentos', 'Patrimônio', 'Resumo mensal', 'Configurações']);
   });
 
   test('opens Configurações from the nav and from the account menu', async () => {
