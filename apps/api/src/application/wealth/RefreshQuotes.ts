@@ -35,7 +35,11 @@ export class RefreshQuotes {
     const due = this.assets.listQuotesDue(this.clock.now() - QUOTE_MAX_AGE_MS);
     if (due.length === 0) return;
     const signal = AbortSignal.timeout(QUOTE_TIMEOUT_MS);
-    await Promise.all(due.map((asset) => this.refreshOne(provider, asset, signal)));
+    // One at a time, as the free plan allows. Assets not reached in time stay due for the next read.
+    for (const asset of due) {
+      if (signal.aborted) return;
+      await this.refreshOne(provider, asset, signal);
+    }
   }
 
   private async refreshOne(provider: QuoteProvider, asset: AutoAsset, signal: AbortSignal): Promise<void> {
