@@ -2,7 +2,15 @@
  * Loads the design prototype's sample ledger (Nov 2025 – Oct 2026) for development.
  * Usage: bun run seed:demo   (refuses to touch a database that already has entries)
  */
-import { pad2, type Transaction, type TransactionType } from '@livro-caixa/domain';
+import {
+  pad2,
+  QUANTITY_SCALE,
+  type Asset,
+  type AssetClass,
+  type Snapshot,
+  type Transaction,
+  type TransactionType,
+} from '@livro-caixa/domain';
 import { bootstrap } from './bootstrap';
 import { loadConfig } from './config';
 
@@ -201,11 +209,107 @@ const OCTOBER: Transaction[] = [
   tx('o11', '2026-10-28', 'Plano de saúde', '', 'despesa', 'c-saude', 412, false, false, 's-saude'),
 ];
 
+const ASSET_DATE = '2026-10-28';
+
+function autoAsset(
+  id: string,
+  institution: string,
+  name: string,
+  assetClass: AssetClass,
+  quantity: number,
+  avgPrice: number | null,
+  price: number,
+  dayChange: number,
+): Asset {
+  return {
+    id,
+    institution,
+    name,
+    assetClass,
+    pricing: 'auto',
+    quantityE8: Math.round(quantity * QUANTITY_SCALE),
+    avgPriceCents: avgPrice === null ? null : reais(avgPrice),
+    priceCents: reais(price),
+    dayChangeBps: Math.round(dayChange * 10_000),
+    updatedAt: ASSET_DATE,
+  };
+}
+
+function manualAsset(
+  id: string,
+  institution: string,
+  name: string,
+  assetClass: AssetClass,
+  invested: number | null,
+  current: number,
+): Asset {
+  return {
+    id,
+    institution,
+    name,
+    assetClass,
+    pricing: 'manual',
+    investedCents: invested === null ? null : reais(invested),
+    currentCents: reais(current),
+    updatedAt: ASSET_DATE,
+  };
+}
+
+const ASSETS: Asset[] = [
+  autoAsset('a1', 'Binance', 'ETH-BRL', 'cripto', 0.0038961, 23076.24, 13937.69, -0.021),
+  autoAsset('a2', 'Coinext', 'ADA-BRL', 'cripto', 3.52, 7.07, 1.26, 0.034),
+  autoAsset('a3', 'Coinext', 'XRP-BRL', 'cripto', 1.28952, 7.8, 7.73, -0.008),
+  autoAsset('a4', 'XP', 'MXRF11', 'fii', 3, 10.25, 8.94, 0.002),
+  autoAsset('a5', 'Clear', 'LFTB11', 'etf', 6, 116.5, 128.3, 0.0003),
+  manualAsset('a6', 'Genial', 'Saldo', 'conta', 0, 0),
+  manualAsset('a7', 'BB', 'Caução', 'garantia', 6850, 6850),
+  manualAsset('a8', 'BB', 'Poupança', 'conta', 0.05, 0.05),
+  manualAsset('a9', 'XP', 'Tesouro 27', 'tesouro', 980.8, 1615.11),
+  manualAsset('a10', 'XP', 'Tesouro 29', 'tesouro', 3387.8, 5443.32),
+  manualAsset('a11', 'XP', 'Investback', 'conta', 130.09, 131.48),
+  manualAsset('a12', 'XP', 'Acumulado', 'conta', null, 51.1),
+  manualAsset('a13', 'Caixa', 'Poupança', 'conta', 0.01, 0.01),
+  manualAsset('a14', 'Nubank', 'Reserva', 'reserva', 608.81, 1691.16),
+  manualAsset('a15', 'Nubank', 'Reserva (uv)', 'reserva', 4531.01, 10012.19),
+  autoAsset('a16', 'Wise', 'Dólar', 'cambio', 4.89, null, 5.19, -0.004),
+];
+
+const SNAPSHOTS: Snapshot[] = (
+  [
+    ['2025-10', 17460, 0],
+    ['2025-11', 18240, 650],
+    ['2025-12', 19105.4, 700],
+    ['2026-01', 19872.1, 600],
+    ['2026-02', 20418.75, 450],
+    ['2026-03', 21195.3, 600],
+    ['2026-04', 21980.6, 600],
+    ['2026-05', 22655.2, 500],
+    ['2026-06', 23241.9, 450],
+    ['2026-07', 23608.45, 200],
+    ['2026-08', 24395.1, 600],
+    ['2026-09', 25481.7, 800],
+  ] as const
+).map(([month, total, contributions]) => ({
+  month,
+  totalCents: reais(total),
+  contributionsCents: reais(contributions),
+}));
+
 const container = bootstrap(loadConfig());
-if (container.transactions.listAll().length > 0) {
+const ledgerIsEmpty = container.transactions.listAll().length === 0;
+const portfolioIsEmpty = container.assets.list().length === 0 && container.snapshots.list().length === 0;
+if (!ledgerIsEmpty && !portfolioIsEmpty) {
   console.error('The database already has entries; demo data was not loaded.');
   process.exit(1);
 }
-const rows = [...history(), ...OCTOBER];
-for (const row of rows) container.transactions.insert(row);
-console.info(`Loaded ${rows.length} demo entries.`);
+// Each part has its own check, so a dev database from before Patrimônio can still get its portfolio.
+if (ledgerIsEmpty) {
+  const rows = [...history(), ...OCTOBER];
+  for (const row of rows) container.transactions.insert(row);
+  console.info(`Loaded ${rows.length} demo entries.`);
+}
+if (portfolioIsEmpty) {
+  for (const asset of ASSETS) container.assets.insert(asset);
+  for (const snapshot of SNAPSHOTS) container.snapshots.insert(snapshot);
+  console.info(`Loaded ${ASSETS.length} demo assets and ${SNAPSHOTS.length} closings.`);
+}

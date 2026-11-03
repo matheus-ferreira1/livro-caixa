@@ -1,4 +1,12 @@
-import type { Category, MonthKey, PublicUser, Settings, Transaction } from '@livro-caixa/domain';
+import type {
+  Asset,
+  Category,
+  MonthKey,
+  PublicUser,
+  Settings,
+  Snapshot,
+  Transaction,
+} from '@livro-caixa/domain';
 
 export interface Clock {
   now(): number;
@@ -59,4 +67,19 @@ export interface CategoryRepository {
 export interface SettingsRepository {
   get(): Settings;
   save(settings: Settings): void;
+}
+
+export interface AssetRepository {
+  /** In the order they were added, which fixes each institution's color. */
+  list(): Asset[];
+  findById(id: string): Asset | null;
+  insert(asset: Asset): void;
+  update(asset: Asset): void;
+  delete(id: string): boolean;
+}
+
+export interface SnapshotRepository {
+  /** Oldest first. */
+  list(): Snapshot[];
+  insert(snapshot: Snapshot): void;
 }

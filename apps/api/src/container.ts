@@ -18,6 +18,8 @@ import {
   ToggleTransactionFlags,
 } from './application/transactions/commands';
 import { ListMonthTransactions, SearchTransactions } from './application/transactions/queries';
+import { CreateAsset, DeleteAsset, UpdateAsset } from './application/wealth/commands';
+import { GetWealth } from './application/wealth/queries';
 import {
   SqliteCategoryRepository,
   SqliteSettingsRepository,
@@ -25,6 +27,10 @@ import {
 import { SqliteSessionRepository } from './infrastructure/repositories/SqliteSessionRepository';
 import { SqliteTransactionRepository } from './infrastructure/repositories/SqliteTransactionRepository';
 import { SqliteUserRepository } from './infrastructure/repositories/SqliteUserRepository';
+import {
+  SqliteAssetRepository,
+  SqliteSnapshotRepository,
+} from './infrastructure/repositories/SqliteWealthRepositories';
 import { BunPasswordHasher, SystemClock } from './infrastructure/system';
 
 export interface ContainerOptions {
@@ -43,6 +49,8 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
   const transactions = new SqliteTransactionRepository(db);
   const categories = new SqliteCategoryRepository(db);
   const settings = new SqliteSettingsRepository(db);
+  const assets = new SqliteAssetRepository(db);
+  const snapshots = new SqliteSnapshotRepository(db);
 
   return {
     secureCookies,
@@ -70,6 +78,12 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     generateRecurring: new GenerateRecurring(transactions),
     getYearSummary: new GetYearSummary(transactions, settings),
     getDashboard: new GetDashboard(transactions, categories, settings),
+    assets,
+    snapshots,
+    getWealth: new GetWealth(assets, snapshots),
+    createAsset: new CreateAsset(assets),
+    updateAsset: new UpdateAsset(assets),
+    deleteAsset: new DeleteAsset(assets),
   };
 }
 
