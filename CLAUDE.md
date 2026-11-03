@@ -141,7 +141,7 @@ Work **red → green → refactor**. Write the failing test first, make it pass 
 1. **Every feature or fix gets its own branch** off `main`: `feat/<short-name>`, `fix/<short-name>`, `chore/<short-name>`. Never commit directly to `main`.
 2. Commit in small steps with **Conventional Commits**, in English (`feat(transactions): add month tiles`).
 3. When the work is done, push the branch and **open a pull request** for review. The PR has a summary, the user stories it covers, and a test plan. Dependent features may use stacked PRs, where each PR targets its parent branch and is retargeted to `main` once the parent merges.
-4. The PR is merged only after it is **reviewed and approved**.
+4. Run the `code-review` skill to validate the changes, looking for code quality issues and bugs. If the agent approves, then proceed with the merge. The PR is merged only after it is **reviewed and approved**.
 5. **After the merge, delete the feature branch both remotely and locally:**
    ```bash
    git switch main && git pull
@@ -149,6 +149,7 @@ Work **red → green → refactor**. Write the failing test first, make it pass 
    git branch -d <branch>
    git fetch --prune
    ```
+6. To complete the task, update the `CLAUDE.md` file with the current state, expliciting which phases are completed and what are the next steps.
 
 ## Design system
 
