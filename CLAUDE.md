@@ -203,7 +203,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, with Phase 6 part 2 (`feat/wealth-closing`). Next: quotes._
+_Last updated: 2026-11-03, with Phase 6 part 2 (PR #21). Next: quotes._
 
 ## Summary
 
@@ -238,7 +238,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#17](https://github.com/matheus-ferreira1/livro-caixa/pull/17) | `feat/monthly-summary` | `monthSummary`, `summaryStatus` and `yearSummary`; summary endpoint; Resumo mensal page with tiles, balance chart and table; restored nav item |
 | [#19](https://github.com/matheus-ferreira1/livro-caixa/pull/19) | `feat/dashboard` | `buildDashboard` and its KPI, donut, open-item and acerto rules; dashboard endpoint; Visão geral page with tiles, bars chart, donut, "Em aberto" and acerto card; Visão geral as the landing page |
 | [#20](https://github.com/matheus-ferreira1/livro-caixa/pull/20) | `feat/wealth-assets` | Migration `003_wealth`; asset, quantity, KPI, evolution and allocation rules; asset CRUD and `GET /api/wealth`; Patrimônio page with tiles, chart, allocation, table and asset sheet; demo portfolio |
-| `feat/wealth-closing` (in review) | `feat/wealth-closing` | Closing availability and math; `POST /api/wealth/closings`, atomic across the snapshot and its assets; closing dialog and banners; e2e flow |
+| [#21](https://github.com/matheus-ferreira1/livro-caixa/pull/21) | `feat/wealth-closing` | Closing availability and math; `POST /api/wealth/closings`, atomic across the snapshot and its assets; closing dialog and banners; e2e flow |
 
 ### Web routes
 
