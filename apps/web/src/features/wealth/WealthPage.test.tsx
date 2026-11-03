@@ -1,4 +1,13 @@
-import { buildWealth, type Asset, type Snapshot } from '@livro-caixa/domain';
+import {
+  buildWealth,
+  monthLabel,
+  monthOf,
+  monthName,
+  shiftMonth,
+  todayIso,
+  type Asset,
+  type Snapshot,
+} from '@livro-caixa/domain';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
@@ -35,8 +44,9 @@ const SNAPSHOTS: Snapshot[] = [
   { month: '2026-09', totalCents: 150_000, contributionsCents: 1000 },
 ];
 
-function setup({ assets = [], snapshots = [] }: { assets?: Asset[]; snapshots?: Snapshot[] } = {}) {
+function setup({ assets = [], snapshots: closings = [] }: { assets?: Asset[]; snapshots?: Snapshot[] } = {}) {
   const stored = [...assets];
+  const snapshots = [...closings];
   const writes: { method: string; url: string; body: unknown }[] = [];
   mockApi((url, init) => {
     const { pathname, searchParams } = new URL(url, 'http://localhost');
@@ -46,6 +56,15 @@ function setup({ assets = [], snapshots = [] }: { assets?: Asset[]; snapshots?: 
         status: 200,
         body: buildWealth({ assets: stored, snapshots, today: searchParams.get('today') ?? '' }),
       };
+    }
+    if (pathname === '/api/wealth/closings') {
+      const body = JSON.parse(String(init.body));
+      writes.push({ method, url: pathname, body });
+      if (body.items[0]?.flowCents === 999) {
+        return { status: 409, body: { error: { code: 'conflict', message: 'Atualize a página.' } } };
+      }
+      snapshots.push({ month: body.month, totalCents: 1, contributionsCents: 0 });
+      return { status: 201, body: { snapshot: snapshots.at(-1) } };
     }
     if (pathname.startsWith('/api/assets')) {
       const body = init.body ? JSON.parse(String(init.body)) : null;
@@ -223,6 +242,126 @@ describe('WealthPage', () => {
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]).toMatchObject({ method: 'DELETE', url: '/api/assets/a-tesouro' });
     expect(await screen.findByText('“Tesouro 27” removido da carteira')).toBeTruthy();
+  });
+
+  describe('closing', () => {
+    const currentMonth = monthOf(todayIso());
+    const previousMonth = shiftMonth(currentMonth, -1);
+    const overdue = [{ month: shiftMonth(currentMonth, -2), totalCents: 150_000, contributionsCents: 0 }];
+    const closedThisMonth = [{ month: currentMonth, totalCents: 150_000, contributionsCents: 0 }];
+
+    test('announces an open closing', async () => {
+      setup({ assets: [manual()], snapshots: overdue });
+      const banner = await screen.findByRole('status');
+      expect(
+        within(banner).getByText(`O fechamento de ${monthLabel(previousMonth)} está disponível.`),
+      ).toBeTruthy();
+      expect(within(banner).getByRole('button', { name: 'Fazer fechamento' })).toBeTruthy();
+    });
+
+    test('says when the next closing opens and disables the button', async () => {
+      setup({ assets: [manual()], snapshots: closedThisMonth });
+      const next = shiftMonth(currentMonth, 1);
+      expect(
+        await screen.findByText(
+          `Fechamento de ${monthLabel(currentMonth)} registrado. O de ${monthName(next)} abre em 25/${next.slice(5)} e até lá não há nada para atualizar.`,
+        ),
+      ).toBeTruthy();
+      const button = screen.getByRole('button', { name: 'Fechamento em dia' }) as HTMLButtonElement;
+      expect(button.disabled).toBe(true);
+    });
+
+    test('offers nothing to close on an empty portfolio', async () => {
+      setup();
+      await screen.findAllByText('Nenhum ativo na carteira.');
+      expect(screen.queryByRole('status')).toBeNull();
+      expect((screen.getByRole('button', { name: 'Fechamento em dia' }) as HTMLButtonElement).disabled).toBe(
+        true,
+      );
+    });
+
+    test('opens the first closing at once, for the previous month, with no comparison', async () => {
+      const { user } = setup({ assets: [manual()] });
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
+      );
+      const dialog = await screen.findByRole('dialog', {
+        name: `Fechamento de ${monthLabel(previousMonth)}`,
+      });
+      expect(within(dialog).getByText('Primeiro fechamento')).toBeTruthy();
+      expect(within(dialog).queryByText(/Comparado ao fechamento/)).toBeNull();
+      expect(within(dialog).getByText('Variação no mês').parentElement?.textContent).toContain('—');
+    });
+
+    test('updates the totals while typing and registers the closing', async () => {
+      const { user, writes } = setup({ assets: [manual(), auto()], snapshots: overdue });
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
+      );
+      const dialog = await screen.findByRole('dialog', {
+        name: `Fechamento de ${monthLabel(previousMonth)}`,
+      });
+      expect(within(dialog).getByText(/Comparado ao fechamento de .* \(R\$\s1\.500,00\)/)).toBeTruthy();
+      expect(within(dialog).getByText('MXRF11')).toBeTruthy();
+
+      const flow = within(dialog).getByLabelText('Aporte ou resgate em Tesouro 27');
+      await user.clear(flow);
+      await user.type(flow, '-50,00');
+      const value = within(dialog).getByLabelText('Valor atual de Tesouro 27');
+      await user.clear(value);
+      await user.type(value, '1700,00');
+
+      expect(within(dialog).getByText('Patrimônio no fechamento').parentElement?.textContent).toMatch(
+        /1\.726,82/,
+      );
+      expect(within(dialog).getByText('Aportes').parentElement?.textContent).toMatch(/− R\$\s50,00/);
+      expect(within(dialog).getByText('Rendimento').parentElement?.textContent).toMatch(/\+ R\$\s276,82/);
+
+      await user.click(
+        within(dialog).getByRole('button', { name: `Registrar fechamento de ${monthName(previousMonth)}` }),
+      );
+
+      await waitFor(() => expect(writes).toHaveLength(1));
+      expect(writes[0]).toMatchObject({
+        url: '/api/wealth/closings',
+        body: {
+          month: previousMonth,
+          items: [{ assetId: 'a-tesouro', flowCents: -5000, currentCents: 170_000 }],
+        },
+      });
+      expect(await screen.findByText(`Fechamento de ${monthLabel(previousMonth)} registrado`)).toBeTruthy();
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    test('names the asset to review and sends nothing', async () => {
+      const { user, writes } = setup({ assets: [manual()], snapshots: overdue });
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      const value = within(dialog).getByLabelText('Valor atual de Tesouro 27');
+      await user.clear(value);
+      await user.type(value, 'abc');
+      expect(value.getAttribute('aria-invalid')).toBe('true');
+
+      await user.click(within(dialog).getByRole('button', { name: /Registrar fechamento/ }));
+
+      expect(within(dialog).getByRole('alert').textContent).toBe('Revise os valores de “Tesouro 27” (XP).');
+      expect(writes).toHaveLength(0);
+    });
+
+    test('shows the server message when the closing is refused', async () => {
+      const { user } = setup({ assets: [manual()], snapshots: overdue });
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      const flow = within(dialog).getByLabelText('Aporte ou resgate em Tesouro 27');
+      await user.clear(flow);
+      await user.type(flow, '9,99');
+      await user.click(within(dialog).getByRole('button', { name: /Registrar fechamento/ }));
+      expect((await within(dialog).findByRole('alert')).textContent).toBe('Atualize a página.');
+    });
   });
 
   test('labels the evolution bars, marking the open month', async () => {

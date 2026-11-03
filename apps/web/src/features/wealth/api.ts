@@ -1,4 +1,4 @@
-import type { Asset, AssetInput, IsoDate, Wealth } from '@livro-caixa/domain';
+import type { Asset, AssetInput, ClosingRequest, IsoDate, Snapshot, Wealth } from '@livro-caixa/domain';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { showError } from '@/features/transactions/api';
@@ -21,6 +21,15 @@ export function useSaveAsset() {
         method: id ? 'PUT' : 'POST',
         ...jsonBody(input),
       }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: WEALTH_KEY }),
+  });
+}
+
+export function useRegisterClosing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: ClosingRequest) =>
+      apiFetch<{ snapshot: Snapshot }>('/api/wealth/closings', { method: 'POST', ...jsonBody(request) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: WEALTH_KEY }),
   });
 }
