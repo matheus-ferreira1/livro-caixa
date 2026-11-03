@@ -4,10 +4,15 @@ import { nameFromEmail } from '@livro-caixa/domain';
 import type { Config } from './config';
 import { createContainer } from './container';
 import { openDatabase } from './infrastructure/db/database';
+import { BrapiQuoteProvider } from './infrastructure/quotes/BrapiQuoteProvider';
 
 export function bootstrap(config: Config) {
   if (config.DATABASE_PATH !== ':memory:') mkdirSync(dirname(config.DATABASE_PATH), { recursive: true });
-  return createContainer({ db: openDatabase(config.DATABASE_PATH), secureCookies: config.SECURE_COOKIES });
+  return createContainer({
+    db: openDatabase(config.DATABASE_PATH),
+    secureCookies: config.SECURE_COOKIES,
+    quoteProvider: config.BRAPI_TOKEN ? new BrapiQuoteProvider(config.BRAPI_TOKEN) : null,
+  });
 }
 
 /** Creates the first account from ADMIN_* env vars when the instance has no users yet. */
