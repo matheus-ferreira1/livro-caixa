@@ -1,8 +1,12 @@
 {
   "name": "livro-caixa",
   "private": true,
+  "license": "MIT",
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "bun run --filter '@livro-caixa/api' dev & bun run --filter '@livro-caixa/web' dev",
     "test": "bun run --filter '*' test",
