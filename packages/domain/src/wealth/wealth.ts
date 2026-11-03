@@ -1,11 +1,9 @@
 import type { IsoDate, MonthKey } from '../dates/dates';
 import { sumCents, type Cents } from '../money/money';
-import { valueAssets, type Asset, type Snapshot, type ValuedAsset } from './asset';
+import { BASIS_POINTS, valueAssets, type Asset, type Snapshot, type ValuedAsset } from './asset';
 import { openMonth } from './closing';
 import { evolutionSeries, type EvolutionSeries } from './evolution';
 import { wealthKpis, type WealthKpis } from './kpis';
-
-const BASIS_POINTS = 10_000;
 
 export interface Wealth {
   totalCents: Cents;

@@ -11,8 +11,8 @@ import {
   MINUS,
   monthLabel,
   monthName,
-  monthShortName,
-  ASSET_CLASSES,
+  assetClassLabel,
+  BASIS_POINTS,
   type AssetGroup,
   type Cents,
   type EvolutionPoint,
@@ -22,13 +22,11 @@ import {
   type WealthGrouping,
   type WealthKpis,
 } from '@livro-caixa/domain';
+import { monthAxisLabel, tooltipAlignOf, type TooltipAlign } from '@/shared/lib/month-chart';
 import { pluralize } from '@/shared/lib/utils';
 import type { TileDelta, TileSpec } from '@/shared/SummaryTiles';
 
 const NO_VALUE = '—';
-const JANUARY = '01';
-const TOOLTIP_EDGE_MONTHS = 2;
-const BASIS_POINTS = 10_000;
 /** Below this a share would round to "0%", which reads as nothing at all. */
 const MINIMUM_SHOWN_SHARE = 0.001;
 
@@ -45,7 +43,7 @@ export interface EvolutionBar {
   label: string;
   partial: boolean;
   height: string;
-  tooltipAlign: 'start' | 'center' | 'end';
+  tooltipAlign: TooltipAlign;
   title: string;
   total: string;
   change: string;
@@ -188,22 +186,12 @@ function resultTile({ result }: WealthKpis): TileSpec {
   };
 }
 
-function tooltipAlignOf(index: number, count: number): EvolutionBar['tooltipAlign'] {
-  if (index < TOOLTIP_EDGE_MONTHS) return 'start';
-  return index >= count - TOOLTIP_EDGE_MONTHS ? 'end' : 'center';
-}
-
-function axisLabel(month: MonthKey, index: number): string {
-  const showYear = index === 0 || month.slice(5) === JANUARY;
-  return showYear ? `${monthShortName(month)} ’${month.slice(2, 4)}` : monthShortName(month);
-}
-
 function barOf(point: EvolutionPoint, index: number, count: number, topCents: Cents): EvolutionBar {
   const { month, totalCents, partial, changeCents, contributionsCents, yieldCents } = point;
   const title = monthLabel(month);
   return {
     month,
-    label: axisLabel(month, index),
+    label: monthAxisLabel(month, index),
     partial,
     height: totalCents > 0 ? `max(2px, ${((totalCents / topCents) * 100).toFixed(2)}%)` : '0px',
     tooltipAlign: tooltipAlignOf(index, count),
@@ -241,8 +229,6 @@ function allocationOf(groups: AssetGroup[]): AllocationView {
   };
 }
 
-const classLabel = (key: string): string => ASSET_CLASSES.find((c) => c.key === key)?.label ?? key;
-
 function pricingLabelOf(asset: ValuedAsset): string {
   if (asset.pricing === 'auto') return 'Cotação automática';
   const { dd, mm } = dateParts(asset.updatedAt);
@@ -270,7 +256,7 @@ function rowOf(asset: ValuedAsset, grouping: WealthGrouping): AssetRow {
     asset,
     id: asset.id,
     name: asset.name,
-    subtitle: grouping === 'class' ? asset.institution : classLabel(asset.assetClass),
+    subtitle: grouping === 'class' ? asset.institution : assetClassLabel(asset.assetClass),
     isAuto,
     pricingLabel: pricingLabelOf(asset),
     quantity: quantityOf(asset),
