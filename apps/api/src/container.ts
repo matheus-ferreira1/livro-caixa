@@ -8,7 +8,7 @@ import { CreateUser, ResetPassword } from './application/auth/user-admin';
 import { CreateCategory, DeleteCategory, UpdateCategory } from './application/categories/commands';
 import { ListCategories } from './application/categories/queries';
 import { GetDashboard } from './application/dashboard/queries';
-import type { Clock } from './application/ports';
+import type { Clock, QuoteProvider } from './application/ports';
 import { GenerateRecurring, ListRecurringCandidates } from './application/recurring/recurring';
 import { UpdateSettings } from './application/settings/UpdateSettings';
 import { GetYearSummary } from './application/summary/queries';
@@ -18,6 +18,9 @@ import {
   ToggleTransactionFlags,
 } from './application/transactions/commands';
 import { ListMonthTransactions, SearchTransactions } from './application/transactions/queries';
+import { CreateAsset, DeleteAsset, RegisterClosing, UpdateAsset } from './application/wealth/commands';
+import { GetWealth } from './application/wealth/queries';
+import { RefreshQuotes } from './application/wealth/RefreshQuotes';
 import {
   SqliteCategoryRepository,
   SqliteSettingsRepository,
@@ -25,16 +28,27 @@ import {
 import { SqliteSessionRepository } from './infrastructure/repositories/SqliteSessionRepository';
 import { SqliteTransactionRepository } from './infrastructure/repositories/SqliteTransactionRepository';
 import { SqliteUserRepository } from './infrastructure/repositories/SqliteUserRepository';
+import {
+  SqliteAssetRepository,
+  SqliteSnapshotRepository,
+} from './infrastructure/repositories/SqliteWealthRepositories';
 import { BunPasswordHasher, SystemClock } from './infrastructure/system';
 
 export interface ContainerOptions {
   db: Database;
   clock?: Clock;
   secureCookies: boolean;
+  /** Null keeps the instance from making any outbound request; prices stay as typed. */
+  quoteProvider?: QuoteProvider | null;
 }
 
 /** Composition root: the only place that knows which adapter backs each port. */
-export function createContainer({ db, clock = new SystemClock(), secureCookies }: ContainerOptions) {
+export function createContainer({
+  db,
+  clock = new SystemClock(),
+  secureCookies,
+  quoteProvider = null,
+}: ContainerOptions) {
   const users = new SqliteUserRepository(db);
   const sessions = new SqliteSessionRepository(db);
   const hasher = new BunPasswordHasher();
@@ -43,6 +57,8 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
   const transactions = new SqliteTransactionRepository(db);
   const categories = new SqliteCategoryRepository(db);
   const settings = new SqliteSettingsRepository(db);
+  const assets = new SqliteAssetRepository(db);
+  const snapshots = new SqliteSnapshotRepository(db, assets);
 
   return {
     secureCookies,
@@ -70,6 +86,14 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     generateRecurring: new GenerateRecurring(transactions),
     getYearSummary: new GetYearSummary(transactions, settings),
     getDashboard: new GetDashboard(transactions, categories, settings),
+    assets,
+    snapshots,
+    getWealth: new GetWealth(assets, snapshots),
+    refreshQuotes: new RefreshQuotes(assets, quoteProvider, clock),
+    createAsset: new CreateAsset(assets),
+    updateAsset: new UpdateAsset(assets),
+    deleteAsset: new DeleteAsset(assets),
+    registerClosing: new RegisterClosing(assets, snapshots),
   };
 }
 

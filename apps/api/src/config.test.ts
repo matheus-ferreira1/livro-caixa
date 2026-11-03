@@ -54,3 +54,17 @@ describe('TRUST_PROXY', () => {
     expect(() => express().set('trust proxy', trustProxyOf(value))).not.toThrow();
   });
 });
+
+describe('BRAPI_TOKEN', () => {
+  test('is optional', () => {
+    expect(loadConfig({}).BRAPI_TOKEN).toBeUndefined();
+  });
+
+  test.each(['', '   '])('treats %p as unset, as Docker Compose passes an unset variable', (value) => {
+    expect(loadConfig({ BRAPI_TOKEN: value }).BRAPI_TOKEN).toBeUndefined();
+  });
+
+  test('keeps a real token, trimmed', () => {
+    expect(loadConfig({ BRAPI_TOKEN: ' abc ' }).BRAPI_TOKEN).toBe('abc');
+  });
+});

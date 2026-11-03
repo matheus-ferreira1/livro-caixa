@@ -21,6 +21,8 @@ export interface TileSpec {
   dark?: boolean;
   /** Colors the value as a negative balance. */
   negative?: boolean;
+  /** Colors the value as good or bad news; a dark tile uses its on-dark shades. */
+  valueTone?: TileDelta['tone'];
 }
 
 const TONE: Record<NonNullable<TileSpec['tone']>, { text: string; dot: string }> = {
@@ -45,7 +47,19 @@ export function SummaryTiles({ tiles }: { tiles: TileSpec[] }) {
   );
 }
 
-function Tile({ label, value, sub, hint, delta, tone, dark, negative }: TileSpec) {
+const VALUE_TEXT: Record<TileDelta['tone'], string> = {
+  good: 'text-income',
+  bad: 'text-expense',
+  neutral: 'text-ink',
+};
+
+const VALUE_TEXT_ON_DARK: Record<TileDelta['tone'], string> = {
+  good: 'text-mint',
+  bad: 'text-negative-on-dark',
+  neutral: 'text-white',
+};
+
+function Tile({ label, value, sub, hint, delta, tone, dark, negative, valueTone }: TileSpec) {
   const toneClasses = tone ? TONE[tone] : null;
   return (
     <section
@@ -65,13 +79,18 @@ function Tile({ label, value, sub, hint, delta, tone, dark, negative }: TileSpec
         {toneClasses && <span aria-hidden="true" className={cn('size-2 rounded-full', toneClasses.dot)} />}
         {label}
       </span>
-      {hint && <span className="text-[13px] text-muted-foreground">{hint}</span>}
+      {hint && (
+        <span className={cn('text-[13px]', dark ? 'text-on-dark-muted' : 'text-muted-foreground')}>
+          {hint}
+        </span>
+      )}
       <span
         className={cn(
           'font-mono font-semibold tracking-[-0.02em]',
           hint ? 'mt-1.5 text-[28px]' : 'text-[26px]',
           dark && (negative ? 'text-negative-on-dark' : 'text-white'),
           !dark && negative && 'text-expense',
+          valueTone && (dark ? VALUE_TEXT_ON_DARK : VALUE_TEXT)[valueTone],
         )}
       >
         {value}
@@ -81,14 +100,19 @@ function Tile({ label, value, sub, hint, delta, tone, dark, negative }: TileSpec
           {sub}
         </span>
       )}
-      {delta?.label && <DeltaLine {...delta} />}
+      {delta?.label && <DeltaLine {...delta} onDark={dark} />}
     </section>
   );
 }
 
-function DeltaLine({ label, tone, direction }: TileDelta) {
+function DeltaLine({ label, tone, direction, onDark }: TileDelta & { onDark?: boolean }) {
   return (
-    <span className={cn('flex items-center gap-1.5 text-[13px] font-semibold', DELTA_TEXT[tone])}>
+    <span
+      className={cn(
+        'flex items-center gap-1.5 text-[13px] font-semibold',
+        onDark ? 'text-on-dark-muted' : DELTA_TEXT[tone],
+      )}
+    >
       <DeltaArrow direction={direction} className="size-3.5" />
       {label}
     </span>

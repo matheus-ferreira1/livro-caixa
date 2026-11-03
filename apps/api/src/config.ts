@@ -54,6 +54,11 @@ const envSchema = z.object({
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_NAME: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
+  // Docker Compose passes an unset variable as an empty string.
+  BRAPI_TOKEN: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined),
 });
 
 export type Config = z.infer<typeof envSchema>;

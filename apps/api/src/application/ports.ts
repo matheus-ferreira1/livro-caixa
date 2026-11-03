@@ -1,4 +1,13 @@
-import type { Category, MonthKey, PublicUser, Settings, Transaction } from '@livro-caixa/domain';
+import type {
+  Asset,
+  AutoAsset,
+  Category,
+  MonthKey,
+  PublicUser,
+  Settings,
+  Snapshot,
+  Transaction,
+} from '@livro-caixa/domain';
 
 export interface Clock {
   now(): number;
@@ -59,4 +68,42 @@ export interface CategoryRepository {
 export interface SettingsRepository {
   get(): Settings;
   save(settings: Settings): void;
+}
+
+export interface AssetRepository {
+  /** In the order they were added, which fixes each institution's color. */
+  list(): Asset[];
+  findById(id: string): Asset | null;
+  insert(asset: Asset): void;
+  update(asset: Asset): void;
+  delete(id: string): boolean;
+  /** The quotable assets last checked at or before `checkedBefore`, or never. */
+  listQuotesDue(checkedBefore: number): AutoAsset[];
+  /**
+   * Stamps the check and stores the quote. A null quote keeps the price and clears the daily
+   * change, which would be an old one. Ignored if the asset's ticker changed meanwhile.
+   */
+  recordQuote(asset: QuotedAsset, quote: Quote | null, checkedAt: number): void;
+}
+
+/** The asset as it was when its quote was requested. */
+export type QuotedAsset = Pick<AutoAsset, 'id' | 'name'>;
+
+export interface Quote {
+  priceCents: number;
+  /** Null when the source does not say. */
+  dayChangeBps: number | null;
+}
+
+export interface QuoteProvider {
+  /** Null when there is no quote for that ticker. */
+  quote(ticker: string, signal?: AbortSignal): Promise<Quote | null>;
+}
+
+export interface SnapshotRepository {
+  /** Oldest first. */
+  list(): Snapshot[];
+  insert(snapshot: Snapshot): void;
+  /** Adds the closing and updates its assets together or, on any failure, not at all. */
+  registerClosing(snapshot: Snapshot, assets: Asset[]): void;
 }

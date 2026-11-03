@@ -8,6 +8,7 @@ import { UserMenu } from './UserMenu';
 const NAV_ITEMS = [
   { to: '/visao-geral', label: 'Visão geral' },
   { to: '/lancamentos', label: 'Lançamentos' },
+  { to: '/patrimonio', label: 'Patrimônio' },
   { to: '/resumo', label: 'Resumo mensal' },
   { to: '/configuracoes', label: 'Configurações' },
 ];
