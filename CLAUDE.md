@@ -315,7 +315,7 @@ Migrations are append-only and tracked in `schema_migrations`.
   - `assets(id, institution, name, asset_class, pricing auto|manual, quantity_e8, avg_price_cents, price_cents, invested_cents, current_cents, day_change_bps, quote_checked_at, updated_at, created_at)`; a CHECK requires quantity and price for `auto` and the current value for `manual`
   - `snapshots(month PK, total_cents, contributions_cents, created_at)`
 - `004_quote_status`:
-  - `assets` gains `quoted_at` (epoch ms) and `quote_failed`; `quote_checked_at` is reset so the next read checks every quote again
+  - `assets` gains `quoted_at` (epoch ms) and `quote_failed`; `quote_checked_at` and `day_change_bps` are reset so the next read checks every quote again
 
 ### Domain (`packages/domain`)
 
@@ -346,8 +346,8 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 291 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 204 | `bun run --filter '@livro-caixa/api' test` |
+| Domain unit | 295 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 206 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 182 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
@@ -434,7 +434,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - A withdrawal larger than the invested amount stops it at zero, where the prototype lets it go negative. What is left is all gain, and a negative cost would break the row's result and the sheet's validation. The full flow still counts in the closing's Aportes.
 - The "Aporte / resgate" input is plain text with no decimal keypad hint, because phone decimal keypads often have no minus key.
 - Quotes come from brapi and only with `BRAPI_TOKEN` (decided 2026-11-03). With no token nothing leaves the instance, so "sem conta em serviço de terceiros" stays true. Only the `etf` and `fii` classes are quoted, which is what the free token covers; `cripto` and `cambio` keep a typed price.
-- Quotes refresh when Patrimônio is read, not on a timer: at one request per asset, a 30-minute timer costs 1,440 requests per asset per month against the free plan's 15,000. A failed lookup still stamps `quote_checked_at`, so a bad ticker is not retried on every page load, and it clears the daily change, which would be an old one. A daily change stored before a token was removed stays until the asset is switched to manual. Editing an asset clears the stamp, since its ticker may have changed, so a found quote replaces a price typed by hand.
+- Quotes refresh when Patrimônio is read, not on a timer: at one request per asset, a 30-minute timer costs 1,440 requests per asset per month against the free plan's 15,000. A failed lookup still stamps `quote_checked_at`, so a bad ticker is not retried on every page load, and it clears the daily change, which would be an old one. Editing an asset clears the stamp, since its ticker may have changed, so a found quote replaces a price typed by hand.
 - The ticker is the asset's name, upper-cased, as the sheet's placeholder suggests.
 - The closing uses the stored quotes and does not refresh them: the page has already done so when it loaded.
 - `seed:demo` checks the ledger and the portfolio separately, so a dev database from before this phase can still get its demo portfolio.
@@ -446,7 +446,9 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - One tag covers every reason for no quote: a class that is never quoted, no `BRAPI_TOKEN`, an unknown ticker, a provider failure. On an instance with no token, every automatic asset shows it, and that is intended: no one is fetching that price.
 - The tag uses the "Previsto" amber, since the price asks for attention but nothing is wrong, and takes its own line under the institution, so every such row breaks the same way.
 - An unavailable price is aged under it in the Cotação column: "em dd/mm" for a price only ever typed, "há…" for the last quote found.
-- Editing an asset forgets its quote, because the price may now be typed and the ticker may have changed. The next read checks again.
+- An edit that changes the ticker, the class or the price forgets the quote and dates the price today, because the price may now be typed. Other edits, such as the institution or the quantity, keep the quote and the price's date, so renaming a broker does not make an old price look recent. Either way, the next read checks again.
+- A daily change exists only alongside a quote. A failed check, a forgotten quote and a missing provider all clear it, so "Hoje" never shows a change next to "Cotação indisponível". The demo seed loses its sample changes for this reason.
+- With no `BRAPI_TOKEN`, each read marks earlier quotes unavailable (`markQuotesUnavailable`), so removing the token does not leave them green. The time of the last quote stays under the price.
 - The label is computed at render and does not tick while the page stays open.
 - `seed:demo` stores no quote, so the demo portfolio's automatic assets read "Cotação indisponível" without a token.
 
