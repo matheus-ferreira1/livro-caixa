@@ -1,6 +1,12 @@
 import type { Database } from 'bun:sqlite';
-import type { Asset, AssetClass, Snapshot } from '@livro-caixa/domain';
-import type { AssetRepository, SnapshotRepository } from '../../application/ports';
+import {
+  QUOTED_ASSET_CLASSES,
+  type Asset,
+  type AssetClass,
+  type AutoAsset,
+  type Snapshot,
+} from '@livro-caixa/domain';
+import type { AssetRepository, Quote, SnapshotRepository } from '../../application/ports';
 
 interface AssetRow {
   id: string;
@@ -95,7 +101,7 @@ export class SqliteAssetRepository implements AssetRepository {
       .query(
         `UPDATE assets SET institution = ?, name = ?, asset_class = ?, pricing = ?, quantity_e8 = ?,
            avg_price_cents = ?, price_cents = ?, invested_cents = ?, current_cents = ?,
-           day_change_bps = ?, updated_at = ?
+           day_change_bps = ?, updated_at = ?, quote_checked_at = NULL
          WHERE id = ?`,
       )
       .run(...toParams(asset));
@@ -103,6 +109,36 @@ export class SqliteAssetRepository implements AssetRepository {
 
   delete(id: string): boolean {
     return this.db.query('DELETE FROM assets WHERE id = ?').run(id).changes > 0;
+  }
+
+  listQuotesDue(checkedBefore: number): AutoAsset[] {
+    const classes = QUOTED_ASSET_CLASSES.map(() => '?').join(', ');
+    return this.db
+      .query<AssetRow, (string | number)[]>(
+        `SELECT ${ASSET_COLUMNS} FROM assets
+         WHERE pricing = 'auto' AND asset_class IN (${classes})
+           AND (quote_checked_at IS NULL OR quote_checked_at <= ?)
+         ORDER BY rowid`,
+      )
+      .all(...QUOTED_ASSET_CLASSES, checkedBefore)
+      .map(toAsset)
+      .filter((asset): asset is AutoAsset => asset.pricing === 'auto');
+  }
+
+  // The pricing check covers an asset switched to manual while its quote was on the way.
+  recordQuote(id: string, quote: Quote | null, checkedAt: number): void {
+    if (!quote) {
+      this.db
+        .query("UPDATE assets SET quote_checked_at = ? WHERE id = ? AND pricing = 'auto'")
+        .run(checkedAt, id);
+      return;
+    }
+    this.db
+      .query(
+        `UPDATE assets SET price_cents = ?, day_change_bps = ?, quote_checked_at = ?
+         WHERE id = ? AND pricing = 'auto'`,
+      )
+      .run(quote.priceCents, quote.dayChangeBps, checkedAt, id);
   }
 }
 
