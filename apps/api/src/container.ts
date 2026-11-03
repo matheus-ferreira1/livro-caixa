@@ -18,7 +18,7 @@ import {
   ToggleTransactionFlags,
 } from './application/transactions/commands';
 import { ListMonthTransactions, SearchTransactions } from './application/transactions/queries';
-import { CreateAsset, DeleteAsset, UpdateAsset } from './application/wealth/commands';
+import { CreateAsset, DeleteAsset, RegisterClosing, UpdateAsset } from './application/wealth/commands';
 import { GetWealth } from './application/wealth/queries';
 import {
   SqliteCategoryRepository,
@@ -50,7 +50,7 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
   const categories = new SqliteCategoryRepository(db);
   const settings = new SqliteSettingsRepository(db);
   const assets = new SqliteAssetRepository(db);
-  const snapshots = new SqliteSnapshotRepository(db);
+  const snapshots = new SqliteSnapshotRepository(db, assets);
 
   return {
     secureCookies,
@@ -84,6 +84,7 @@ export function createContainer({ db, clock = new SystemClock(), secureCookies }
     createAsset: new CreateAsset(assets),
     updateAsset: new UpdateAsset(assets),
     deleteAsset: new DeleteAsset(assets),
+    registerClosing: new RegisterClosing(assets, snapshots),
   };
 }
 

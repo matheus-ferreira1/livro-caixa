@@ -113,7 +113,10 @@ interface SnapshotRow {
 }
 
 export class SqliteSnapshotRepository implements SnapshotRepository {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly assets: AssetRepository,
+  ) {}
 
   list(): Snapshot[] {
     return this.db
@@ -130,5 +133,12 @@ export class SqliteSnapshotRepository implements SnapshotRepository {
     this.db
       .query('INSERT INTO snapshots (month, total_cents, contributions_cents) VALUES (?, ?, ?)')
       .run(month, totalCents, contributionsCents);
+  }
+
+  registerClosing(snapshot: Snapshot, assets: Asset[]): void {
+    this.db.transaction(() => {
+      this.insert(snapshot);
+      assets.forEach((asset) => this.assets.update(asset));
+    })();
   }
 }

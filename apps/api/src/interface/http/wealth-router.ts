@@ -1,4 +1,4 @@
-import { assetInputSchema, isIsoDate } from '@livro-caixa/domain';
+import { assetInputSchema, closingRequestSchema, isIsoDate } from '@livro-caixa/domain';
 import { Router } from 'express';
 import { z } from 'zod';
 import type { Container } from '../../container';
@@ -12,6 +12,11 @@ export function wealthRouter(container: Container): Router {
   router.get('/wealth', (req, res) => {
     const { today } = wealthQuery.parse(req.query);
     res.json(container.getWealth.execute(today));
+  });
+
+  router.post('/wealth/closings', (req, res) => {
+    const snapshot = container.registerClosing.execute(closingRequestSchema.parse(req.body));
+    res.status(201).json({ snapshot });
   });
 
   router.post('/assets', (req, res) => {
