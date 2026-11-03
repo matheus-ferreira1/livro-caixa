@@ -100,10 +100,7 @@ function ClosingBanner({ banner, onOpen }: { banner: ClosingBannerView; onOpen: 
     >
       <span className="flex flex-[1_1_360px] flex-col gap-0.5">
         <span className="font-semibold">{banner.title}</span>
-        <span className="text-sm">
-          Uma vez por mês: confira os valores manuais e informe aportes ou resgates. As cotações automáticas
-          já estão em dia.
-        </span>
+        <span className="text-sm">{banner.detail}</span>
       </span>
       <button
         type="button"

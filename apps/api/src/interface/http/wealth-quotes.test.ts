@@ -155,6 +155,78 @@ describe('quotes on GET /api/wealth', () => {
     expect(assets[0]).toMatchObject({ priceCents: 894 });
   }, 6000);
 
+  test('asks about one asset at a time, as the free plan allows', async () => {
+    const quotes = new FakeQuotes();
+    let running = 0;
+    let mostAtOnce = 0;
+    quotes.answer = async () => {
+      running += 1;
+      mostAtOnce = Math.max(mostAtOnce, running);
+      await Promise.resolve();
+      running -= 1;
+      return { priceCents: 1000, dayChangeBps: null, quotedAt: null };
+    };
+    const { agent, wealth } = await setup(quotes);
+    await agent.post('/api/assets').send(anAsset()).expect(201);
+    await agent
+      .post('/api/assets')
+      .send(anAsset({ name: 'HGLG11' }))
+      .expect(201);
+
+    await wealth();
+
+    expect(quotes.tickers).toHaveLength(2);
+    expect(mostAtOnce).toBe(1);
+  });
+
+  test('leaves the assets it had no time for to the next read, without marking them', async () => {
+    const quotes = new FakeQuotes();
+    const answer = quotes.answer;
+    quotes.answer = (_, signal) =>
+      new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => reject(new Error('aborted')));
+      });
+    const { agent, wealth } = await setup(quotes);
+    await agent.post('/api/assets').send(anAsset()).expect(201);
+    await agent
+      .post('/api/assets')
+      .send(anAsset({ name: 'HGLG11' }))
+      .expect(201);
+
+    const first = await wealth();
+    expect(quotes.tickers).toEqual(['MXRF11']);
+    expect(first.assets[0]).toMatchObject({ name: 'MXRF11', quoteFailed: true });
+    expect(first.assets[1]).toMatchObject({ name: 'HGLG11', quoteFailed: false });
+
+    quotes.answer = answer;
+    await wealth();
+    expect(quotes.tickers).toEqual(['MXRF11', 'HGLG11']);
+  }, 6000);
+
+  test('keeps a lookup cut short by the deadline due, when an earlier one already used the time', async () => {
+    const quotes = new FakeQuotes();
+    const answer = quotes.answer;
+    quotes.answer = (ticker, signal) =>
+      ticker === 'MXRF11'
+        ? answer(ticker)
+        : new Promise((_resolve, reject) => {
+            signal?.addEventListener('abort', () => reject(new Error('aborted')));
+          });
+    const { agent, wealth } = await setup(quotes);
+    await agent.post('/api/assets').send(anAsset()).expect(201);
+    await agent
+      .post('/api/assets')
+      .send(anAsset({ name: 'HGLG11' }))
+      .expect(201);
+
+    const first = await wealth();
+    expect(first.assets[1]).toMatchObject({ name: 'HGLG11', quoteFailed: false });
+
+    quotes.answer = answer;
+    const second = await wealth();
+    expect(second.assets[1]).toMatchObject({ name: 'HGLG11', priceCents: 1000, quoteFailed: false });
+  }, 6000);
+
   test('shares one refresh between requests that arrive together', async () => {
     const quotes = new FakeQuotes();
     let release = () => {};

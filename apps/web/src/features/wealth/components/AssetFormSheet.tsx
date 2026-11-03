@@ -1,6 +1,7 @@
 import {
   ASSET_CLASSES,
   draftToAssetInput,
+  QUOTED_ASSET_CLASSES,
   type AssetDraft,
   type IsoDate,
   type PricingMode,
@@ -15,9 +16,14 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@
 import { useSaveAsset } from '../api';
 
 const PRICING_OPTIONS: readonly { key: PricingMode; label: string; hint: string }[] = [
-  { key: 'auto', label: 'Cotação automática', hint: 'Ações, FIIs, ETFs, cripto e moedas' },
-  { key: 'manual', label: 'Manual, no fechamento', hint: 'Tesouro, caixinhas, CDB, saldos' },
+  { key: 'auto', label: 'Cotação automática', hint: 'FIIs e ETFs' },
+  { key: 'manual', label: 'Manual, no fechamento', hint: 'Tesouro, caixinhas, CDB, saldos, cripto e câmbio' },
 ];
+
+const QUOTED_PRICE_HINT =
+  'Preenchida pela cotação automática pelo ticker. Edite só se a cotação não for encontrada.';
+const UNQUOTED_PRICE_HINT =
+  'Esta classe não tem cotação automática. Mantenha o preço atualizado aqui ou use o modo manual.';
 
 const INPUT_CLASS =
   'h-11 w-full rounded-[10px] border border-input bg-card px-3 font-normal text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
@@ -195,7 +201,7 @@ function AssetForm({
                 placeholder="0,00"
                 inputMode="decimal"
                 amount
-                hint="Preenchida pela cotação automática pelo ticker. Edite só se a cotação não for encontrada."
+                hint={QUOTED_ASSET_CLASSES.includes(assetClass) ? QUOTED_PRICE_HINT : UNQUOTED_PRICE_HINT}
                 {...register('price')}
               />
             </div>

@@ -1,9 +1,10 @@
 import type { ValuedAsset } from '@livro-caixa/domain';
-import { Pencil, RefreshCw, RefreshCwOff, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { useDeleteAsset } from '../api';
 import type { AssetGroupView, AssetRow, ValueTone } from '../view-model';
+import { PricingTag } from './PricingTag';
 
 const COLUMNS = 'minmax(200px,1.5fr) 96px 108px 108px 118px 118px 132px 112px';
 const ACTIONS_COLUMN = '92px';
@@ -132,24 +133,6 @@ function GroupHeader({ group }: { group: AssetGroupView }) {
         <span className="text-muted-foreground">{group.percent}</span>
       </span>
     </div>
-  );
-}
-
-function PricingTag({ tag }: { tag: AssetRow['pricingTag'] }) {
-  if (tag.kind === 'manual') return <span>{tag.label}</span>;
-  if (tag.kind === 'updated') {
-    return (
-      <span className="flex items-center gap-1 text-income">
-        <RefreshCw className="size-3" aria-hidden="true" />
-        {tag.label}
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center gap-1 rounded-full border border-dashed border-pending-border bg-pending-bg px-2 font-semibold text-pending">
-      <RefreshCwOff className="size-3" aria-hidden="true" />
-      {tag.label}
-    </span>
   );
 }
 

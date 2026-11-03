@@ -9,17 +9,22 @@ import {
   formatSignedMoney,
   monthLabel,
   monthName,
+  unavailableQuoteCount,
   type Asset,
   type ClosingEdits,
   type MonthKey,
   type Wealth,
 } from '@livro-caixa/domain';
+import { pricingOf, type AssetRow } from './view-model';
 
 const NO_VALUE = '—';
+const MANUAL_REVIEW = 'Uma vez por mês: confira os valores manuais e informe aportes ou resgates.';
+const AUTO_TRADES = 'Compras e vendas são registradas editando o ativo (quantidade e preço médio).';
 
 type LastClosing = { month: MonthKey; totalCents: number };
 
-export type ClosingBanner = { kind: 'open'; title: string } | { kind: 'waiting'; label: string } | null;
+export type ClosingBanner =
+  { kind: 'open'; title: string; detail: string } | { kind: 'waiting'; label: string } | null;
 
 export interface ClosingRowView {
   id: string;
@@ -38,7 +43,11 @@ export interface ClosingRowView {
 export interface ClosingView {
   subtitle: string;
   manualRows: ClosingRowView[];
-  autoRows: { id: string; name: string; subtitle: string; value: string }[];
+  autoNote: string;
+  autoRows: ({ id: string; name: string; subtitle: string; value: string } & Pick<
+    AssetRow,
+    'pricingTag' | 'priceNote'
+  >)[];
   total: string;
   change: string;
   contributions: string;
@@ -48,10 +57,34 @@ export interface ClosingView {
   submitLabel: string;
 }
 
+function missingQuotes(count: number): string {
+  return count === 1
+    ? '1 ativo sem cotação usa o último preço salvo.'
+    : `${count} ativos sem cotação usam o último preço salvo.`;
+}
+
+function closingAutoNote(assets: Asset[]): string {
+  const missing = unavailableQuoteCount(assets);
+  return missing === 0
+    ? `Já atualizadas, nada a fazer. ${AUTO_TRADES}`
+    : `${missingQuotes(missing)} Para atualizar o preço, edite o ativo antes de fechar. ${AUTO_TRADES}`;
+}
+
+function closingBannerDetail(assets: Asset[]): string {
+  const missing = unavailableQuoteCount(assets);
+  return missing === 0
+    ? `${MANUAL_REVIEW} As cotações automáticas já estão em dia.`
+    : `${MANUAL_REVIEW} ${missingQuotes(missing)}`;
+}
+
 export function closingBanner(wealth: Wealth): ClosingBanner {
   const open = wealth.openMonth;
   if (wealth.closingAvailable) {
-    return { kind: 'open', title: `O fechamento de ${monthLabel(open)} está disponível.` };
+    return {
+      kind: 'open',
+      title: `O fechamento de ${monthLabel(open)} está disponível.`,
+      detail: closingBannerDetail(wealth.assets),
+    };
   }
   const last = wealth.kpis.lastClosing;
   if (!last) return null;
@@ -77,6 +110,7 @@ export function closingView(
   edits: ClosingEdits,
   month: MonthKey,
   last: LastClosing | null,
+  now: number,
 ): ClosingView {
   const draft = closingDraft(assets, edits);
   const { changeCents, yieldCents } = differenceOf(
@@ -102,7 +136,9 @@ export function closingView(
         valueValid: valueCents !== null,
       };
     }),
+    autoNote: closingAutoNote(assets),
     autoRows: draft.autoAssets.map((asset) => ({
+      ...pricingOf(asset, now),
       id: asset.id,
       name: asset.name,
       subtitle: `${asset.institution} · ${formatQuantity(asset.quantityE8)} × ${formatMoney(asset.priceCents)}`,
