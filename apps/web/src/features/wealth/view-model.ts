@@ -1,6 +1,7 @@
 import {
   allocationSegments,
   dateParts,
+  elapsedLabel,
   formatCompactAmount,
   formatMoney,
   formatPercent,
@@ -11,11 +12,13 @@ import {
   MINUS,
   monthLabel,
   monthName,
+  quoteStatus,
   assetClassLabel,
   BASIS_POINTS,
   type AssetGroup,
   type Cents,
   type EvolutionPoint,
+  type IsoDate,
   type MonthKey,
   type ValuedAsset,
   type Wealth,
@@ -57,8 +60,9 @@ export interface AssetRow {
   id: string;
   name: string;
   subtitle: string;
-  isAuto: boolean;
-  pricingLabel: string;
+  pricingTag: { kind: 'updated' | 'unavailable' | 'manual'; label: string };
+  /** Says how old the price of an unavailable quote is. */
+  priceNote: string;
   quantity: string;
   avgPrice: string;
   price: string;
@@ -97,6 +101,7 @@ export interface WealthViewModel {
   chart: { ticks: EvolutionTick[]; bars: EvolutionBar[] };
   allocation: AllocationView;
   groups: AssetGroupView[];
+  hasUnavailableQuote: boolean;
   institutions: string[];
 }
 
@@ -229,10 +234,30 @@ function allocationOf(groups: AssetGroup[]): AllocationView {
   };
 }
 
-function pricingLabelOf(asset: ValuedAsset): string {
-  if (asset.pricing === 'auto') return 'Cotação automática';
-  const { dd, mm } = dateParts(asset.updatedAt);
-  return `Manual · ${dd}/${mm}`;
+function dayAndMonth(date: IsoDate): string {
+  const { dd, mm } = dateParts(date);
+  return `${dd}/${mm}`;
+}
+
+function pricingOf(asset: ValuedAsset, now: number): Pick<AssetRow, 'pricingTag' | 'priceNote'> {
+  if (asset.pricing !== 'auto') {
+    return {
+      pricingTag: { kind: 'manual', label: `Manual · ${dayAndMonth(asset.updatedAt)}` },
+      priceNote: '',
+    };
+  }
+  const status = quoteStatus(asset);
+  if (status.kind === 'updated') {
+    return {
+      pricingTag: { kind: 'updated', label: `Atualizada ${elapsedLabel(status.quotedAt, now)}` },
+      priceNote: '',
+    };
+  }
+  return {
+    pricingTag: { kind: 'unavailable', label: 'Cotação indisponível' },
+    priceNote:
+      status.quotedAt === null ? `em ${dayAndMonth(asset.updatedAt)}` : elapsedLabel(status.quotedAt, now),
+  };
 }
 
 function quantityOf(asset: ValuedAsset): string {
@@ -249,7 +274,7 @@ function dayOf(asset: ValuedAsset): Pick<AssetRow, 'day' | 'dayTone'> {
   };
 }
 
-function rowOf(asset: ValuedAsset, grouping: WealthGrouping): AssetRow {
+function rowOf(asset: ValuedAsset, grouping: WealthGrouping, now: number): AssetRow {
   const isAuto = asset.pricing === 'auto';
   const { costCents, resultCents } = asset;
   return {
@@ -257,8 +282,7 @@ function rowOf(asset: ValuedAsset, grouping: WealthGrouping): AssetRow {
     id: asset.id,
     name: asset.name,
     subtitle: grouping === 'class' ? asset.institution : assetClassLabel(asset.assetClass),
-    isAuto,
-    pricingLabel: pricingLabelOf(asset),
+    ...pricingOf(asset, now),
     quantity: quantityOf(asset),
     avgPrice: isAuto && asset.avgPriceCents !== null ? formatMoney(asset.avgPriceCents) : NO_VALUE,
     price: isAuto ? formatMoney(asset.priceCents) : NO_VALUE,
@@ -273,7 +297,7 @@ function rowOf(asset: ValuedAsset, grouping: WealthGrouping): AssetRow {
   };
 }
 
-function groupOf(group: AssetGroup, grouping: WealthGrouping): AssetGroupView {
+function groupOf(group: AssetGroup, grouping: WealthGrouping, now: number): AssetGroupView {
   return {
     key: group.key,
     name: group.name,
@@ -281,11 +305,16 @@ function groupOf(group: AssetGroup, grouping: WealthGrouping): AssetGroupView {
     count: pluralize(group.assets.length, 'ativo', 'ativos'),
     value: formatMoney(group.valueCents),
     percent: shareLabel(group.share),
-    rows: group.assets.map((asset) => rowOf(asset, grouping)),
+    rows: group.assets.map((asset) => rowOf(asset, grouping, now)),
   };
 }
 
-export function wealthViewModel(wealth: Wealth, grouping: WealthGrouping, calm: boolean): WealthViewModel {
+export function wealthViewModel(
+  wealth: Wealth,
+  grouping: WealthGrouping,
+  calm: boolean,
+  now: number,
+): WealthViewModel {
   const groups = groupAssets(wealth.assets, grouping);
   const institutions = institutionsOf(wealth.assets);
   const { kpis } = wealth;
@@ -301,7 +330,10 @@ export function wealthViewModel(wealth: Wealth, grouping: WealthGrouping, calm: 
     ],
     chart: chartOf(wealth.evolution),
     allocation: allocationOf(groups),
-    groups: groups.map((group) => groupOf(group, grouping)),
+    groups: groups.map((group) => groupOf(group, grouping, now)),
+    hasUnavailableQuote: wealth.assets.some(
+      (asset) => asset.pricing === 'auto' && quoteStatus(asset).kind === 'unavailable',
+    ),
     institutions,
   };
 }

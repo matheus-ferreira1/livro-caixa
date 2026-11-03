@@ -3,6 +3,9 @@ import { describe, expect, test } from 'vitest';
 import { wealthViewModel } from './view-model';
 
 const TODAY = '2026-11-03';
+const NOW = Date.UTC(2026, 10, 3, 15, 0);
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
 
 const manual = (overrides: Partial<Extract<Asset, { pricing: 'manual' }>> = {}): Asset => ({
   id: crypto.randomUUID(),
@@ -16,8 +19,24 @@ const manual = (overrides: Partial<Extract<Asset, { pricing: 'manual' }>> = {}):
   ...overrides,
 });
 
+const auto = (overrides: Partial<Extract<Asset, { pricing: 'auto' }>> = {}): Asset => ({
+  id: crypto.randomUUID(),
+  institution: 'Clear',
+  name: 'MXRF11',
+  assetClass: 'fii',
+  pricing: 'auto',
+  quantityE8: 100_000_000,
+  avgPriceCents: null,
+  priceCents: 894,
+  dayChangeBps: null,
+  quotedAt: null,
+  quoteFailed: false,
+  updatedAt: '2026-10-28',
+  ...overrides,
+});
+
 const viewOf = (assets: Asset[], options: { calm?: boolean } = {}) =>
-  wealthViewModel(buildWealth({ assets, snapshots: [], today: TODAY }), 'class', options.calm ?? true);
+  wealthViewModel(buildWealth({ assets, snapshots: [], today: TODAY }), 'class', options.calm ?? true, NOW);
 
 describe('wealthViewModel', () => {
   test('uses singular labels for one asset in one institution', () => {
@@ -26,26 +45,59 @@ describe('wealthViewModel', () => {
 
   test('tags a manual asset with its update date', () => {
     const [group] = viewOf([manual()]).groups;
-    expect(group?.rows[0]).toMatchObject({ pricingLabel: 'Manual · 28/10', quantity: '—', price: '—' });
+    expect(group?.rows[0]).toMatchObject({
+      pricingTag: { kind: 'manual', label: 'Manual · 28/10' },
+      priceNote: '',
+      quantity: '—',
+      price: '—',
+    });
   });
 
-  test('tags an automatic asset and adds the currency to a câmbio quantity', () => {
+  test('tells how long ago an updated quote was current', () => {
+    const [group] = viewOf([auto({ quotedAt: NOW - 12 * MINUTE })]).groups;
+    expect(group?.rows[0]).toMatchObject({
+      pricingTag: { kind: 'updated', label: 'Atualizada há 12 min' },
+      priceNote: '',
+    });
+  });
+
+  test('reads a quote from this very minute as now', () => {
+    const [group] = viewOf([auto({ quotedAt: NOW })]).groups;
+    expect(group?.rows[0]?.pricingTag.label).toBe('Atualizada agora');
+  });
+
+  test('flags an asset never quoted and dates its typed price', () => {
+    const [group] = viewOf([auto()]).groups;
+    expect(group?.rows[0]).toMatchObject({
+      pricingTag: { kind: 'unavailable', label: 'Cotação indisponível' },
+      priceNote: 'em 28/10',
+    });
+  });
+
+  test('flags a failed check and shows the age of the last quote', () => {
+    const [group] = viewOf([auto({ quotedAt: NOW - 3 * DAY, quoteFailed: true })]).groups;
+    expect(group?.rows[0]).toMatchObject({
+      pricingTag: { kind: 'unavailable', label: 'Cotação indisponível' },
+      priceNote: 'há 3 dias',
+    });
+  });
+
+  test('says when any quote is unavailable', () => {
+    expect(viewOf([auto()]).hasUnavailableQuote).toBe(true);
+    expect(viewOf([auto({ quotedAt: NOW }), manual()]).hasUnavailableQuote).toBe(false);
+  });
+
+  test('adds the currency to a câmbio quantity', () => {
     const [group] = viewOf([
-      {
-        id: 'usd',
+      auto({
         institution: 'Wise',
         name: 'Dólar',
         assetClass: 'cambio',
-        pricing: 'auto',
         quantityE8: 489_000_000,
-        avgPriceCents: null,
         priceCents: 519,
-        dayChangeBps: null,
-        updatedAt: TODAY,
-      },
+      }),
     ]).groups;
     expect(group?.rows[0]).toMatchObject({
-      pricingLabel: 'Cotação automática',
       quantity: '4,89 USD',
       avgPrice: '—',
       invested: '—',

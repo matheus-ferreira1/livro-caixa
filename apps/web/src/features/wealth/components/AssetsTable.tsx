@@ -1,5 +1,5 @@
 import type { ValuedAsset } from '@livro-caixa/domain';
-import { Pencil, RefreshCw, Trash2 } from 'lucide-react';
+import { Pencil, RefreshCw, RefreshCwOff, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { useDeleteAsset } from '../api';
@@ -18,13 +18,22 @@ const TONE_TEXT: Record<ValueTone, string> = {
 interface AssetsTableProps {
   groups: AssetGroupView[];
   showDaily: boolean;
+  hasUnavailableQuote: boolean;
   invested: string;
   total: string;
   onNew: () => void;
   onEdit: (asset: ValuedAsset) => void;
 }
 
-export function AssetsTable({ groups, showDaily, invested, total, onNew, onEdit }: AssetsTableProps) {
+export function AssetsTable({
+  groups,
+  showDaily,
+  hasUnavailableQuote,
+  invested,
+  total,
+  onNew,
+  onEdit,
+}: AssetsTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const remove = useDeleteAsset();
   const gridTemplateColumns = showDaily
@@ -88,8 +97,14 @@ export function AssetsTable({ groups, showDaily, invested, total, onNew, onEdit 
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted px-5 py-3.5 text-sm text-muted-foreground">
-        <span>
-          Resultado = valor atual − valor aplicado. Aportes informados no fechamento entram no valor aplicado.
+        <span className="flex flex-col gap-1">
+          <span>
+            Resultado = valor atual − valor aplicado. Aportes informados no fechamento entram no valor
+            aplicado.
+          </span>
+          {hasUnavailableQuote && (
+            <span>Sem cotação, o ativo usa o último preço salvo. Para atualizar, edite o ativo.</span>
+          )}
         </span>
         <span className="flex flex-wrap gap-5 font-mono">
           <span>
@@ -117,6 +132,24 @@ function GroupHeader({ group }: { group: AssetGroupView }) {
         <span className="text-muted-foreground">{group.percent}</span>
       </span>
     </div>
+  );
+}
+
+function PricingTag({ tag }: { tag: AssetRow['pricingTag'] }) {
+  if (tag.kind === 'manual') return <span>{tag.label}</span>;
+  if (tag.kind === 'updated') {
+    return (
+      <span className="flex items-center gap-1 text-income">
+        <RefreshCw className="size-3" aria-hidden="true" />
+        {tag.label}
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 rounded-full border border-dashed border-pending-border bg-pending-bg px-2 font-semibold text-pending">
+      <RefreshCwOff className="size-3" aria-hidden="true" />
+      {tag.label}
+    </span>
   );
 }
 
@@ -149,17 +182,24 @@ function Row({
       >
         <span className="flex min-w-0 flex-col gap-0.5 font-sans">
           <span className="truncate text-[15px] font-semibold">{row.name}</span>
-          <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted-foreground">
-            <span className="font-semibold text-icon">{row.subtitle}</span>·
-            <span className={cn('flex items-center gap-1', row.isAuto && 'text-income')}>
-              {row.isAuto && <RefreshCw className="size-3" aria-hidden="true" />}
-              {row.pricingLabel}
-            </span>
+          {/* The tag does not fit beside most institutions, and every row should break the same way. */}
+          <span
+            className={cn(
+              'flex gap-1.5 text-[12.5px] text-muted-foreground',
+              row.pricingTag.kind === 'unavailable' ? 'flex-col items-start' : 'flex-wrap items-center',
+            )}
+          >
+            <span className="font-semibold text-icon">{row.subtitle}</span>
+            {row.pricingTag.kind !== 'unavailable' && '·'}
+            <PricingTag tag={row.pricingTag} />
           </span>
         </span>
         <span className="text-right">{row.quantity}</span>
         <span className="text-right">{row.avgPrice}</span>
-        <span className="text-right">{row.price}</span>
+        <span className="flex flex-col items-end">
+          <span>{row.price}</span>
+          {row.priceNote && <span className="text-xs text-muted-foreground">{row.priceNote}</span>}
+        </span>
         <span className="text-right text-icon">{row.invested}</span>
         <span className="text-right font-semibold">{row.current}</span>
         <span className={cn('flex flex-col items-end', TONE_TEXT[row.resultTone])}>

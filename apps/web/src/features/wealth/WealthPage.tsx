@@ -19,7 +19,7 @@ export function WealthPage() {
   const [calm, setCalm] = useState(true);
   const [formTarget, setFormTarget] = useState<AssetFormTarget | null>(null);
   const [closingOpen, setClosingOpen] = useState(false);
-  const wealth = data && wealthViewModel(data, grouping, calm);
+  const wealth = data && wealthViewModel(data, grouping, calm, Date.now());
   const openNewAsset = () => setFormTarget({ id: null, draft: emptyAssetDraft() });
 
   return (
@@ -64,6 +64,7 @@ export function WealthPage() {
           <AssetsTable
             groups={wealth.groups}
             showDaily={!calm}
+            hasUnavailableQuote={wealth.hasUnavailableQuote}
             invested={wealth.invested}
             total={wealth.total}
             onNew={openNewAsset}
