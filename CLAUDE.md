@@ -1,6 +1,6 @@
 # Livro-caixa
 
-Self-hosted household cash book for a couple. It tracks income and expenses, marks bills that are split with a partner, and works out the monthly settlement (**acerto**). Later phases add recurring entries, a monthly summary, a dashboard and a net-worth tracker. Everything runs in a single Docker container, and the data stays on the user's own instance.
+Self-hosted household cash book for a couple. It tracks income and expenses, marks bills that are split with a partner, and works out the monthly settlement (**acerto**). It also has recurring entries, a monthly summary, a dashboard and a net-worth tracker. Everything runs in a single Docker container, and the data stays on the user's own instance.
 
 The source design is the Design canvas "Livro-caixa — Lançamentos e acerto": https://claude.ai/code/artifact/fe1ce3e5-2bb1-4f8e-8afa-5406b57c8a9a. Its `project/Main.dc.html` holds the whole interactive prototype, markup and logic. When a story below is ambiguous, the prototype decides.
 
@@ -59,7 +59,7 @@ e2e/                    Playwright specs
 ```bash
 bun install
 bun run dev            # api on :3000 and web on :5173 (proxying /api)
-bun run seed:demo      # loads the prototype's sample data (Nov 2025 – Oct 2026) into an empty dev database
+bun run seed:demo      # loads the prototype's sample ledger (Nov 2025 – Oct 2026) and portfolio (assets and 12 closings) into a dev database, each only if it is empty
 bun run test           # all unit + integration tests
 bun run test:e2e       # Playwright: builds the SPA and serves it from the API on :4173 with an in-memory DB
 bun run lint
@@ -101,9 +101,9 @@ infrastructure (sqlite, hashing) implements application ports
 
 ### Design patterns in use
 
-- **Repository**: persistence behind an interface (`TransactionRepository`, `SessionRepository`, `UserRepository`, `CategoryRepository`, `SettingsRepository`).
-- **Use case / command**: `Login`, `Logout`, `ListTransactions`, `CreateTransaction`, `UpdateTransaction`, `DeleteTransaction`, …
-- **Adapter**: SQLite repositories, `BunPasswordHasher`, `SystemClock`.
+- **Repository**: persistence behind an interface (`TransactionRepository`, `SessionRepository`, `UserRepository`, `CategoryRepository`, `SettingsRepository`, `AssetRepository`, `SnapshotRepository`).
+- **Use case / command**: `Login`, `Logout`, `ListTransactions`, `CreateTransaction`, `UpdateTransaction`, `DeleteTransaction`, `RegisterClosing`, `RefreshQuotes`, …
+- **Adapter**: SQLite repositories, `BunPasswordHasher`, `SystemClock`, `BrapiQuoteProvider`.
 - **Strategy**: sort comparators keyed by sort column; period-range resolvers.
 - **Factory / builder for tests**: `aTransaction({...overrides})`, `aCategory(...)`.
 - **Mapper / view model**: row view models in the web app, the same idea as `rowViewModel` in the prototype.
@@ -204,7 +204,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, #22). All planned phases are built; see the follow-ups under Phase 6._
+_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22) and the `parseMoney` fix (PR #23). All planned phases are built and merged. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -218,6 +218,16 @@ _Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, #22). All planned phases 
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
+
+## What comes next
+
+Nothing is in progress and no PR is open. No phase is planned, so what follows is a choice among these:
+
+1. **Decide the closing's copy (product decision).** It says automatic quotes are current ("As cotações automáticas já estão em dia", "Já atualizadas, nada a fazer"), but `cripto` and `cambio` are never quoted, nor is anything without a `BRAPI_TOKEN`. Until this changes, update those prices by editing the asset before closing a month.
+2. **Crypto and currency quotes.** They need brapi's paid plan or a second provider.
+3. **Required status checks on `main`.** Repo admin only: GitHub → Settings → Branches.
+
+The "Cotação automática" tag on assets that are never quoted is the same gap as item 1.
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -241,6 +251,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#20](https://github.com/matheus-ferreira1/livro-caixa/pull/20) | `feat/wealth-assets` | Migration `003_wealth`; asset, quantity, KPI, evolution and allocation rules; asset CRUD and `GET /api/wealth`; Patrimônio page with tiles, chart, allocation, table and asset sheet; demo portfolio |
 | [#21](https://github.com/matheus-ferreira1/livro-caixa/pull/21) | `feat/wealth-closing` | Closing availability and math; `POST /api/wealth/closings`, atomic across the snapshot and its assets; closing dialog and banners; e2e flow |
 | [#22](https://github.com/matheus-ferreira1/livro-caixa/pull/22) | `feat/wealth-quotes` | `QuoteProvider` port, brapi adapter, `RefreshQuotes` on `GET /api/wealth`, optional `BRAPI_TOKEN` |
+| [#23](https://github.com/matheus-ferreira1/livro-caixa/pull/23) | `fix/parse-money-thousands` | `parseMoney` reads a dot before three digits as a thousands separator |
 
 ### Web routes
 
@@ -350,7 +361,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - Expired sessions are purged on boot and then every hour (`startSessionPurge` in `apps/api/src/session-purge.ts`, use case `PurgeExpiredSessions`). `Authenticate` still drops an expired session as soon as its cookie comes back.
 - The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
 - Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
-- Demo data (`seed:demo`) is for development only and refuses to load into a non-empty database.
+- Demo data (`seed:demo`) is for development only and never loads into a part of the database that already has data (see Phase 6).
 - **The app is individual (decided 2026-10-29).** One person uses each instance. The partner is only a name and a split share in `settings` and never gets a login. Do not add per-user data, partner accounts or sharing features. The CLI can still create more accounts, which all see the same ledger; keep that for admin and recovery only.
 
 ### Decisions taken in Phase 2
@@ -489,7 +500,7 @@ Follow-ups found during Phase 1.5:
   - acerto card
 - [x] Make Visão geral the landing page after login and the `/` redirect.
 
-### Phase 6 — Patrimônio and Fechamento (US-10)
+### Phase 6 — Patrimônio and Fechamento (US-10) (done, PRs #20, #21, #22)
 
 - [x] Migration `003_wealth`: `assets` and `snapshots` tables.
 - [x] Domain: asset value and cost, KPIs, allocation by class and institution.
@@ -557,10 +568,10 @@ As the instance owner, I want to sign in with the account my admin created, so m
 
 ### US-02 Sign out and the app shell — ✅ Done (Phase 1, PR #1)
 - Dark header (`#17201C`, min-height 64px) with the logo and "Livro-caixa".
-- Nav (aria "Principal"). Phase 1 shows only "Lançamentos". The full nav is "Visão geral", "Lançamentos", "Patrimônio", "Resumo mensal", "Configurações". The active item has bg `#2C3832`, white text and `aria-current="page"`; inactive items use `#C9D3CD`.
+- Nav (aria "Principal"). The nav is "Visão geral", "Lançamentos", "Patrimônio", "Resumo mensal", "Configurações". The active item has bg `#2C3832`, white text and `aria-current="page"`; inactive items use `#C9D3CD`.
 - User menu button: a mint avatar with initials plus a chevron (aria "Conta de {nome}", `aria-haspopup=menu`). It opens a 264px white panel with:
   - the avatar, the name and the e-mail (ellipsis)
-  - "Configurações" (hidden until US-11)
+  - "Configurações"
   - "Sair" in `#A8401A`
 - Clicking outside closes the menu.
 - Sign out returns to the login screen with the notice "Você saiu da sua conta." (`#E3F1EA` / `#136B4A`, check icon).
@@ -572,7 +583,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 - Header:
   - the segmented control "Por mês | Todos" (aria "Modo de exibição")
   - month navigation: 44px outline buttons "Mês anterior" / "Próximo mês" around h1 `{Mês AAAA}`, 32px bold
-  - on the right, the primary button "Novo lançamento" (plus icon). "Gerar recorrentes" (outline) and "Gerar acerto" (blue outline) appear here too, once US-06 and US-07 ship.
+  - on the right, the primary button "Novo lançamento" (plus icon). "Gerar recorrentes" (outline) and "Gerar acerto" (blue outline) appear here too.
 - Four tiles. Each white tile has a 14px radius, a colored dot and label, a 26px mono value and a 13px muted sub-line. The tiles read only the viewed month:
   1. "Receitas" (`#136B4A`): confirmed receitas. Sub-line: "Previsto no mês: {all receitas}".
   2. "Despesas" (`#A8401A`): confirmed despesas. Sub-line: "Previsto no mês: {all despesas}".
@@ -628,7 +639,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - Acerto only: the info note "Acerto é o valor recebido de {partnerName} referente às contas divididas do mês. Não entra como receita."
   - "Data" (date input) and "Valor (R$)" (mono, right-aligned, placeholder "0,00"), side by side.
   - "Descrição", placeholder "Ex.: Conta de luz".
-  - "Categoria" chips filtered by type, not shown for acertos. The link "Gerenciar categorias" appears once US-11 ships.
+  - "Categoria" chips filtered by type, not shown for acertos. With the link "Gerenciar categorias".
   - "Observação" (marked "Opcional"): a textarea, placeholder "Ex.: leitura de 12/09 a 11/10".
   - Options box with checkboxes:
     - "Conta dividida": despesa only. Description: "Entra no cálculo do acerto com {partnerName} ({share}% para {partnerName})."
