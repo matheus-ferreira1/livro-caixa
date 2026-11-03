@@ -20,6 +20,9 @@ export const assetClassLabel = (key: AssetClass): string =>
 
 export const ASSET_CLASS_KEYS = ASSET_CLASSES.map((c) => c.key) as [AssetClass, ...AssetClass[]];
 
+/** The classes quoted automatically. Crypto and currency quotes need a paid plan, so they stay typed. */
+export const QUOTED_ASSET_CLASSES: readonly AssetClass[] = ['etf', 'fii'];
+
 /** The scale of a quote's daily change: 100 basis points are 1%. */
 export const BASIS_POINTS = 10_000;
 

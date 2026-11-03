@@ -1,5 +1,6 @@
 import type {
   Asset,
+  AutoAsset,
   Category,
   MonthKey,
   PublicUser,
@@ -76,6 +77,27 @@ export interface AssetRepository {
   insert(asset: Asset): void;
   update(asset: Asset): void;
   delete(id: string): boolean;
+  /** The quotable assets last checked at or before `checkedBefore`, or never. */
+  listQuotesDue(checkedBefore: number): AutoAsset[];
+  /**
+   * Stamps the check and stores the quote. A null quote keeps the price and clears the daily
+   * change, which would be an old one. Ignored if the asset's ticker changed meanwhile.
+   */
+  recordQuote(asset: QuotedAsset, quote: Quote | null, checkedAt: number): void;
+}
+
+/** The asset as it was when its quote was requested. */
+export type QuotedAsset = Pick<AutoAsset, 'id' | 'name'>;
+
+export interface Quote {
+  priceCents: number;
+  /** Null when the source does not say. */
+  dayChangeBps: number | null;
+}
+
+export interface QuoteProvider {
+  /** Null when there is no quote for that ticker. */
+  quote(ticker: string, signal?: AbortSignal): Promise<Quote | null>;
 }
 
 export interface SnapshotRepository {

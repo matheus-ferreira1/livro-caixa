@@ -9,8 +9,9 @@ const wealthQuery = z.object({ today: z.string().refine(isIsoDate) });
 export function wealthRouter(container: Container): Router {
   const router = Router();
 
-  router.get('/wealth', (req, res) => {
+  router.get('/wealth', async (req, res) => {
     const { today } = wealthQuery.parse(req.query);
+    await container.refreshQuotes.execute();
     res.json(container.getWealth.execute(today));
   });
 

@@ -82,6 +82,7 @@ Environment variables (`apps/api/src/config.ts`):
 | `SECURE_COOKIES` | `false` | Set `true` behind HTTPS |
 | `TRUST_PROXY` | `loopback` | Proxies allowed to set `X-Forwarded-For`, which decides the client IP for the per-IP login limit: `true`, `false`, a hop count, or a comma-separated list of IPs, CIDRs and `loopback` / `linklocal` / `uniquelocal`. Behind a reverse proxy in another container use `1` or `uniquelocal`. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | unset | First user, created only while the database has no users |
+| `BRAPI_TOKEN` | unset | Token for [brapi.dev](https://brapi.dev) quotes of ETFs and FIIs. Unset, the instance makes no outbound request and prices stay as typed. |
 
 ## Architecture
 
@@ -203,7 +204,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, with Phase 6 part 2 (PR #21). Next: quotes._
+_Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, #22). All planned phases are built; see the follow-ups under Phase 6._
 
 ## Summary
 
@@ -216,11 +217,11 @@ _Last updated: 2026-11-03, with Phase 6 part 2 (PR #21). Next: quotes._
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
-| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In progress: assets, page and closing in review; quotes next |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phases 1 to 5)
+## What is built (Phases 1 to 6)
 
 | PR | Branch | Delivered |
 |---|---|---|
@@ -239,6 +240,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#19](https://github.com/matheus-ferreira1/livro-caixa/pull/19) | `feat/dashboard` | `buildDashboard` and its KPI, donut, open-item and acerto rules; dashboard endpoint; Visão geral page with tiles, bars chart, donut, "Em aberto" and acerto card; Visão geral as the landing page |
 | [#20](https://github.com/matheus-ferreira1/livro-caixa/pull/20) | `feat/wealth-assets` | Migration `003_wealth`; asset, quantity, KPI, evolution and allocation rules; asset CRUD and `GET /api/wealth`; Patrimônio page with tiles, chart, allocation, table and asset sheet; demo portfolio |
 | [#21](https://github.com/matheus-ferreira1/livro-caixa/pull/21) | `feat/wealth-closing` | Closing availability and math; `POST /api/wealth/closings`, atomic across the snapshot and its assets; closing dialog and banners; e2e flow |
+| [#22](https://github.com/matheus-ferreira1/livro-caixa/pull/22) | `feat/wealth-quotes` | `QuoteProvider` port, brapi adapter, `RefreshQuotes` on `GET /api/wealth`, optional `BRAPI_TOKEN` |
 
 ### Web routes
 
@@ -279,7 +281,7 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
 | `GET /api/summary?year=YYYY&mode=real\|proj` | `GetYearSummary` | `{ year, mode, months[12], totals }` in cents; `mode` defaults to `real`. "Atual" and the default year come from the client. |
 | `GET /api/dashboard?month=YYYY-MM&mode=real\|proj` | `GetDashboard` | `{ month, mode, partnerName, kpis, series[12], categories, open, settlement }` in cents; `mode` defaults to `real`. `open` and `settlement` ignore the mode. Relative due labels come from the client, from `relativeDue` and its own "today". |
-| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, closingAvailable, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. |
+| `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, closingAvailable, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. With a `BRAPI_TOKEN`, it first refreshes quotes older than 30 minutes (`RefreshQuotes`), waiting at most 3 s; a failure never fails the read. |
 | `POST /api/wealth/closings` | `RegisterClosing` | 201 `{ snapshot }`; body `{ month, today, items: [{ assetId, flowCents, currentCents }] }`, one item per manual asset. The server recomputes the open month and total. 409 when the month is not open or the items do not match the manual assets, 400 "Revise os valores de “{nome}” ({instituição})." for a negative value. The snapshot and the assets are written in one transaction. |
 | `POST /api/assets` | `CreateAsset` | 201 `{ asset }`; body is `AssetInput` (amounts in cents, `quantityE8` scaled by 1e8, `today`). 400 with the design's messages. |
 | `PUT /api/assets/:id` | `UpdateAsset` | Full replace; may switch the pricing mode, which drops the old mode's fields |
@@ -328,9 +330,9 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 261 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 159 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 174 | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 262 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 192 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 175 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
@@ -414,6 +416,10 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - A skipped month closes in sequence, with today's values, as in the prototype.
 - A withdrawal larger than the invested amount stops it at zero, where the prototype lets it go negative. What is left is all gain, and a negative cost would break the row's result and the sheet's validation. The full flow still counts in the closing's Aportes.
 - The "Aporte / resgate" input is plain text with no decimal keypad hint, because phone decimal keypads often have no minus key.
+- Quotes come from brapi and only with `BRAPI_TOKEN` (decided 2026-11-03). With no token nothing leaves the instance, so "sem conta em serviço de terceiros" stays true. Only the `etf` and `fii` classes are quoted, which is what the free token covers; `cripto` and `cambio` keep a typed price although the design's "Cotação automática" tag stays on them. This is a known gap in the copy.
+- Quotes refresh when Patrimônio is read, not on a timer: at one request per asset, a 30-minute timer costs 1,440 requests per asset per month against the free plan's 15,000. A failed lookup still stamps `quote_checked_at`, so a bad ticker is not retried on every page load, and it clears the daily change, which would be an old one. A daily change stored before a token was removed stays until the asset is switched to manual. Editing an asset clears the stamp, since its ticker may have changed, so a found quote replaces a price typed by hand.
+- The ticker is the asset's name, upper-cased, as the sheet's placeholder suggests.
+- The closing uses the stored quotes and does not refresh them: the page has already done so when it loaded.
 - `seed:demo` checks the ledger and the portfolio separately, so a dev database from before this phase can still get its demo portfolio.
 
 ## Roadmap
@@ -491,7 +497,14 @@ Follow-ups found during Phase 1.5:
 - [x] API: `POST /api/wealth/closings`.
 - [x] Web `/patrimonio`: header with "Modo tranquilo", KPI tiles, evolution chart, allocation bar, assets table, asset sheet.
 - [x] Web `/patrimonio`: banners, closing dialog.
-- [ ] Automatic quotes for `pricing: 'auto'` assets through brapi, with an optional `BRAPI_TOKEN` (decided 2026-11-03). A free token covers the `etf` and `fii` classes; crypto and currency need a paid plan, so those keep a typed price.
+- [x] Automatic quotes for `pricing: 'auto'` assets through brapi, with an optional `BRAPI_TOKEN` (decided 2026-11-03). A free token covers the `etf` and `fii` classes; crypto and currency need a paid plan, so those keep a typed price.
+
+Follow-ups found during Phase 6:
+
+- [x] Verify the Docker image with a real `BRAPI_TOKEN` (2026-11-03, Docker 28.4): an ETF is quoted from `oven/bun:1.3-slim` with the token, and keeps its typed price without it.
+- [ ] Crypto and currency quotes, which need brapi's paid plan or a second provider.
+- [ ] The closing's copy says automatic quotes are current ("As cotações automáticas já estão em dia", "Já atualizadas, nada a fazer"), but `cripto` and `cambio` are never quoted, nor is anything without a token. Following it registers a month with old prices. The copy is verbatim from the design, so changing it is a product decision.
+- [ ] `parseMoney` reads `1.234` (a dot with no comma) as R$ 3,34 instead of R$ 1.234,00. This predates Phase 6 and affects every money field.
 
 ---
 
@@ -751,9 +764,9 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - progress bar, then "{recebido} recebido · {n} contas divididas ({total})"
   - "Abrir acerto" opens US-06
 
-## Backlog — not started
+## Phase 6 — done
 
-### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — 🚧 Phase 6
+### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — ✅ Done (Phase 6, PRs #20, #21, #22)
 - Assets: `{ institution, name, assetClass, pricing: 'auto'|'manual', quantity, avgPrice, price, invested, current, dayChange, updatedAt }`.
   - Classes:
 
