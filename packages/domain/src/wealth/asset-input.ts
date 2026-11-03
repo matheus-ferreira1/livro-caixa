@@ -158,5 +158,7 @@ export function toAsset(id: string, input: AssetInput, existing: Asset | null): 
     avgPriceCents: input.avgPriceCents,
     priceCents: input.priceCents ?? 0,
     dayChangeBps: existing?.pricing === 'auto' ? existing.dayChangeBps : null,
+    quotedAt: null,
+    quoteFailed: false,
   };
 }

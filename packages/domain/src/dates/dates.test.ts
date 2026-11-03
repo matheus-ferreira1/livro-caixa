@@ -3,6 +3,7 @@ import {
   dateParts,
   daysBetween,
   defaultDateForMonth,
+  elapsedLabel,
   lastDayOfMonth,
   monthLabel,
   monthName,
@@ -59,5 +60,29 @@ describe('daysBetween', () => {
 
   test('crosses a daylight-saving change as whole days', () => {
     expect(daysBetween('2026-03-07', '2026-03-09')).toBe(2);
+  });
+});
+
+describe('elapsedLabel', () => {
+  const NOW = 1_790_000_000_000;
+  const MINUTE = 60_000;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
+  test.each([
+    [0, 'agora'],
+    [MINUTE - 1, 'agora'],
+    [MINUTE, 'há 1 min'],
+    [59 * MINUTE, 'há 59 min'],
+    [HOUR, 'há 1 h'],
+    [23 * HOUR + 59 * MINUTE, 'há 23 h'],
+    [DAY, 'há 1 dia'],
+    [3 * DAY, 'há 3 dias'],
+  ])('reads %d ms ago as %s', (elapsed, label) => {
+    expect(elapsedLabel(NOW - elapsed, NOW)).toBe(label);
+  });
+
+  test('reads a time ahead of a slow clock as now', () => {
+    expect(elapsedLabel(NOW + HOUR, NOW)).toBe('agora');
   });
 });

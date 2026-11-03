@@ -24,4 +24,5 @@ export * from './wealth/closing';
 export * from './wealth/evolution';
 export * from './wealth/kpis';
 export * from './wealth/quantity';
+export * from './wealth/quote-status';
 export * from './wealth/wealth';

@@ -46,6 +46,10 @@ export interface AutoAsset extends AssetBase {
   priceCents: Cents;
   /** Change of the quote today, in basis points. Null until a quote provides it. */
   dayChangeBps: number | null;
+  /** When the last quote found was current, in epoch ms. Null when the price was only ever typed. */
+  quotedAt: number | null;
+  /** The last check found no quote, so the price may be old. */
+  quoteFailed: boolean;
 }
 
 /** Valued by what is typed at each closing. */

@@ -17,6 +17,8 @@ const MONTH_NAMES = [
   'Dezembro',
 ];
 const MONTH_SHORT_NAME_LENGTH = 3;
+const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 3_600_000;
 const MS_PER_DAY = 86_400_000;
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
@@ -78,3 +80,13 @@ export const defaultDateForMonth = (key: MonthKey, today: IsoDate): IsoDate =>
 
 export const isIsoDate = (value: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value);
 export const isMonthKey = (value: string): boolean => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+
+/** How long ago an instant was, in epoch ms. `now` comes from the client, like every "today". */
+export function elapsedLabel(from: number, now: number): string {
+  const elapsed = now - from;
+  if (elapsed < MS_PER_MINUTE) return 'agora';
+  if (elapsed < MS_PER_HOUR) return `há ${Math.floor(elapsed / MS_PER_MINUTE)} min`;
+  if (elapsed < MS_PER_DAY) return `há ${Math.floor(elapsed / MS_PER_HOUR)} h`;
+  const days = Math.floor(elapsed / MS_PER_DAY);
+  return `há ${days} ${days === 1 ? 'dia' : 'dias'}`;
+}

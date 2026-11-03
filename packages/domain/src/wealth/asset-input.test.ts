@@ -134,6 +134,14 @@ describe('toAsset', () => {
     return result.input;
   };
 
+  test('forgets the quote of an edited asset, whose price may now be typed by hand', () => {
+    const existing = anAutoAsset({ quotedAt: 1_790_000_000_000, quoteFailed: true });
+    expect(toAsset(existing.id, inputOf(autoDraft()), existing)).toMatchObject({
+      quotedAt: null,
+      quoteFailed: false,
+    });
+  });
+
   test('builds a manual asset dated today', () => {
     expect(toAsset('a1', inputOf(manualDraft()), null)).toEqual({
       id: 'a1',
