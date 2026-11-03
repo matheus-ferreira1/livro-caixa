@@ -205,7 +205,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25) the closing's quote copy (PR #26) and the MIT license (PR #27). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26) and the MIT license (PR #27). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
