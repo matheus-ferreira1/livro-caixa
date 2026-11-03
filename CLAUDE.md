@@ -175,6 +175,7 @@ Fonts: **Schibsted Grotesk** (400/500/600/700) for UI and **IBM Plex Mono** (400
 | disabled text | `#B5BBB6` | Disabled pager arrows |
 | neutral swatch | `#9AA29D` | "Sem categoria", chart zero line |
 | chart bars | `#86BFA5` surplus with previstos, `#C2561F` deficit, `#E8A887` deficit with previstos, `#2F6E57` Acumulado | Resumo mensal |
+| dashboard chart | `#1A6E4E` Receitas, `#E8894A` Despesas, `#5FBF94` Receitas swatch on the dark tooltip, `#3A4640` tooltip divider, `#F1F2EE` hovered month, donut track and neutral badge | Visão geral |
 | current row | `#F7F8F4` | Current month in the Resumo table |
 | overlay | `rgba(23, 32, 28, 0.45)` | Modal and sheet backdrop |
 
@@ -313,7 +314,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 |---|---|---|
 | Domain unit | 164 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 119 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 145 | `bun run --filter '@livro-caixa/web' test` |
+| Web component | 147 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 4 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)".
@@ -373,6 +374,10 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - "{n} contas divididas" reads "1 conta dividida" for one bill, where the prototype always uses the plural.
 - A negative net-spend average divides by its absolute value, so "acima" and "abaixo" stay correct where the prototype would invert them.
 - On phones "Confirmar" takes its own line in each row, or the description would have no room. The date column is 64px, not 56px, so "Em 10 dias" stays on one line.
+- The axis scale starts at R$ 4, not the prototype's R$ 1, so an empty chart shows whole reais instead of rounded quarters.
+- The bars take keyboard focus and show the tooltip, and their aria label adds acertos and balanço, which the prototype leaves to the mouse.
+- The acerto badge keeps the prototype's rule: a 0% share with split bills reads "Sem contas divididas".
+- While another month loads, the cards keep the last data and name that data's month. The heading already shows the new month.
 - `SummaryTiles` gained `hint` and `delta`; tiles with a hint use the design's ink label and 28px value.
 
 ## Phase 1 placeholders to restore later
@@ -514,7 +519,7 @@ As the instance owner, I want to sign in with the account my admin created, so m
 - While submitting, the button reads "Entrando…" with bg `#4A544F` and is disabled.
 - "Esqueceu a senha?" (blue link button, `aria-expanded`) reveals the info box "Como cada instância é hospedada por você, a senha é redefinida pelo administrador do servidor, com o comando de redefinição do container."
 - Footnote with a lock icon: "Ainda sem conta? O primeiro acesso é criado pelo administrador ao configurar a instância."
-- On success, the user lands on **Lançamentos**. (Once Visão geral exists, it becomes the landing page.)
+- On success, the user lands on **Visão geral**.
 - "Manter conectado" checked gives a persistent session cookie (30 days); unchecked gives a browser-session cookie. The cookie is httpOnly and SameSite=Lax.
 
 ### US-02 Sign out and the app shell — ✅ Done (Phase 1, PR #1)

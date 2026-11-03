@@ -4,7 +4,7 @@ import type { Category, Transaction } from '../transactions/transaction';
 import type { SummaryMode } from '../transactions/year-summary';
 import { compareToAverage, type AverageComparison } from './kpis';
 
-export const OTHERS_SLICE_ID = 'outras';
+export const OTHERS_SLICE_ID = 'others';
 export const OTHERS_COLOR = '#9AA29D';
 
 const MAX_SLICES = 6;

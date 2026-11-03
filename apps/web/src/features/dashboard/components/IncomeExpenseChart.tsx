@@ -83,6 +83,7 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
                     group={group}
                     hovered={hovered === group.month}
                     onEnter={() => setHovered(group.month)}
+                    onLeave={() => setHovered(null)}
                   />
                 ))}
               </div>
@@ -111,16 +112,21 @@ function MonthBars({
   group,
   hovered,
   onEnter,
+  onLeave,
 }: {
   group: ChartGroup;
   hovered: boolean;
   onEnter: () => void;
+  onLeave: () => void;
 }) {
   return (
     <div
       role="img"
       aria-label={group.ariaLabel}
+      tabIndex={0}
       onMouseEnter={onEnter}
+      onFocus={onEnter}
+      onBlur={onLeave}
       className={cn(
         'relative flex h-full items-end justify-center gap-0.5 rounded-lg px-[14%]',
         hovered && 'bg-hover-track',

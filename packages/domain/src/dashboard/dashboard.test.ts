@@ -23,8 +23,8 @@ describe('niceAxis', () => {
     expect(niceAxis(1_100_000).topCents).toBe(1_500_000);
   });
 
-  test('floors the maximum at one real, so an empty period has whole-cent ticks', () => {
-    expect(niceAxis(0).ticks).toEqual([0, 25, 50, 75, 100]);
+  test('floors the maximum at R$ 4, so an empty period has whole-real ticks', () => {
+    expect(niceAxis(0).ticks).toEqual([0, 100, 200, 300, 400]);
   });
 });
 

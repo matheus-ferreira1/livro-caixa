@@ -207,7 +207,7 @@ describe('chart', () => {
       expense: formatMoney(40_000),
       settlement: formatMoney(5_000),
       balance: formatMoney(65_000),
-      ariaLabel: `Outubro 2026: receitas ${formatMoney(100_000)}, despesas ${formatMoney(40_000)}`,
+      ariaLabel: `Outubro 2026: receitas ${formatMoney(100_000)}, despesas ${formatMoney(40_000)}, acertos ${formatMoney(5_000)}, balanço ${formatMoney(65_000)}`,
     });
     expect(groups[0]?.hasData).toBe(false);
   });

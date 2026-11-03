@@ -254,7 +254,7 @@ function chartOf(series: DashboardMonth[]): DashboardViewModel['chart'] {
       expense: formatMoney(m.expenseCents),
       settlement: formatMoney(m.settlementCents),
       balance: formatMoney(m.balanceCents),
-      ariaLabel: `${monthLabel(m.month)}: receitas ${formatMoney(m.incomeCents)}, despesas ${formatMoney(m.expenseCents)}`,
+      ariaLabel: `${monthLabel(m.month)}: receitas ${formatMoney(m.incomeCents)}, despesas ${formatMoney(m.expenseCents)}, acertos ${formatMoney(m.settlementCents)}, balanço ${formatMoney(m.balanceCents)}`,
     })),
   };
 }

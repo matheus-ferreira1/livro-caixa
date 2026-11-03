@@ -14,7 +14,8 @@ import { openItems, type OpenItems } from './open-items';
 
 const WINDOW_MONTHS = 12;
 const AXIS_INTERVALS = 4;
-const AXIS_MINIMUM_CENTS = 100;
+// A R$ 4 scale gives whole-real ticks, which the one-decimal compact format can show exactly.
+const AXIS_MINIMUM_CENTS = 400;
 
 export type SettlementCardStatus = 'none' | 'settled' | 'partial' | 'pending';
 
@@ -89,7 +90,9 @@ function groupByMonth(transactions: Transaction[]): Map<MonthKey, Transaction[]>
   const groups = new Map<MonthKey, Transaction[]>();
   for (const t of transactions) {
     const month = monthOf(t.date);
-    groups.set(month, [...(groups.get(month) ?? []), t]);
+    const group = groups.get(month);
+    if (group) group.push(t);
+    else groups.set(month, [t]);
   }
   return groups;
 }

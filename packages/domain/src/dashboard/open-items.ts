@@ -1,5 +1,6 @@
 import { daysBetween, type IsoDate } from '../dates/dates';
 import { sumCents, type Cents } from '../money/money';
+import { compareByDate } from '../transactions/list-query';
 import type { Category, Transaction } from '../transactions/transaction';
 
 const MAX_OPEN_ROWS = 5;
@@ -21,12 +22,9 @@ export interface OpenItems {
 
 const totalOf = (list: Transaction[]): Cents => sumCents(list.map((t) => t.valueCents));
 
-const byDateThenDescription = (a: Transaction, b: Transaction): number =>
-  a.date.localeCompare(b.date) || a.description.localeCompare(b.description, 'pt-BR');
-
 /** What is still unconfirmed in the month, whatever the dashboard's mode. */
 export function openItems(monthTransactions: Transaction[], categories: Category[]): OpenItems {
-  const pending = monthTransactions.filter((t) => !t.confirmed).sort(byDateThenDescription);
+  const pending = monthTransactions.filter((t) => !t.confirmed).sort(compareByDate);
   const nameById = new Map(categories.map((c) => [c.id, c.name]));
   return {
     items: pending.slice(0, MAX_OPEN_ROWS).map((t) => ({

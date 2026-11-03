@@ -7,7 +7,7 @@ import {
   type SummaryMode,
   type Transaction,
 } from '@livro-caixa/domain';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
 import { DashboardPage } from './DashboardPage';
@@ -37,7 +37,7 @@ function setup(
   const ledger = [...entries];
   const dashboardRequests: string[] = [];
   const patches: { url: string; body: unknown }[] = [];
-  mockApi((url, init) => {
+  const fetchMock = mockApi((url, init) => {
     const { pathname, searchParams } = new URL(url, 'http://localhost');
     if (init.method === 'PATCH') {
       patches.push({ url: pathname, body: JSON.parse(String(init.body)) });
@@ -64,9 +64,24 @@ function setup(
     if (pathname === '/api/settings') return { status: 200, body: { settings: SETTINGS } };
     return undefined;
   });
+  const respond = fetchMock.getMockImplementation();
+  /** Keeps dashboard responses waiting until the returned function is called. */
+  const holdNextDashboard = () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    fetchMock.mockImplementation(async (input, init) => {
+      if (String(input).startsWith('/api/dashboard')) await gate;
+      if (!respond) throw new Error('fetch is not mocked');
+      return respond(input, init);
+    });
+    return release;
+  };
   return {
     dashboardRequests,
     patches,
+    holdNextDashboard,
     ...renderRoutes(
       [
         { path: '/visao-geral', element: <DashboardPage /> },
@@ -148,6 +163,26 @@ describe('DashboardPage', () => {
     const empty = screen.getByRole('img', { name: /^Fevereiro 2026: receitas/ });
     await user.hover(empty);
     expect(within(empty).getByText('Sem lançamentos')).toBeInTheDocument();
+  });
+
+  test('the bars show the tooltip on keyboard focus too', async () => {
+    setup(`/visao-geral?mes=${MONTH}`);
+    const first = await screen.findByRole('img', { name: /^Abril 2025: receitas/ });
+    act(() => first.focus());
+    await waitFor(() => expect(within(first).getByText('Sem lançamentos')).toBeInTheDocument());
+    act(() => first.blur());
+    await waitFor(() => expect(within(first).queryByText('Sem lançamentos')).not.toBeInTheDocument());
+  });
+
+  test('while another month loads, the cards name the month of the data they still show', async () => {
+    const { user, holdNextDashboard } = setup(`/visao-geral?mes=${MONTH}`);
+    await screen.findByText('Nada pendente em Março 2026.');
+    const release = holdNextDashboard();
+    await user.click(screen.getByRole('button', { name: 'Próximo mês' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Abril 2026' })).toBeInTheDocument();
+    expect(screen.getByText('Nada pendente em Março 2026.')).toBeInTheDocument();
+    act(release);
+    expect(await screen.findByText('Nada pendente em Abril 2026.')).toBeInTheDocument();
   });
 
   test('the donut shows the total, and a category on hover', async () => {

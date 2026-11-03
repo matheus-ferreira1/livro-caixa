@@ -1,8 +1,9 @@
 import { monthLabel, shiftMonth, todayIso, type SummaryMode } from '@livro-caixa/domain';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { RecurringDialog } from '@/features/recurring/RecurringDialog';
 import { SettlementDialog } from '@/features/settlement/SettlementDialog';
+import { ArrowButton } from '@/shared/ArrowButton';
 import { Segmented } from '@/shared/Segmented';
 import { SummaryTiles } from '@/shared/SummaryTiles';
 import { useDashboard } from './api';
@@ -29,7 +30,6 @@ export function DashboardPage() {
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const dashboard = data && dashboardViewModel(data, todayIso());
-  const label = monthLabel(month);
 
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 pt-8 pb-16">
@@ -39,15 +39,15 @@ export function DashboardPage() {
             Visão geral
           </span>
           <div className="flex items-center gap-2">
-            <MonthArrow label="Mês anterior" onClick={() => update({ month: shiftMonth(month, -1) })}>
+            <ArrowButton label="Mês anterior" onClick={() => update({ month: shiftMonth(month, -1) })}>
               <ChevronLeft className="size-[18px]" aria-hidden="true" />
-            </MonthArrow>
+            </ArrowButton>
             <h1 className="m-0 min-w-0 text-center text-[clamp(24px,7vw,32px)] font-bold tracking-[-0.02em] whitespace-nowrap sm:min-w-[248px]">
-              {label}
+              {monthLabel(month)}
             </h1>
-            <MonthArrow label="Próximo mês" onClick={() => update({ month: shiftMonth(month, 1) })}>
+            <ArrowButton label="Próximo mês" onClick={() => update({ month: shiftMonth(month, 1) })}>
               <ChevronRight className="size-[18px]" aria-hidden="true" />
-            </MonthArrow>
+            </ArrowButton>
           </div>
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
@@ -67,12 +67,13 @@ export function DashboardPage() {
           <SummaryTiles tiles={dashboard.tiles} />
           <IncomeExpenseChart {...dashboard.chart} tableHref={dashboard.tableHref} />
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(560px,100%),1fr))] items-start gap-4">
-            <CategoryDonut donut={dashboard.donut} monthLabel={label} />
+            {/* While another month loads the cards keep the last data, so they name that data's month. */}
+            <CategoryDonut donut={dashboard.donut} monthLabel={monthLabel(data.month)} />
             <div className="flex flex-col gap-4">
               <OpenItemsCard
                 open={dashboard.open}
-                month={month}
-                monthLabel={label}
+                month={data.month}
+                monthLabel={monthLabel(data.month)}
                 onReviewRecurring={() => setRecurringOpen(true)}
               />
               <SettlementCard
@@ -88,26 +89,5 @@ export function DashboardPage() {
       <SettlementDialog month={month} open={settlementOpen} onClose={() => setSettlementOpen(false)} />
       <RecurringDialog month={month} open={recurringOpen} onClose={() => setRecurringOpen(false)} />
     </div>
-  );
-}
-
-function MonthArrow({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="flex size-11 items-center justify-center rounded-[10px] border bg-card text-ink hover:bg-accent"
-    >
-      {children}
-    </button>
   );
 }
