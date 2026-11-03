@@ -312,7 +312,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 164 | `bun run --filter '@livro-caixa/domain' test` |
+| Domain unit | 180 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 119 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 147 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 4 flows: the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
@@ -322,7 +322,8 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 ### Decisions taken in Phase 1
 
 - After sign-in the user landed on **Lançamentos** until US-09 existed. Since Phase 5 the landing page is Visão geral.
-- The money parser accepts `1.234,56`, `1234,56`, `180`, `10.5` and `R$ 10,5`, and rejects anything else.
+- The money parser accepts `1.234,56`, `1.234`, `1234,56`, `180`, `10.5` and `R$ 10,5`, and rejects anything else.
+- A dot before exactly three digits is a thousands separator, so `10.012` is R$ 10.012,00 and never R$ 10,12. A dot before one or two digits is the decimal mark (`10.5`, `10.50`). Thousands groups must be well formed: `1234.567` and `0.123` are rejected, because guessing could silently store the wrong amount.
 - Currency formatting keeps Intl's no-break space after `R$`, and negatives use U+2212 (`−R$ 50,00`).
 - The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
 - The month view loads the whole month and filters on the client, because the tiles need the full month anyway.
