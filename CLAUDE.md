@@ -217,7 +217,7 @@ _Last updated: 2026-11-03, with Phase 6 (PRs #20, #21, #22). All planned phases 
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
-| 6 — Patrimônio | US-10 Net worth and monthly closing | 🚧 In review (PRs #20, #21, #22) |
+| 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -764,9 +764,9 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - progress bar, then "{recebido} recebido · {n} contas divididas ({total})"
   - "Abrir acerto" opens US-06
 
-## Phase 6 — in review
+## Phase 6 — done
 
-### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — 🚧 In review (Phase 6, PRs #20, #21, #22)
+### US-10 Net worth (Patrimônio) and monthly closing (Fechamento) — ✅ Done (Phase 6, PRs #20, #21, #22)
 - Assets: `{ institution, name, assetClass, pricing: 'auto'|'manual', quantity, avgPrice, price, invested, current, dayChange, updatedAt }`.
   - Classes:
 
