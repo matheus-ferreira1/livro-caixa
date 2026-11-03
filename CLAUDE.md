@@ -406,6 +406,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - An empty portfolio reads "Nenhum ativo na carteira.", which is not in the design either.
 - "Modo tranquilo" is not saved, as in the prototype: it starts on at each visit.
 - Row buttons and the grouping control are 44px, not the prototype's 40px and 36px, because of the touch-target rule. The actions column grew from 84px to 92px to fit.
+- `SummaryTiles` gained `valueTone` for colored values. On a dark tile, its hint and delta now use the on-dark color, because the muted gray was too low in contrast. No earlier dark tile has a hint or a delta, so Lançamentos and Resumo look the same.
 - Grouping and the "Hoje" column are computed on the client from the asset list, like the month view's filters.
 - Institution colors follow the order assets were added, so removing an institution's first asset can recolor the others, as in the prototype.
 - The first closing opens at once for the previous calendar month, and only once there is an asset, so an empty portfolio shows no banner and a disabled "Fechamento em dia". The first closing's dialog reads "Primeiro fechamento", with "—" for Variação and Rendimento.
