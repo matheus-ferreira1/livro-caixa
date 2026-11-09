@@ -218,7 +218,8 @@ function TransactionForm({
           />
         </div>
 
-        <div className="flex flex-col overflow-hidden rounded-xl border">
+        {/* Without shrink-0 this box, which clips its content, shrinks to fit instead of the form scrolling. */}
+        <div className="flex shrink-0 flex-col overflow-hidden rounded-xl border">
           {type === 'despesa' && (
             <Option
               control={control}

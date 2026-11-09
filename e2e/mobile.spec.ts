@@ -124,3 +124,15 @@ test('every screen fits a phone without sideways scrolling', async ({ page }) =>
     await page.request.delete(`/api/assets/${asset.id}`);
   }
 });
+
+// The options box clips its content, so it once shrank to fit the sheet instead of letting it scroll.
+test('the entry form scrolls to its last option on a short screen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 600 });
+  await signIn(page);
+  await page.goto(`/lancamentos?mes=${MONTH}`);
+  await page.getByRole('button', { name: 'Novo lançamento' }).first().click();
+
+  const lastOption = page.getByRole('dialog').getByText('Desmarcado, fica como previsto.');
+  await lastOption.scrollIntoViewIfNeeded();
+  await expect(lastOption).toBeInViewport({ ratio: 1 });
+});
