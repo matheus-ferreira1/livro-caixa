@@ -47,7 +47,7 @@ export function AllFiltersCard({ period, from, to, category, categories, onChang
         )}
       </div>
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2.5">
-        <FilterLabel className="min-h-9">Categoria</FilterLabel>
+        <FilterLabel className="sm:min-h-9">Categoria</FilterLabel>
         <div
           role="group"
           aria-label="Filtrar por categoria"
@@ -84,7 +84,7 @@ function FilterLabel({ children, className }: { children: ReactNode; className?:
   return (
     <span
       className={cn(
-        'flex min-w-[84px] items-center text-[13px] font-semibold tracking-[0.06em] text-muted-foreground uppercase',
+        'flex items-center max-sm:basis-full sm:min-w-[84px] text-[13px] font-semibold tracking-[0.06em] text-muted-foreground uppercase',
         className,
       )}
     >

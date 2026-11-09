@@ -10,14 +10,21 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { cn } from '@/shared/lib/utils';
+import { STACKED_CELL_LABEL } from '@/shared/stacked';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { useRegisterClosing } from '../api';
 import { closingSubtitle, closingView, type ClosingRowView } from '../closing-view-model';
 import { PricingTag } from './PricingTag';
 
-const ROW_GRID = 'grid grid-cols-[minmax(180px,1fr)_130px_150px_150px] items-center gap-3 px-4';
+/**
+ * From 768px, the design's table. Below that each asset stacks: its name beside the last value,
+ * then the two fields side by side under their labels.
+ */
+const ROW_GRID =
+  'grid grid-cols-2 items-center gap-x-3 gap-y-2 px-3 md:grid-cols-[minmax(180px,1fr)_130px_150px_150px] md:gap-3 md:px-4';
+const FIELD = cn(STACKED_CELL_LABEL, 'flex flex-col gap-1 md:contents');
 const AMOUNT_INPUT =
-  'min-h-11 w-full rounded-lg border bg-card px-2.5 text-right font-mono text-sm font-medium text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
+  'min-h-11 w-full min-w-0 rounded-lg border bg-card px-2.5 text-right font-mono text-sm font-medium text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 const toneClass = (cents: number | null) => {
   if (cents === null || cents === 0) return 'text-muted-foreground';
@@ -77,7 +84,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-5 sm:px-6">
         {view.manualRows.length > 0 && (
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-col gap-0.5">
@@ -88,12 +95,12 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
               </span>
             </div>
             <div className="overflow-hidden rounded-xl border">
-              <div className="overflow-x-auto">
-                <div className="min-w-[660px]">
+              <div className="md:overflow-x-auto">
+                <div className="md:min-w-[660px]">
                   <div
                     className={cn(
                       ROW_GRID,
-                      'min-h-11 border-b bg-muted text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase',
+                      'min-h-11 border-b max-md:hidden bg-muted text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase',
                     )}
                   >
                     <span>Ativo</span>
@@ -138,7 +145,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
         )}
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 border-t bg-muted px-6 py-4">
+      <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 border-t bg-muted px-4 py-4 sm:px-6">
         <div className="flex flex-wrap gap-x-6 gap-y-2">
           <Total label="Patrimônio no fechamento" value={view.total} />
           <Total label="Variação no mês" value={view.change} className={toneClass(view.changeCents)} />
@@ -178,32 +185,39 @@ function ManualRow({
   onChange: (patch: { flow?: string; value?: string }) => void;
 }) {
   return (
-    <div className={cn(ROW_GRID, 'min-h-[60px] border-b border-divider py-2 last:border-b-0')}>
+    <div className={cn(ROW_GRID, 'min-h-[60px] border-b border-divider py-3 last:border-b-0 md:py-2')}>
       <span className="flex min-w-0 flex-col">
         <span className="truncate font-semibold">{row.name}</span>
         <span className="truncate text-[13px] text-muted-foreground">{row.subtitle}</span>
       </span>
-      <span className="flex flex-col items-end font-mono text-sm">
+      <span
+        data-label="Último valor"
+        className={cn(STACKED_CELL_LABEL, 'flex flex-col items-end font-mono text-sm')}
+      >
         {row.last}
         <span className="font-sans text-xs text-muted-foreground">{row.lastDate}</span>
       </span>
-      <input
-        type="text"
-        aria-label={row.flowLabel}
-        aria-invalid={!row.flowValid}
-        value={row.flowInput}
-        onChange={(e) => onChange({ flow: e.target.value })}
-        className={cn(AMOUNT_INPUT, row.flowValid ? 'border-input' : 'border-expense')}
-      />
-      <input
-        type="text"
-        inputMode="decimal"
-        aria-label={row.valueLabel}
-        aria-invalid={!row.valueValid}
-        value={row.valueInput}
-        onChange={(e) => onChange({ value: e.target.value })}
-        className={cn(AMOUNT_INPUT, row.valueValid ? 'border-input' : 'border-expense')}
-      />
+      <label data-label="Aporte / resgate" className={FIELD}>
+        <input
+          type="text"
+          aria-label={row.flowLabel}
+          aria-invalid={!row.flowValid}
+          value={row.flowInput}
+          onChange={(e) => onChange({ flow: e.target.value })}
+          className={cn(AMOUNT_INPUT, row.flowValid ? 'border-input' : 'border-expense')}
+        />
+      </label>
+      <label data-label="Valor atual" className={FIELD}>
+        <input
+          type="text"
+          inputMode="decimal"
+          aria-label={row.valueLabel}
+          aria-invalid={!row.valueValid}
+          value={row.valueInput}
+          onChange={(e) => onChange({ value: e.target.value })}
+          className={cn(AMOUNT_INPUT, row.valueValid ? 'border-input' : 'border-expense')}
+        />
+      </label>
     </div>
   );
 }

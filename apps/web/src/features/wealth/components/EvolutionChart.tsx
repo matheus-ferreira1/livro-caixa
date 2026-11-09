@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { cn } from '@/shared/lib/utils';
 import type { EvolutionBar, EvolutionTick } from '../view-model';
 
-const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-1.5';
+// Below 640px the chart shrinks to the screen instead of scrolling, so its columns are narrow.
+const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-0.5 sm:gap-1.5';
 const PLOT_HEIGHT = 'h-[220px]';
 
 const TOOLTIP_ALIGN: Record<EvolutionBar['tooltipAlign'], string> = {
@@ -22,7 +23,7 @@ export function EvolutionChart({ ticks, bars }: { ticks: EvolutionTick[]; bars: 
   return (
     <section
       aria-labelledby="wealth-chart-title"
-      className="flex flex-col gap-4 rounded-[14px] border bg-card p-5"
+      className="flex flex-col gap-4 rounded-[14px] border bg-card p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
@@ -43,9 +44,9 @@ export function EvolutionChart({ ticks, bars }: { ticks: EvolutionTick[]; bars: 
         </div>
       </div>
       {/* The padding keeps the scroll container from clipping the top tick's label. */}
-      <div className="overflow-x-auto pt-2">
-        <div className="flex min-w-[680px] gap-2.5">
-          <div aria-hidden="true" className={cn('relative w-[52px] flex-none', PLOT_HEIGHT)}>
+      <div className="pt-2 sm:overflow-x-auto">
+        <div className="flex gap-1.5 sm:min-w-[680px] sm:gap-2.5">
+          <div aria-hidden="true" className={cn('relative w-11 flex-none sm:w-[52px]', PLOT_HEIGHT)}>
             {ticks.map((tick) => (
               <span
                 key={tick.label}
@@ -83,7 +84,7 @@ export function EvolutionChart({ ticks, bars }: { ticks: EvolutionTick[]; bars: 
                 <span
                   key={bar.month}
                   className={cn(
-                    'text-center text-[12.5px] whitespace-nowrap',
+                    'text-center text-[11px] leading-tight sm:text-[12.5px] sm:leading-[inherit] sm:whitespace-nowrap',
                     bar.partial ? 'font-bold text-ink' : 'font-medium text-muted-foreground',
                   )}
                 >
@@ -118,7 +119,7 @@ function MonthBar({
       onFocus={onEnter}
       onBlur={onLeave}
       className={cn(
-        'relative flex h-full items-end justify-center rounded-lg px-[14%]',
+        'relative flex h-full items-end justify-center rounded-sm px-[8%] sm:rounded-lg sm:px-[14%]',
         hovered && 'bg-hover-track',
       )}
     >

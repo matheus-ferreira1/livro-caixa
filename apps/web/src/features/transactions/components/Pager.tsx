@@ -21,19 +21,22 @@ export function Pager({ page, totalPages, start, end, total, pageSize, onPage, o
   return (
     <nav
       aria-label="Paginação"
-      className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-t bg-muted px-5 py-3 text-sm text-muted-foreground"
+      className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-t bg-muted px-4 py-3 text-sm text-muted-foreground md:px-5"
     >
       <div className="flex flex-wrap items-center gap-3">
         <span role="status">{total ? `Mostrando ${start}–${end} de ${total}` : 'Nenhum resultado'}</span>
-        <Segmented
-          label="Itens por página"
-          size="sm"
-          value={String(pageSize)}
-          options={SIZE_OPTIONS}
-          onChange={(v) => onPageSize(Number(v))}
-          className="rounded-[10px]"
-        />
-        <span className="text-[13px]">por página</span>
+        {/* Kept together, so "por página" never wraps away from the sizes it describes. */}
+        <span className="flex items-center gap-3">
+          <Segmented
+            label="Itens por página"
+            size="sm"
+            value={String(pageSize)}
+            options={SIZE_OPTIONS}
+            onChange={(v) => onPageSize(Number(v))}
+            className="rounded-[10px]"
+          />
+          <span className="text-[13px]">por página</span>
+        </span>
       </div>
       <div className="flex items-center gap-1">
         <PagerArrow label="Página anterior" disabled={page <= 1} onClick={() => onPage(page - 1)}>
@@ -52,7 +55,7 @@ export function Pager({ page, totalPages, start, end, total, pageSize, onPage, o
               aria-label={`Página ${p}`}
               aria-current={p === page ? 'page' : undefined}
               className={cn(
-                'h-10 min-w-10 rounded-lg border px-2 font-mono text-sm font-semibold',
+                'h-11 min-w-11 rounded-lg border px-2 font-mono text-sm font-semibold md:h-10 md:min-w-10',
                 p === page ? 'border-ink bg-ink text-white' : 'bg-card text-ink',
               )}
             >
@@ -85,7 +88,7 @@ function PagerArrow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-10 items-center justify-center rounded-lg border bg-card text-ink disabled:cursor-default disabled:text-disabled-text"
+      className="flex size-11 items-center justify-center rounded-lg border bg-card text-ink md:size-10 disabled:cursor-default disabled:text-disabled-text"
     >
       {children}
     </button>

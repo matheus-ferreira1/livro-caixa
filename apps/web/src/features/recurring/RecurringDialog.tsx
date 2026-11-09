@@ -6,6 +6,7 @@ import { useCategories } from '@/features/settings/api';
 import { TYPE_META } from '@/features/transactions/view-model';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { cn, pluralize } from '@/shared/lib/utils';
+import { STACKED_CELL_LABEL } from '@/shared/stacked';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { useGenerateRecurring, useRecurringCandidates } from './api';
@@ -19,7 +20,13 @@ import {
 } from './view-model';
 
 // Lançamento, Tipo, Data, Valor and Último lançado after the checkbox, as in the design.
-const ROW_GRID = 'grid grid-cols-[36px_minmax(220px,1fr)_96px_168px_148px_150px] items-center gap-3 px-4';
+/**
+ * From 768px, the design's table. Below that each entry stacks: its checkbox and name, then the date
+ * and value fields under their labels, then its type and last occurrence.
+ */
+const ROW_GRID =
+  'grid grid-cols-[28px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 gap-y-2 px-3 md:grid-cols-[36px_minmax(220px,1fr)_96px_168px_148px_150px] md:gap-3 md:px-4';
+const FIELD = cn(STACKED_CELL_LABEL, 'flex flex-col gap-1 md:contents');
 
 const checkboxClass = 'size-[18px] border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink';
 
@@ -88,7 +95,7 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-6 py-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-4 py-5 sm:px-6">
         {rows.length ? (
           <>
             <p className="m-0 text-sm text-icon">
@@ -96,8 +103,8 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
               aqui ou depois, direto na lista. Desmarque o que não acontece neste mês.
             </p>
             <div className="overflow-hidden rounded-xl border">
-              <div className="overflow-x-auto">
-                <div className="min-w-[880px]">
+              <div className="md:overflow-x-auto">
+                <div className="md:min-w-[880px]">
                   <div
                     className={cn(
                       ROW_GRID,
@@ -110,11 +117,11 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
                       onCheckedChange={toggleAll}
                       className={checkboxClass}
                     />
-                    <span>Lançamento</span>
-                    <span>Tipo</span>
-                    <span>Data</span>
-                    <span className="text-right">Valor (R$)</span>
-                    <span className="text-right">Último lançado</span>
+                    <span className="col-span-2 md:col-auto">Lançamento</span>
+                    <span className="hidden md:block">Tipo</span>
+                    <span className="hidden md:block">Data</span>
+                    <span className="hidden text-right md:block">Valor (R$)</span>
+                    <span className="hidden text-right md:block">Último lançado</span>
                   </div>
                   {rows.map((row) => (
                     <ReviewRow
@@ -137,7 +144,7 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-t bg-muted px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-t bg-muted px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-1">
           <span className="flex flex-wrap gap-x-[18px] gap-y-1.5 text-sm">
             <span className="font-semibold">{summary.selectionLabel}</span>
@@ -178,46 +185,59 @@ function ReviewRow({
   onChange: (patch: Partial<RecurringDraft>) => void;
 }) {
   const meta = TYPE_META[row.type];
-  const inputClass = 'min-h-10 w-full rounded-lg border border-input bg-card px-2.5 text-sm text-ink';
+  const inputClass =
+    'min-h-11 w-full min-w-0 md:min-h-10 rounded-lg border border-input bg-card px-2.5 text-sm text-ink';
   return (
-    <div className={cn(ROW_GRID, 'min-h-[60px] border-b border-divider py-2', !row.include && 'opacity-50')}>
+    <div
+      className={cn(
+        ROW_GRID,
+        'min-h-[60px] border-b border-divider py-3 last:border-b-0 md:py-2',
+        !row.include && 'opacity-50',
+      )}
+    >
       <Checkbox
         aria-label={row.includeLabel}
         checked={row.include}
         onCheckedChange={(checked) => onChange({ include: checked === true })}
         className={checkboxClass}
       />
-      <span className="flex min-w-0 flex-col">
+      <span className="col-span-2 flex min-w-0 flex-col md:col-auto">
         <span className="font-semibold">{row.description}</span>
         <span className="text-[13px] text-muted-foreground">{row.meta}</span>
       </span>
       <span
         className={cn(
-          'justify-self-start rounded-full px-2.5 py-[3px] text-[13px] font-semibold',
+          'justify-self-start rounded-full px-2.5 py-[3px] text-[13px] font-semibold [grid-area:3/1/4/3] md:[grid-area:auto]',
           meta.bg,
           meta.text,
         )}
       >
         {row.typeLabel}
       </span>
-      <input
-        type="date"
-        aria-label={row.dateLabel}
-        value={row.date}
-        min={`${month}-01`}
-        max={`${month}-${pad2(lastDayOfMonth(month))}`}
-        onChange={(e) => onChange({ date: e.target.value })}
-        className={inputClass}
-      />
-      <input
-        type="text"
-        inputMode="decimal"
-        aria-label={row.valueLabel}
-        value={row.value}
-        onChange={(e) => onChange({ value: e.target.value })}
-        className={cn(inputClass, 'text-right font-mono font-medium')}
-      />
-      <span className="text-right font-mono text-[13px] text-muted-foreground">{row.lastLabel}</span>
+      <label data-label="Data" className={cn(FIELD, '[grid-area:2/1/3/3]')}>
+        <input
+          type="date"
+          aria-label={row.dateLabel}
+          value={row.date}
+          min={`${month}-01`}
+          max={`${month}-${pad2(lastDayOfMonth(month))}`}
+          onChange={(e) => onChange({ date: e.target.value })}
+          className={inputClass}
+        />
+      </label>
+      <label data-label="Valor (R$)" className={cn(FIELD, '[grid-area:2/3/3/4]')}>
+        <input
+          type="text"
+          inputMode="decimal"
+          aria-label={row.valueLabel}
+          value={row.value}
+          onChange={(e) => onChange({ value: e.target.value })}
+          className={cn(inputClass, 'text-right font-mono font-medium')}
+        />
+      </label>
+      <span className="text-right font-mono text-[13px] whitespace-nowrap text-muted-foreground [grid-area:3/2/4/4] md:[grid-area:auto]">
+        {row.lastLabel}
+      </span>
     </div>
   );
 }

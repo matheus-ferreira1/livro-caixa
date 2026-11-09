@@ -3,10 +3,14 @@
 import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
+const PHONE_NAV_CLEARANCE = 'calc(4.5rem + env(safe-area-inset-bottom))';
+
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme="light"
+      // On phones, toasts sit above the nav bar instead of over it.
+      mobileOffset={{ bottom: PHONE_NAV_CLEARANCE }}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
