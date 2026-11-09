@@ -205,7 +205,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27) and the phone layout (branch `feat/mobile-layout`, PR not opened yet). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27) and the phone layout (PR #28, open). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -222,7 +222,7 @@ _Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` f
 
 ## What comes next
 
-The phone layout is committed on `feat/mobile-layout` and waits for its PR, review and merge. No phase is planned. What is left is optional:
+The phone layout is in PR #28, which waits for review and merge. No phase is planned. What is left is optional:
 
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
@@ -258,7 +258,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#25](https://github.com/matheus-ferreira1/livro-caixa/pull/25) | `feat/quote-status` | Migration `004_quote_status`; `quoteStatus` and `elapsedLabel`; the brapi quote time; "Atualizada há…" and "Cotação indisponível" on the assets table |
 | [#26](https://github.com/matheus-ferreira1/livro-caixa/pull/26) | `fix/closing-quote-copy` | The closing's copy and rows use the quote status; the sheet points cripto and câmbio to manual; quotes are requested one at a time |
 | [#27](https://github.com/matheus-ferreira1/livro-caixa/pull/27) | `chore/add-license` | MIT license, which makes the login page's "Código aberto" true |
-| not opened yet | `feat/mobile-layout` | Phone layout: bottom nav bar, stacked rows in place of sideways-scrolling tables, charts that fit the screen, a shorter login panel; e2e spec at 375px |
+| [#28](https://github.com/matheus-ferreira1/livro-caixa/pull/28) | `feat/mobile-layout` | Phone layout: bottom nav bar, stacked rows in place of sideways-scrolling tables, charts that fit the screen, a shorter login panel; e2e spec at 375px |
 
 ### Web routes
 
@@ -465,7 +465,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The sheet's hints differ from the design because its promise was false: "Cotação automática" reads "FIIs e ETFs", and "Manual, no fechamento" adds "cripto e câmbio", since the closing asks for a manual asset's value each month. An automatic asset in a class with no quote is still allowed, and its price field reads "Esta classe não tem cotação automática. Mantenha o preço atualizado aqui ou use o modo manual.".
 - Quotes are requested one at a time, because brapi's free plan allows one simultaneous request. A real token took about 1.3 s for 6 lookups, so the 3 s limit covers around 14 assets per read. Assets not reached stay due and are not marked, and so does a lookup cut short after an earlier one used the time, or a large portfolio would flag a healthy ticker on every round. The first lookup of a round had all 3 s, so it counts as failed; a hung provider costs one slow page load per asset and not one per read forever.
 
-### Decisions taken for the phone layout (branch `feat/mobile-layout`)
+### Decisions taken for the phone layout (PR #28)
 
 The design has no phone drawing beyond stacking, so everything here was decided in code. Breakpoints: stacked tables and the nav bar below 768px (`md`), fitted charts and the short login panel below 640px (`sm`).
 
