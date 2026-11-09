@@ -28,6 +28,8 @@ const STACKED_AREA = {
   settlement: '[grid-area:3/1/4/2] md:[grid-area:auto]',
   balance: '[grid-area:3/2/4/4] md:[grid-area:auto]',
   accumulated: '[grid-area:4/1/5/4] md:[grid-area:auto]',
+  // A month with no amounts has no lines 2 and 3 to sit under.
+  accumulatedAlone: '[grid-area:2/1/3/4] md:[grid-area:auto]',
 };
 
 const STATUS_CLASSES: Record<SummaryStatus, string> = {
@@ -181,7 +183,7 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
         data-label="Acumulado"
         className={cn(
           STACKED_CELL_LABEL,
-          STACKED_AREA.accumulated,
+          m.hasData ? STACKED_AREA.accumulated : STACKED_AREA.accumulatedAlone,
           'block md:table-cell md:px-1.5',
           !m.hasAccumulated && 'max-md:hidden',
         )}

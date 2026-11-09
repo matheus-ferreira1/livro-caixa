@@ -119,7 +119,8 @@ function MonthBar({
       onFocus={onEnter}
       onBlur={onLeave}
       className={cn(
-        'relative flex h-full items-end justify-center rounded-sm px-[8%] sm:rounded-lg sm:px-[14%]',
+        // Below 640px a column is narrower than its tooltip, which is then placed against the whole plot.
+        'flex h-full items-end justify-center sm:relative rounded-sm px-[8%] sm:rounded-lg sm:px-[14%]',
         hovered && 'bg-hover-track',
       )}
     >

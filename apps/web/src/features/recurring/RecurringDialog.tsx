@@ -6,7 +6,7 @@ import { useCategories } from '@/features/settings/api';
 import { TYPE_META } from '@/features/transactions/view-model';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { cn, pluralize } from '@/shared/lib/utils';
-import { STACKED_CELL_LABEL } from '@/shared/stacked';
+import { STACKED_FIELD } from '@/shared/stacked';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { useGenerateRecurring, useRecurringCandidates } from './api';
@@ -26,7 +26,6 @@ import {
  */
 const ROW_GRID =
   'grid grid-cols-[28px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 gap-y-2 px-3 md:grid-cols-[36px_minmax(220px,1fr)_96px_168px_148px_150px] md:gap-3 md:px-4';
-const FIELD = cn(STACKED_CELL_LABEL, 'flex flex-col gap-1 md:contents');
 
 const checkboxClass = 'size-[18px] border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink';
 
@@ -214,7 +213,7 @@ function ReviewRow({
       >
         {row.typeLabel}
       </span>
-      <label data-label="Data" className={cn(FIELD, '[grid-area:2/1/3/3]')}>
+      <label data-label="Data" className={cn(STACKED_FIELD, '[grid-area:2/1/3/3]')}>
         <input
           type="date"
           aria-label={row.dateLabel}
@@ -225,7 +224,7 @@ function ReviewRow({
           className={inputClass}
         />
       </label>
-      <label data-label="Valor (R$)" className={cn(FIELD, '[grid-area:2/3/3/4]')}>
+      <label data-label="Valor (R$)" className={cn(STACKED_FIELD, '[grid-area:2/3/3/4]')}>
         <input
           type="text"
           inputMode="decimal"
@@ -235,7 +234,8 @@ function ReviewRow({
           className={cn(inputClass, 'text-right font-mono font-medium')}
         />
       </label>
-      <span className="text-right font-mono text-[13px] whitespace-nowrap text-muted-foreground [grid-area:3/2/4/4] md:[grid-area:auto]">
+      {/* Stacked, the pill reaches into this cell's column, so the text keeps clear of it and may wrap. */}
+      <span className="text-right font-mono text-[13px] text-muted-foreground [grid-area:3/2/4/4] max-md:pl-12 md:[grid-area:auto]">
         {row.lastLabel}
       </span>
     </div>

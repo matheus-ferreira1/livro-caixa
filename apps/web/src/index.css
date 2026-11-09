@@ -65,6 +65,17 @@
   --chart-income-on-dark: #5fbf94;
   --tooltip-divider: #3a4640;
   --hover-track: #f1f2ee;
+
+  /* The phone's bottom nav bar, and the room pages and toasts leave for it. */
+  --phone-nav-height: 3.5rem;
+  --phone-nav-clearance: calc(var(--phone-nav-height) + env(safe-area-inset-bottom));
+}
+
+/* From 768px the nav lives in the header, so nothing has to make room for it. */
+@media (min-width: 48rem) {
+  :root {
+    --phone-nav-clearance: 0px;
+  }
 }
 
 @theme inline {

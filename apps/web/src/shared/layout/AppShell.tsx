@@ -40,7 +40,7 @@ export function AppShell() {
                 to={to}
                 className={({ isActive }) =>
                   cn(
-                    'group min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold no-underline',
+                    'group min-h-(--phone-nav-height) flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold no-underline',
                     'md:min-h-11 md:flex-none md:flex-row md:rounded-[10px] md:px-4 md:text-[15px]',
                     onPhoneBar ? 'flex' : 'hidden md:flex',
                     isActive ? 'text-white md:bg-header-active' : 'text-on-dark-muted hover:text-white',
@@ -60,7 +60,7 @@ export function AppShell() {
         </div>
       </header>
       {/* The bottom padding keeps the last of a page clear of the phone's nav bar. */}
-      <main className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main className="pb-(--phone-nav-clearance)">
         <Outlet />
       </main>
     </>

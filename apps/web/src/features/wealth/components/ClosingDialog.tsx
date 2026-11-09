@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { cn } from '@/shared/lib/utils';
-import { STACKED_CELL_LABEL } from '@/shared/stacked';
+import { STACKED_CELL_LABEL, STACKED_FIELD } from '@/shared/stacked';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { useRegisterClosing } from '../api';
 import { closingSubtitle, closingView, type ClosingRowView } from '../closing-view-model';
@@ -22,7 +22,6 @@ import { PricingTag } from './PricingTag';
  */
 const ROW_GRID =
   'grid grid-cols-2 items-center gap-x-3 gap-y-2 px-3 md:grid-cols-[minmax(180px,1fr)_130px_150px_150px] md:gap-3 md:px-4';
-const FIELD = cn(STACKED_CELL_LABEL, 'flex flex-col gap-1 md:contents');
 const AMOUNT_INPUT =
   'min-h-11 w-full min-w-0 rounded-lg border bg-card px-2.5 text-right font-mono text-sm font-medium text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
@@ -197,7 +196,7 @@ function ManualRow({
         {row.last}
         <span className="font-sans text-xs text-muted-foreground">{row.lastDate}</span>
       </span>
-      <label data-label="Aporte / resgate" className={FIELD}>
+      <label data-label="Aporte / resgate" className={STACKED_FIELD}>
         <input
           type="text"
           aria-label={row.flowLabel}
@@ -207,7 +206,7 @@ function ManualRow({
           className={cn(AMOUNT_INPUT, row.flowValid ? 'border-input' : 'border-expense')}
         />
       </label>
-      <label data-label="Valor atual" className={FIELD}>
+      <label data-label="Valor atual" className={STACKED_FIELD}>
         <input
           type="text"
           inputMode="decimal"
