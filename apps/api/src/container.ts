@@ -8,7 +8,7 @@ import { CreateUser, ResetPassword } from './application/auth/user-admin';
 import { CreateCategory, DeleteCategory, UpdateCategory } from './application/categories/commands';
 import { ListCategories } from './application/categories/queries';
 import { GetDashboard } from './application/dashboard/queries';
-import type { Clock, QuoteProvider } from './application/ports';
+import type { Clock, PasswordHasher, QuoteProvider } from './application/ports';
 import { GenerateRecurring, ListRecurringCandidates } from './application/recurring/recurring';
 import { UpdateSettings } from './application/settings/UpdateSettings';
 import { GetYearSummary } from './application/summary/queries';
@@ -37,6 +37,7 @@ import { BunPasswordHasher, SystemClock } from './infrastructure/system';
 export interface ContainerOptions {
   db: Database;
   clock?: Clock;
+  hasher?: PasswordHasher;
   secureCookies: boolean;
   /** Null keeps the instance from making any outbound request; prices stay as typed. */
   quoteProvider?: QuoteProvider | null;
@@ -46,12 +47,12 @@ export interface ContainerOptions {
 export function createContainer({
   db,
   clock = new SystemClock(),
+  hasher = new BunPasswordHasher(),
   secureCookies,
   quoteProvider = null,
 }: ContainerOptions) {
   const users = new SqliteUserRepository(db);
   const sessions = new SqliteSessionRepository(db);
-  const hasher = new BunPasswordHasher();
   const accountThrottle = new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY);
   const ipThrottle = new LoginThrottle(clock, IP_THROTTLE_POLICY);
   const transactions = new SqliteTransactionRepository(db);

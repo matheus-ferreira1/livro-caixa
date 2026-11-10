@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-10, with the entry validation fix open for review (PR #31). Before it: Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-10, with two fixes open for review: entry validation (PR #31) and the login burst (PR #32, stacked on #31). Before it: Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -17,7 +17,7 @@ _Last updated: 2026-11-10, with the entry validation fix open for review (PR #31
 
 ## What comes next
 
-No phase is planned. One fix is open for review: PR #31, entry validation. What is left after it is optional:
+No phase is planned. Two fixes are open for review: PR #31, entry validation, and PR #32, the login burst, which is stacked on #31. What is left after them is optional:
 
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
@@ -56,6 +56,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#28](https://github.com/matheus-ferreira1/livro-caixa/pull/28) | `feat/mobile-layout` | Phone layout: bottom nav bar, stacked rows in place of sideways-scrolling tables, charts that fit the screen, a shorter login panel; e2e spec at 375px |
 | [#30](https://github.com/matheus-ferreira1/livro-caixa/pull/30) | `chore/slim-claude-md` | `CLAUDE.md` keeps the rules every task needs; the status moved to `docs/status.md`, the user stories to `docs/user-stories.md` and the design system to `apps/web/CLAUDE.md` |
 | [#31](https://github.com/matheus-ferreira1/livro-caixa/pull/31) | `fix/entry-validation` | `isIsoDate` accepts only real calendar days from 1900 on; an entry's amount is capped at `MAX_ENTRY_CENTS` (open for review) |
+| [#32](https://github.com/matheus-ferreira1/livro-caixa/pull/32) | `fix/login-throttle-burst` | `Login` handles one attempt per client IP at a time (`KeyedQueue`), so a burst cannot outrun the lock (open for review) |
 
 ### Web routes
 
@@ -149,7 +150,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 317 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 221 | `bun run --filter '@livro-caixa/api' test` |
+| API integration | 222 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 9 flows: the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
@@ -164,7 +165,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - The "Todos" filters run in the domain over all rows instead of in SQL, which is fine at household scale. Revisit only if the data grows past ~50k entries.
 - The month view loads the whole month and filters on the client, because the tiles need the full month anyway.
 - The login lockout counters live in memory, so a restart clears them. This is acceptable for a single container.
-- Login throttling has two in-memory limits: 5 failures per e-mail + IP lock that pair for 60 s, and 20 failures per IP within 15 min lock that IP for 15 min. Only failures count, and a success does not clear the IP counter. Both answer 429 "Muitas tentativas. Tente de novo em {N} s.". `req.ip` honors `X-Forwarded-For` only from the proxies that `TRUST_PROXY` allows (default `loopback`).
+- Login throttling has two in-memory limits: 5 failures per e-mail + IP lock that pair for 60 s, and 20 failures per IP within 15 min lock that IP for 15 min. Only failures count, and a success does not clear the IP counter. Both answer 429 "Muitas tentativas. Tente de novo em {N} s.". Attempts of one IP are handled one at a time, so the limits also hold for attempts sent together (PR #32). `req.ip` honors `X-Forwarded-For` only from the proxies that `TRUST_PROXY` allows (default `loopback`).
 - Expired sessions are purged on boot and then every hour (`startSessionPurge` in `apps/api/src/session-purge.ts`, use case `PurgeExpiredSessions`). `Authenticate` still drops an expired session as soon as its cookie comes back.
 - The fonts ship as `@fontsource` Latin subsets instead of a CDN, so the "data stays on your instance" promise holds.
 - Single-choice segmented controls are shadcn `ToggleGroup`s, which render as `radiogroup`/`radio`. Category chips and row toggles are buttons with `aria-pressed`.
@@ -286,10 +287,13 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - An entry's amount, typed or generated from a recurring series, is at most `MAX_ENTRY_CENTS`, R$ 1 bilhão. A cap on each entry is what keeps totals exact: a safe-integer check alone would still let two huge entries add up past `Number.MAX_SAFE_INTEGER`. The answer above it is the generic 400 "Dados inválidos.", since the design has no copy for it.
 - Entries stored before this fix with an impossible date are left as they are; nothing looks for them. Such an entry shows only in "Todos", and saving it asks for the date ("Informe a data."), which is how it gets corrected.
 
-### Decisions taken for the login burst (`fix/login-throttle-burst`)
+### Decisions taken for the login burst (PR #32)
 
 - `Login` handles one attempt per client IP at a time (`KeyedQueue`). The lock was checked before the password and the failure counted after it, so attempts sent together were all checked before the first one counted: 30 at once meant 30 guesses, and the right password among them signed in. Now the sixth waits for the fifth, finds the lock and answers 429.
 - The queue is per IP, which covers the e-mail + IP lock too. Other clients do not wait, and a locked client's queued attempts end at once, without a password check.
+- Clients that share an IP share the queue, as they already share the per-IP lock: behind a reverse proxy in another container with `TRUST_PROXY` left at `loopback`, every sign-in waits its turn. At most 20 password checks stand ahead before the IP lock ends the rest. The answer is the same as for the lock: set `TRUST_PROXY`.
+- The queue has no length limit. A flood from one IP keeps its requests waiting until the 20th failure locks the IP, and then they end at once. A limit would need a new answer for "too many at once", and the per-IP lock already bounds the password checks.
+- `createContainer` takes an optional `hasher`, so the HTTP test counts the passwords checked with a fake one (`CountingHasher` in `test/harness.ts`).
 
 ## Roadmap
 
