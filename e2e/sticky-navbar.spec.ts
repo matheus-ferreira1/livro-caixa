@@ -41,9 +41,10 @@ async function openLongPage(page: Page) {
   await expect(page.getByRole('button', { name: 'Editar Lançamento 0' })).toBeVisible();
   const viewportHeight = page.viewportSize()?.height ?? 0;
   const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
-  expect(pageHeight, 'the page must be taller than the screen for this test to mean anything').toBeGreaterThan(
-    viewportHeight + 200,
-  );
+  expect(
+    pageHeight,
+    'the page must be taller than the screen for this test to mean anything',
+  ).toBeGreaterThan(viewportHeight + 200);
 }
 
 async function scrollToBottom(page: Page) {
