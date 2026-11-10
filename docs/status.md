@@ -148,7 +148,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 310 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 211 | `bun run --filter '@livro-caixa/api' test` |
+| API integration | 215 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
 | E2E | 9 flows: the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
@@ -283,6 +283,11 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 - `isIsoDate` accepts only a day that exists on the calendar. It was a shape check, so the API stored `2026-02-31` or `2026-99-99`, which no month view would ever list. Every date the API reads goes through it: entries, the search range, recurring items and each `today`.
 - `valueCents` of an entry and of a recurring item must be a safe integer, like the amounts of assets and closings. A larger number would be stored as a float and stop adding up exactly. The answer is the generic 400 "Dados inválidos.", since no form can type such a value.
+
+### Decisions taken for the login burst (`fix/login-throttle-burst`)
+
+- `Login` handles one attempt per client IP at a time (`KeyedQueue`). The lock was checked before the password and the failure counted after it, so attempts sent together were all checked before the first one counted: 30 at once meant 30 guesses, and the right password among them signed in. Now the sixth waits for the fifth, finds the lock and answers 429.
+- The queue is per IP, which covers the e-mail + IP lock too. Other clients do not wait, and a locked client's queued attempts end at once, without a password check.
 
 ## Roadmap
 
