@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSettlement, settlementEntry } from '@livro-caixa/domain';
+import { computeSettlement, MAX_ENTRY_CENTS, settlementEntry } from '@livro-caixa/domain';
 import { buildTestApp, signIn } from '../../test/harness';
 
 const input = {
@@ -78,6 +78,27 @@ describe('POST /api/transactions', () => {
       .send({ ...input, ...patch })
       .expect(400);
     expect(res.body.error.message).toBe(message);
+  });
+});
+
+describe('POST /api/transactions with values no ledger can hold', () => {
+  test('rejects a day that does not exist', async () => {
+    const { agent } = await signedIn();
+    const { body } = await agent
+      .post('/api/transactions')
+      .send({ ...input, date: '2026-02-31' })
+      .expect(400);
+    expect(body.error.message).toBe('Informe a data.');
+  });
+
+  test.each([MAX_ENTRY_CENTS + 1, 1e300])('rejects the amount %p and stores nothing', async (valueCents) => {
+    const { agent } = await signedIn();
+    await agent
+      .post('/api/transactions')
+      .send({ ...input, valueCents })
+      .expect(400);
+    const month = await agent.get('/api/transactions?month=2026-11').expect(200);
+    expect(month.body.transactions).toHaveLength(0);
   });
 });
 

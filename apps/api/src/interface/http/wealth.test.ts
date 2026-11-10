@@ -43,11 +43,14 @@ describe('GET /api/wealth', () => {
     await request(app).get(`/api/wealth?today=${TODAY}`).expect(401);
   });
 
-  test.each(['', 'today=2026-1-1', 'today=abc'])('rejects the query "%s"', async (query) => {
-    const { agent } = await signedIn();
-    const { body } = await agent.get(`/api/wealth?${query}`).expect(400);
-    expect(body.error.code).toBe('validation_error');
-  });
+  test.each(['', 'today=2026-1-1', 'today=abc', 'today=2026-02-31'])(
+    'rejects the query "%s"',
+    async (query) => {
+      const { agent } = await signedIn();
+      const { body } = await agent.get(`/api/wealth?${query}`).expect(400);
+      expect(body.error.code).toBe('validation_error');
+    },
+  );
 
   test('is empty for a new portfolio, open on the previous month', async () => {
     const { agent } = await signedIn();
@@ -280,6 +283,7 @@ describe('POST /api/wealth/closings', () => {
   test.each([
     { month: 'abc' },
     { today: 'abc' },
+    { today: '2026-02-31' },
     { items: [{ assetId: 'a', flowCents: 1.5, currentCents: 1 }] },
   ])('rejects the malformed body %j', async (overrides) => {
     const { agent, assetId } = await withManualAsset();

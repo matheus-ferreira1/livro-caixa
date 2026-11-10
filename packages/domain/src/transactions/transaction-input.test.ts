@@ -2,11 +2,13 @@ import { describe, expect, test } from 'bun:test';
 import { aTransaction } from '../test/builders';
 import {
   FORM_MESSAGES,
+  MAX_ENTRY_CENTS,
   applyTypeChange,
   draftFromTransaction,
   draftToInput,
   emptyDraft,
   toTransaction,
+  transactionInputSchema,
   validateInput,
   type TransactionDraft,
 } from './transaction-input';
@@ -128,5 +130,33 @@ describe('draftFromTransaction', () => {
       recurring: true,
       categoryId: t.categoryId,
     });
+  });
+});
+
+describe('transactionInputSchema', () => {
+  const input = { ...aTransaction(), note: '' };
+
+  test('accepts an amount in whole cents', () => {
+    expect(transactionInputSchema.safeParse(input).success).toBe(true);
+  });
+
+  test('accepts the largest amount an entry may have', () => {
+    expect(transactionInputSchema.safeParse({ ...input, valueCents: MAX_ENTRY_CENTS }).success).toBe(true);
+  });
+
+  test.each([MAX_ENTRY_CENTS + 1, 1e300])('rejects %p, above the largest amount', (valueCents) => {
+    expect(transactionInputSchema.safeParse({ ...input, valueCents }).success).toBe(false);
+  });
+
+  test('keeps the total of a very large ledger exact', () => {
+    const HOUSEHOLD_ENTRY_CEILING = 50_000;
+    expect(Number.isSafeInteger(MAX_ENTRY_CENTS * HOUSEHOLD_ENTRY_CEILING)).toBe(true);
+  });
+});
+
+describe('validateInput', () => {
+  test('asks for the date when the day does not exist', () => {
+    const input = { ...aTransaction(), date: '2026-02-31' };
+    expect(validateInput(input)).toBe(FORM_MESSAGES.date);
   });
 });
