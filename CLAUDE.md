@@ -17,7 +17,7 @@ Read these when the task needs them; they are not loaded automatically.
 ## Language rules
 
 - **Code, identifiers, comments, commits, branch names, PR titles and PR bodies are in English.**
-- **UI copy is Brazilian Portuguese (pt-BR), verbatim from the design.** Never translate the UI and never paraphrase its strings. Quoted strings in this file are the exact copy.
+- **UI copy is Brazilian Portuguese (pt-BR), verbatim from the design.** Never translate the UI and never paraphrase its strings. Quoted strings in this file and in [docs/user-stories.md](docs/user-stories.md) are the exact copy.
 - Domain terms keep the English names below in code. The pt-BR terms appear only in UI copy and in the persisted enum values listed here.
 
 | pt-BR (UI) | Code | Notes |

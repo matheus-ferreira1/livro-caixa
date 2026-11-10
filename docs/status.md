@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27) and the phone layout (PR #28). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -54,6 +54,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#26](https://github.com/matheus-ferreira1/livro-caixa/pull/26) | `fix/closing-quote-copy` | The closing's copy and rows use the quote status; the sheet points cripto and câmbio to manual; quotes are requested one at a time |
 | [#27](https://github.com/matheus-ferreira1/livro-caixa/pull/27) | `chore/add-license` | MIT license, which makes the login page's "Código aberto" true |
 | [#28](https://github.com/matheus-ferreira1/livro-caixa/pull/28) | `feat/mobile-layout` | Phone layout: bottom nav bar, stacked rows in place of sideways-scrolling tables, charts that fit the screen, a shorter login panel; e2e spec at 375px |
+| [#30](https://github.com/matheus-ferreira1/livro-caixa/pull/30) | `chore/slim-claude-md` | `CLAUDE.md` keeps the rules every task needs; the status moved to `docs/status.md`, the user stories to `docs/user-stories.md` and the design system to `apps/web/CLAUDE.md` |
 
 ### Web routes
 

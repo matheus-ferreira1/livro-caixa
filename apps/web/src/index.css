@@ -10,7 +10,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Design tokens from the Livro-caixa design (see CLAUDE.md › Design system). */
+/* Design tokens from the Livro-caixa design (see apps/web/CLAUDE.md › Design system). */
 :root {
   --radius: 0.625rem;
   --background: #f4f5f1;

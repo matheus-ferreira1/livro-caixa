@@ -2,3 +2,5 @@ node_modules
 dist
 bun.lock
 CLAUDE.md
+docs
+apps/web/CLAUDE.md
