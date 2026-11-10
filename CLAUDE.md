@@ -205,7 +205,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27) and the phone layout (PR #28, open). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27) and the phone layout (PR #28). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -222,7 +222,7 @@ _Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` f
 
 ## What comes next
 
-The phone layout is in PR #28, which waits for review and merge. No phase is planned. What is left is optional:
+Nothing is in progress and no PR is open. No phase is planned. What is left is optional:
 
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
