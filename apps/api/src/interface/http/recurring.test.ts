@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import request from 'supertest';
-import type { Transaction } from '@livro-caixa/domain';
+import { MAX_ENTRY_CENTS, type Transaction } from '@livro-caixa/domain';
 import { buildTestApp, signIn } from '../../test/harness';
 
 let n = 0;
@@ -116,6 +116,15 @@ describe('POST /api/recurring/generate', () => {
     await agent.post('/api/recurring/generate').send(payload).expect(201);
     const res = await agent.post('/api/recurring/generate').send(payload).expect(409);
     expect(res.body.error.code).toBe('conflict');
+  });
+
+  test('rejects an amount above the largest an entry may have and inserts nothing', async () => {
+    const { agent, container } = await appWith(SERIES);
+    await agent
+      .post('/api/recurring/generate')
+      .send({ month: '2026-11', items: [{ ...novemberItem, valueCents: MAX_ENTRY_CENTS + 1 }] })
+      .expect(400);
+    expect(container.transactions.listByMonth('2026-11')).toEqual([]);
   });
 
   test('rejects a malformed body', async () => {

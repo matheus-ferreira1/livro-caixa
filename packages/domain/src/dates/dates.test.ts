@@ -89,9 +89,12 @@ describe('elapsedLabel', () => {
 });
 
 describe('isIsoDate', () => {
-  test.each(['2026-11-06', '2026-01-31', '2028-02-29'])('accepts the calendar date %p', (date) => {
-    expect(isIsoDate(date)).toBe(true);
-  });
+  test.each(['2026-11-06', '2026-01-31', '2028-02-29', '1900-01-01'])(
+    'accepts the calendar date %p',
+    (date) => {
+      expect(isIsoDate(date)).toBe(true);
+    },
+  );
 
   test.each(['2026-02-31', '2027-02-29', '2026-13-01', '2026-00-10', '2026-01-00', '2026-1-5', 'hoje'])(
     'rejects %p, which is no day on the calendar',
@@ -99,4 +102,8 @@ describe('isIsoDate', () => {
       expect(isIsoDate(date)).toBe(false);
     },
   );
+
+  test.each(['1899-12-31', '0001-01-01', '0000-02-29'])('rejects %p, older than any ledger', (date) => {
+    expect(isIsoDate(date)).toBe(false);
+  });
 });
