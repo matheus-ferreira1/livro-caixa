@@ -1,6 +1,7 @@
 import { LOGIN_MESSAGES, lockedOutMessage, type LoginRequest, type PublicUser } from '@livro-caixa/domain';
 import { ApplicationError } from '../errors';
 import type { Clock, PasswordHasher, SessionRepository, UserRepository } from '../ports';
+import { KeyedQueue } from './KeyedQueue';
 import type { LoginThrottle } from './LoginThrottle';
 import {
   BROWSER_SESSION_MS,
@@ -20,6 +21,8 @@ export interface LoginResult {
 const DUMMY_HASH = await Bun.password.hash('timing-equalizer');
 
 export class Login {
+  private readonly attemptsByClient = new KeyedQueue();
+
   constructor(
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
@@ -29,7 +32,15 @@ export class Login {
     private readonly clock: Clock,
   ) {}
 
-  async execute(input: LoginRequest, clientKey: string): Promise<LoginResult> {
+  /**
+   * One attempt per client at a time. Checking a password takes a while, so attempts sent
+   * together would all pass the lock check before the first failure was counted.
+   */
+  execute(input: LoginRequest, clientKey: string): Promise<LoginResult> {
+    return this.attemptsByClient.run(clientKey, () => this.attempt(input, clientKey));
+  }
+
+  private async attempt(input: LoginRequest, clientKey: string): Promise<LoginResult> {
     const accountKey = `${input.email}|${clientKey}`;
     this.assertNotLocked(accountKey, clientKey);
 

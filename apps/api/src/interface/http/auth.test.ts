@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import request from 'supertest';
-import { buildTestApp, signIn, TEST_USER } from '../../test/harness';
+import { buildTestApp, CountingHasher, signIn, TEST_USER } from '../../test/harness';
 
 describe('POST /api/auth/login', () => {
   test('signs in with valid credentials and sets an httpOnly session cookie', async () => {
@@ -57,6 +57,24 @@ describe('POST /api/auth/login', () => {
 
     clock.advance(40_000);
     expect((await attempt(TEST_USER.password)).status).toBe(200);
+  });
+
+  test('checks only 5 passwords when many attempts arrive together', async () => {
+    const BURST_SIZE = 30;
+    const VERIFY_MS = 20;
+    const hasher = new CountingHasher(VERIFY_MS);
+    const { app } = await buildTestApp({ hasher });
+
+    const responses = await Promise.all(
+      Array.from({ length: BURST_SIZE }, (_, i) =>
+        request(app)
+          .post('/api/auth/login')
+          .send({ email: TEST_USER.email, password: `errada-${i}` }),
+      ),
+    );
+
+    expect(hasher.verifications).toBe(5);
+    expect(responses.filter((res) => res.status === 429)).toHaveLength(BURST_SIZE - 4);
   });
 
   describe('per-IP limit', () => {
