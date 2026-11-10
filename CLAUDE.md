@@ -205,7 +205,7 @@ Radii: 8px for small controls and row buttons, 10px for buttons and inputs, 12px
 
 # Project status & roadmap
 
-_Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26) and the MIT license (PR #27). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-09, after Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27) and the phone layout (PR #28, open). All planned phases are built and merged, and the roadmap has no open item. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -222,7 +222,7 @@ _Last updated: 2026-11-03, after Phase 6 (PRs #20, #21, #22), the `parseMoney` f
 
 ## What comes next
 
-Nothing is in progress and no PR is open. No phase is planned. What is left is optional:
+The phone layout is in PR #28, which waits for review and merge. No phase is planned. What is left is optional:
 
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
@@ -258,6 +258,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#25](https://github.com/matheus-ferreira1/livro-caixa/pull/25) | `feat/quote-status` | Migration `004_quote_status`; `quoteStatus` and `elapsedLabel`; the brapi quote time; "Atualizada há…" and "Cotação indisponível" on the assets table |
 | [#26](https://github.com/matheus-ferreira1/livro-caixa/pull/26) | `fix/closing-quote-copy` | The closing's copy and rows use the quote status; the sheet points cripto and câmbio to manual; quotes are requested one at a time |
 | [#27](https://github.com/matheus-ferreira1/livro-caixa/pull/27) | `chore/add-license` | MIT license, which makes the login page's "Código aberto" true |
+| [#28](https://github.com/matheus-ferreira1/livro-caixa/pull/28) | `feat/mobile-layout` | Phone layout: bottom nav bar, stacked rows in place of sideways-scrolling tables, charts that fit the screen, a shorter login panel; e2e spec at 375px |
 
 ### Web routes
 
@@ -353,7 +354,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Domain unit | 297 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 209 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
-| E2E | 5 flows: the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
+| E2E | 9 flows: the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -390,7 +391,7 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - "Agora não" on the recurring banner is stored in `localStorage` (`livro-caixa:recurring-dismissed:{YYYY-MM}`), per month and per browser. When storage is unavailable, the banner stays hidden until the page reloads.
 - `POST /api/recurring/generate` recomputes the candidates and refuses any series that is no longer one (409), so a second tab or a double click cannot duplicate entries. The 409 message "Esses lançamentos já foram gerados. Atualize a página e revise de novo." is not in the design; it was written for this case.
 - The recurring candidates query lives under the `transactions` query key, so any change to the ledger refreshes the banner.
-- On phones the Gerar recorrentes table scrolls sideways, like the prototype's 880px table.
+- On phones the Gerar recorrentes table scrolled sideways, like the prototype's 880px table, until PR #28 stacked its rows.
 
 ### Decisions taken in Phase 4
 
@@ -463,6 +464,24 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and 
 - Each row of "2. Cotações automáticas" shows the same tag as the assets table.
 - The sheet's hints differ from the design because its promise was false: "Cotação automática" reads "FIIs e ETFs", and "Manual, no fechamento" adds "cripto e câmbio", since the closing asks for a manual asset's value each month. An automatic asset in a class with no quote is still allowed, and its price field reads "Esta classe não tem cotação automática. Mantenha o preço atualizado aqui ou use o modo manual.".
 - Quotes are requested one at a time, because brapi's free plan allows one simultaneous request. A real token took about 1.3 s for 6 lookups, so the 3 s limit covers around 14 assets per read. Assets not reached stay due and are not marked, and so does a lookup cut short after an earlier one used the time, or a large portfolio would flag a healthy ticker on every round. The first lookup of a round had all 3 s, so it counts as failed; a hung provider costs one slow page load per asset and not one per read forever.
+
+### Decisions taken for the phone layout (PR #28)
+
+The design has no phone drawing beyond stacking, so everything here was decided in code. Breakpoints: stacked tables and the nav bar below 768px (`md`), fitted charts and the short login panel below 640px (`sm`).
+
+- **One DOM, restyled with CSS.** Nothing is rendered twice for phones, because happy-dom ignores media queries and duplicated controls would break role queries. A stacked row is the same grid with other placements (`[grid-area:…]`), and labels that only phones need come from `data-label` through `STACKED_CELL_LABEL` (`shared/stacked.ts`).
+- Below 768px the nav is a fixed bar at the bottom with an icon over each label: Visão geral, Lançamentos, Patrimônio, Resumo mensal. Configurações does not fit a fifth slot at 320px, so on phones it is reached from the account menu. `main` and the toasts leave room for the bar through `--phone-nav-clearance` (`index.css`), which is zero from 768px. Both of Sonner's offsets use it, because Sonner's own phone layout stops at 600px. From 768px to 1023px the nav has its own header row, and from 1024px it is inline.
+- Lançamentos stacks each entry in three lines: description and value, date and category, then the toggles and actions. The "Tipo" pill and the "—" of "Dividido" are hidden there, since the value's sign and color tell the type. The header keeps only the three sort buttons.
+- Resumo mensal stays a `<table>` whose rows become grids, and every element states its ARIA role, because browsers drop table semantics once `display` changes. A month with no entries keeps only its first line.
+- Patrimônio stacks each asset on a grid of 6: name beside the current value and result, then Qtd., Preço médio and Cotação, then Aplicado, % carteira and the actions. A manual asset has no unit line.
+- The dialogs of Gerar recorrentes and Fechamento stack their rows the same way, with each input under its label.
+- Below 640px the three charts shrink to the screen instead of scrolling. The first axis label wraps ("Dez" over "’25"), and Balanço por mês hides the value over each bar, which the table below repeats.
+- Below 640px a chart tooltip is placed against the whole plot, not its month's column, which is narrower than the tooltip.
+- The nav stays second in the DOM at every width, so keyboard focus matches the screen from 1024px. Below that, focus reaches the nav before the account button although the nav is drawn after it. Any other order would move the mismatch to the desktop, where a keyboard is most likely.
+- Tailwind only sees class names written out in full, so the `[grid-area:…] md:[grid-area:auto]` pairs are literals in each file and cannot come from a helper.
+- Stacked, the 36px pills get a 44px touch area from a pseudo-element, and row buttons, pager buttons and "Abrir mês" are 44px.
+- On phones the login panel keeps only the logo and the headline, so the form is on the first screen.
+- From 768px to about 1200px the tables still scroll sideways inside their card, as before.
 
 ## Roadmap
 

@@ -14,7 +14,8 @@ const LEGEND = [
   { label: 'Mês com previstos', background: 'bg-income-soft' },
 ];
 
-const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-2';
+// Below 640px the chart shrinks to the screen instead of scrolling, so its columns are narrow.
+const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-0.5 sm:gap-2';
 // Leaves room above and below the bars for their value labels.
 const PLOT_AREA = 'absolute inset-x-0 top-7 bottom-7';
 
@@ -22,7 +23,7 @@ export function BalanceChart({ months, zeroLineTop }: { months: SummaryMonthRow[
   return (
     <section
       aria-labelledby="balance-chart-title"
-      className="flex flex-col gap-4 rounded-[14px] border bg-card px-5 pt-5 pb-4"
+      className="flex flex-col gap-4 rounded-[14px] border bg-card px-4 pt-4 pb-4 sm:px-5 sm:pt-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="balance-chart-title" className="m-0 text-base font-bold">
@@ -37,8 +38,8 @@ export function BalanceChart({ months, zeroLineTop }: { months: SummaryMonthRow[
           ))}
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <div className="flex min-w-[640px] flex-col gap-2">
+      <div className="sm:overflow-x-auto">
+        <div className="flex flex-col gap-2 sm:min-w-[640px]">
           <div className="relative h-60">
             <div aria-hidden="true" className={PLOT_AREA}>
               <div className="absolute inset-x-0 h-px bg-neutral-swatch" style={{ top: zeroLineTop }} />
@@ -56,7 +57,7 @@ export function BalanceChart({ months, zeroLineTop }: { months: SummaryMonthRow[
               <span
                 key={m.month}
                 className={cn(
-                  'text-center text-[13px]',
+                  'text-center text-[11px] sm:text-[13px]',
                   m.isCurrent ? 'font-bold text-ink' : 'font-medium text-muted-foreground',
                 )}
               >
@@ -77,7 +78,7 @@ function Bar({ bar }: { bar: NonNullable<SummaryMonthRow['bar']> }) {
         role="img"
         aria-label={bar.ariaLabel}
         className={cn(
-          'absolute inset-x-[22%]',
+          'absolute inset-x-[14%] sm:inset-x-[22%]',
           bar.positive ? 'rounded-t-[4px]' : 'rounded-b-[4px]',
           BAR_BACKGROUND[bar.tone],
         )}
@@ -86,7 +87,8 @@ function Bar({ bar }: { bar: NonNullable<SummaryMonthRow['bar']> }) {
       <span
         aria-hidden="true"
         className={cn(
-          'absolute -inset-x-1 text-center font-mono text-[11.5px] font-semibold whitespace-nowrap',
+          // The value does not fit over a narrow column; the table below has it.
+          'absolute -inset-x-1 hidden text-center font-mono text-[11.5px] font-semibold whitespace-nowrap sm:block',
           bar.positive ? 'text-income' : 'text-expense',
         )}
         style={{ top: bar.labelTop }}

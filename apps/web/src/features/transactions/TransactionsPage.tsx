@@ -19,7 +19,7 @@ import {
 } from '@livro-caixa/domain';
 import { ChevronLeft, ChevronRight, Plus, Repeat, Users } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
-import { pluralize } from '@/shared/lib/utils';
+import { cn, pluralize } from '@/shared/lib/utils';
 import { ArrowButton } from '@/shared/ArrowButton';
 import { Segmented } from '@/shared/Segmented';
 import { SummaryTiles, type TileSpec } from '@/shared/SummaryTiles';
@@ -132,7 +132,7 @@ export function TransactionsPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 pt-8 pb-16">
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-6 sm:pt-8 sm:pb-16">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <Segmented
@@ -164,13 +164,13 @@ export function TransactionsPage() {
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2.5 max-sm:w-full">
           {!isAll && (
             <>
               <button
                 type="button"
                 onClick={() => setRecurringOpen(true)}
-                className="flex min-h-11 items-center gap-2 rounded-[10px] border border-input bg-card px-[18px] font-semibold text-ink hover:bg-accent"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-input bg-card px-3 font-semibold text-ink hover:bg-accent max-sm:flex-auto sm:px-[18px]"
               >
                 <Repeat className="size-[18px]" aria-hidden="true" />
                 Gerar recorrentes
@@ -178,14 +178,14 @@ export function TransactionsPage() {
               <button
                 type="button"
                 onClick={() => setSettlementOpen(true)}
-                className="flex min-h-11 items-center gap-2 rounded-[10px] border border-settlement bg-card px-[18px] font-semibold text-settlement hover:bg-settlement-bg"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-settlement bg-card px-3 font-semibold text-settlement hover:bg-settlement-bg max-sm:flex-auto sm:px-[18px]"
               >
                 <Users className="size-[18px]" aria-hidden="true" />
                 Gerar acerto
               </button>
             </>
           )}
-          <NewEntryButton onClick={openNew} />
+          <NewEntryButton onClick={openNew} className="max-sm:flex-auto" />
         </div>
       </div>
 
@@ -341,7 +341,7 @@ function allModeGroups(
 function MonthFooter({ shown, total, filtered }: { shown: number; total: number; filtered: Transaction[] }) {
   const totals = totalsOf(filtered);
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted px-5 py-3.5 text-sm text-muted-foreground">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted px-4 py-3.5 text-sm text-muted-foreground md:px-5">
       <span>
         {shown} de {total} lançamentos
       </span>
@@ -358,12 +358,23 @@ function MonthFooter({ shown, total, filtered }: { shown: number; total: number;
   );
 }
 
-function NewEntryButton({ onClick, withIcon = true }: { onClick: () => void; withIcon?: boolean }) {
+function NewEntryButton({
+  onClick,
+  withIcon = true,
+  className,
+}: {
+  onClick: () => void;
+  withIcon?: boolean;
+  className?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-11 items-center gap-2 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90"
+      className={cn(
+        'flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90',
+        className,
+      )}
     >
       {withIcon && <Plus className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />}
       Novo lançamento

@@ -25,7 +25,7 @@ export function SummaryPage() {
   const summary = data && summaryViewModel(data, monthOf(todayIso()));
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 pt-8 pb-16">
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-6 sm:pt-8 sm:pb-16">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">

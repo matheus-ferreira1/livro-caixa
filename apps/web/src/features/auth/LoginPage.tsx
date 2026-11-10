@@ -66,9 +66,9 @@ export function LoginPage() {
   const fieldBorder = error ? 'border-expense' : 'border-input';
 
   return (
-    <div className="flex min-h-screen flex-wrap">
+    <div className="flex min-h-screen flex-col sm:flex-row sm:flex-wrap">
       <BrandPanel />
-      <div className="flex flex-[1_1_440px] items-center justify-center bg-background px-6 py-12">
+      <div className="flex flex-[1_1_440px] items-center justify-center bg-background px-4 py-10 sm:px-6 sm:py-12">
         <form
           onSubmit={handleSubmit}
           noValidate

@@ -2,12 +2,35 @@ import type { SummaryStatus } from '@livro-caixa/domain';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { cn } from '@/shared/lib/utils';
+import { STACKED_CELL_LABEL } from '@/shared/stacked';
 import type { SummaryMonthRow, SummaryViewModel } from '../view-model';
 
 const HEADER_CELL = 'px-1.5 text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase';
-const AMOUNT_CELL = 'px-1.5 text-right whitespace-nowrap';
+const AMOUNT_CELL = cn(STACKED_CELL_LABEL, 'block whitespace-nowrap md:table-cell md:px-1.5 md:text-right');
 // The padding on the first and last cells makes the row's 20px inset, on top of the 6px cell gap.
-const FIRST_CELL = 'pr-1.5 pl-5 text-left font-sans text-[15px]';
+const FIRST_CELL =
+  '[grid-area:1/1/2/2] md:[grid-area:auto] flex items-center text-left font-sans text-[15px] md:table-cell md:pr-1.5 md:pl-5';
+
+/**
+ * Below 768px each month stacks: its name, status and link on the first line, then the amounts in
+ * two columns and the running total. The table elements stop being laid out as a table there, which
+ * makes browsers drop their semantics, so every element states its role.
+ */
+const ROW =
+  'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-2.5 md:table-row';
+
+/** Where each cell sits when a month is stacked, as row / column / row end / column end. */
+const STACKED_AREA = {
+  status: '[grid-area:1/2/2/3] md:[grid-area:auto]',
+  link: '[grid-area:1/3/2/4] md:[grid-area:auto]',
+  income: '[grid-area:2/1/3/2] md:[grid-area:auto]',
+  expense: '[grid-area:2/2/3/4] md:[grid-area:auto]',
+  settlement: '[grid-area:3/1/4/2] md:[grid-area:auto]',
+  balance: '[grid-area:3/2/4/4] md:[grid-area:auto]',
+  accumulated: '[grid-area:4/1/5/4] md:[grid-area:auto]',
+  // A month with no amounts has no lines 2 and 3 to sit under.
+  accumulatedAlone: '[grid-area:2/1/3/4] md:[grid-area:auto]',
+};
 
 const STATUS_CLASSES: Record<SummaryStatus, string> = {
   empty: 'border-solid border-border text-muted-foreground',
@@ -34,8 +57,11 @@ export function SummaryTable({
 }) {
   return (
     <section aria-label="Tabela do resumo mensal" className="overflow-hidden rounded-[14px] border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1140px] table-fixed border-collapse font-mono text-sm">
+      <div className="md:overflow-x-auto">
+        <table
+          role="table"
+          className="block w-full border-collapse font-mono text-sm md:table md:min-w-[1140px] md:table-fixed"
+        >
           <colgroup>
             <col className="w-[176px]" />
             <col className="w-[140px]" />
@@ -46,40 +72,64 @@ export function SummaryTable({
             <col className="w-[144px]" />
             <col className="w-[72px]" />
           </colgroup>
-          <thead>
-            <tr className="h-11 border-b bg-muted font-sans">
-              <th scope="col" className={cn(HEADER_CELL, 'pl-5 text-left')}>
+          <thead role="rowgroup" className="max-md:sr-only">
+            <tr role="row" className="h-11 border-b bg-muted font-sans">
+              <th role="columnheader" scope="col" className={cn(HEADER_CELL, 'pl-5 text-left')}>
                 Mês
               </th>
               {AMOUNT_COLUMNS.map((label) => (
-                <th key={label} scope="col" className={cn(HEADER_CELL, 'text-right')}>
+                <th key={label} role="columnheader" scope="col" className={cn(HEADER_CELL, 'text-right')}>
                   {label}
                 </th>
               ))}
-              <th scope="col" className={cn(HEADER_CELL, 'text-left')}>
+              <th role="columnheader" scope="col" className={cn(HEADER_CELL, 'text-left')}>
                 Acumulado
               </th>
-              <th scope="col" className={cn(HEADER_CELL, 'text-left')}>
+              <th role="columnheader" scope="col" className={cn(HEADER_CELL, 'text-left')}>
                 Situação
               </th>
-              <td />
+              <td role="cell" />
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup" className="block md:table-row-group">
             {months.map((m) => (
               <MonthRow key={m.month} month={m} />
             ))}
           </tbody>
-          <tfoot>
-            <tr className="h-14 bg-muted font-semibold">
-              <th scope="row" className={cn(FIRST_CELL, 'font-bold')}>
+          <tfoot role="rowgroup" className="block md:table-footer-group">
+            <tr role="row" className={cn(ROW, 'bg-muted font-semibold md:h-14')}>
+              <th role="rowheader" scope="row" className={cn(FIRST_CELL, 'min-h-9 font-bold')}>
                 Total {year}
               </th>
-              <td className={cn(AMOUNT_CELL, 'text-income')}>{totals.income}</td>
-              <td className={cn(AMOUNT_CELL, 'text-expense')}>{totals.expense}</td>
-              <td className={cn(AMOUNT_CELL, 'text-settlement')}>{totals.settlement}</td>
-              <td className={cn(AMOUNT_CELL, BALANCE_CLASSES[totals.balanceTone])}>{totals.balance}</td>
-              <td colSpan={3} />
+              <td
+                role="cell"
+                data-label="Receitas"
+                className={cn(AMOUNT_CELL, STACKED_AREA.income, 'text-income')}
+              >
+                {totals.income}
+              </td>
+              <td
+                role="cell"
+                data-label="Despesas"
+                className={cn(AMOUNT_CELL, STACKED_AREA.expense, 'text-expense')}
+              >
+                {totals.expense}
+              </td>
+              <td
+                role="cell"
+                data-label="Acertos"
+                className={cn(AMOUNT_CELL, STACKED_AREA.settlement, 'text-settlement')}
+              >
+                {totals.settlement}
+              </td>
+              <td
+                role="cell"
+                data-label="Balanço"
+                className={cn(AMOUNT_CELL, STACKED_AREA.balance, BALANCE_CLASSES[totals.balanceTone])}
+              >
+                {totals.balance}
+              </td>
+              <td role="cell" colSpan={3} className="hidden md:table-cell" />
             </tr>
           </tfoot>
         </table>
@@ -90,9 +140,11 @@ export function SummaryTable({
 
 function MonthRow({ month: m }: { month: SummaryMonthRow }) {
   const cellColor = m.hasData ? undefined : 'text-muted-foreground';
+  // Stacked, a month with nothing to show keeps only its first line.
+  const amountCell = cn(AMOUNT_CELL, !m.hasData && 'max-md:hidden');
   return (
-    <tr className={cn('h-14 border-b border-divider', m.isCurrent && 'bg-current-row')}>
-      <th scope="row" className={cn(FIRST_CELL, 'font-semibold')}>
+    <tr role="row" className={cn(ROW, 'border-b border-divider md:h-14', m.isCurrent && 'bg-current-row')}>
+      <th role="rowheader" scope="row" className={cn(FIRST_CELL, 'font-semibold')}>
         <span className="flex items-center gap-2">
           {m.name}
           {m.isCurrent && (
@@ -102,13 +154,40 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
           )}
         </span>
       </th>
-      <td className={cn(AMOUNT_CELL, cellColor)}>{m.income}</td>
-      <td className={cn(AMOUNT_CELL, cellColor)}>{m.expense}</td>
-      <td className={cn(AMOUNT_CELL, m.hasSettlement ? 'text-settlement' : 'text-muted-foreground')}>
+      <td role="cell" data-label="Receitas" className={cn(amountCell, STACKED_AREA.income, cellColor)}>
+        {m.income}
+      </td>
+      <td role="cell" data-label="Despesas" className={cn(amountCell, STACKED_AREA.expense, cellColor)}>
+        {m.expense}
+      </td>
+      <td
+        role="cell"
+        data-label="Acertos"
+        className={cn(
+          amountCell,
+          STACKED_AREA.settlement,
+          m.hasSettlement ? 'text-settlement' : 'text-muted-foreground',
+        )}
+      >
         {m.settlement}
       </td>
-      <td className={cn(AMOUNT_CELL, 'font-semibold', BALANCE_CLASSES[m.balanceTone])}>{m.balance}</td>
-      <td className="px-1.5">
+      <td
+        role="cell"
+        data-label="Balanço"
+        className={cn(amountCell, STACKED_AREA.balance, 'font-semibold', BALANCE_CLASSES[m.balanceTone])}
+      >
+        {m.balance}
+      </td>
+      <td
+        role="cell"
+        data-label="Acumulado"
+        className={cn(
+          STACKED_CELL_LABEL,
+          m.hasData ? STACKED_AREA.accumulated : STACKED_AREA.accumulatedAlone,
+          'block md:table-cell md:px-1.5',
+          !m.hasAccumulated && 'max-md:hidden',
+        )}
+      >
         <span className="flex min-w-0 items-center gap-2.5">
           <span aria-hidden="true" className="flex h-2 flex-1 overflow-hidden rounded-full bg-divider">
             <span
@@ -127,7 +206,7 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
           </span>
         </span>
       </td>
-      <td className="px-1.5">
+      <td role="cell" className={cn(STACKED_AREA.status, 'block justify-self-end md:table-cell md:px-1.5')}>
         <span
           className={cn(
             'inline-block rounded-full border px-2.5 py-[3px] font-sans text-[13px] font-semibold whitespace-nowrap',
@@ -137,12 +216,12 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
           {m.statusLabel}
         </span>
       </td>
-      <td className="pr-3">
+      <td role="cell" className={cn(STACKED_AREA.link, 'block md:table-cell md:pr-3')}>
         <Link
           to={m.href}
           aria-label={m.openLabel}
           title={m.openLabel}
-          className="flex size-11 items-center justify-center rounded-lg text-icon hover:bg-accent"
+          className="flex size-11 items-center justify-center rounded-lg text-icon hover:bg-accent max-md:-mr-2"
         >
           <ChevronRight className="size-[17px]" aria-hidden="true" />
         </Link>
