@@ -78,12 +78,14 @@ export function daysBetween(from: IsoDate, to: IsoDate): number {
 export const defaultDateForMonth = (key: MonthKey, today: IsoDate): IsoDate =>
   today.startsWith(key) ? today : `${key}-01`;
 
-const ISO_DATE_PATTERN = /^(\d{4}-(?:0[1-9]|1[0-2]))-(\d{2})$/;
+const ISO_DATE_PATTERN = /^((\d{4})-(?:0[1-9]|1[0-2]))-(\d{2})$/;
+// No ledger goes back further, and Date.UTC reads the years 0 to 99 as 1900 to 1999.
+const MIN_YEAR = 1900;
 
 /** A day that exists on the calendar, so "2026-02-31" is refused and never lands in a month's totals. */
 export function isIsoDate(value: string): boolean {
-  const [, month, day] = ISO_DATE_PATTERN.exec(value) ?? [];
-  if (!month || !day) return false;
+  const [, month, year, day] = ISO_DATE_PATTERN.exec(value) ?? [];
+  if (!month || !year || !day || Number(year) < MIN_YEAR) return false;
   return Number(day) >= 1 && Number(day) <= lastDayOfMonth(month);
 }
 export const isMonthKey = (value: string): boolean => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);

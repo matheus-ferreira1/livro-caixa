@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isMonthKey } from '../dates/dates';
+import { MAX_ENTRY_CENTS } from './transaction-input';
 
 // A household ledger has a few dozen recurring series at most.
 const MAX_GENERATED_ITEMS = 500;
@@ -8,7 +9,9 @@ const MAX_GENERATED_ITEMS = 500;
 export const recurringGenerateSchema = z.object({
   month: z.string().refine(isMonthKey),
   items: z
-    .array(z.object({ seriesId: z.string(), date: z.string(), valueCents: z.number().int().safe() }))
+    .array(
+      z.object({ seriesId: z.string(), date: z.string(), valueCents: z.number().int().max(MAX_ENTRY_CENTS) }),
+    )
     .max(MAX_GENERATED_ITEMS),
 });
 

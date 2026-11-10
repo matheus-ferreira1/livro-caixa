@@ -23,6 +23,12 @@ export interface TransactionDraft {
   recurring: boolean;
 }
 
+/**
+ * R$ 1 bilhão. No household entry comes near it, and it keeps totals exact: a ledger far
+ * larger than any household's still adds up below Number.MAX_SAFE_INTEGER.
+ */
+export const MAX_ENTRY_CENTS = 100_000_000_000;
+
 /** What the API accepts to create or replace an entry. */
 export const transactionInputSchema = z.object({
   date: z.string(),
@@ -30,8 +36,7 @@ export const transactionInputSchema = z.object({
   note: z.string().max(500).default(''),
   type: z.enum(TRANSACTION_TYPES),
   categoryId: z.string().nullable(),
-  // Safe integers only: a larger amount would be stored as a float and no longer add up exactly.
-  valueCents: z.number().int().safe(),
+  valueCents: z.number().int().max(MAX_ENTRY_CENTS),
   split: z.boolean(),
   confirmed: z.boolean(),
   recurring: z.boolean(),

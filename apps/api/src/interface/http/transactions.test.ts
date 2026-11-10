@@ -107,6 +107,15 @@ describe('GET /api/transactions/search', () => {
     ]);
   });
 
+  test.each(['from', 'to'])('rejects a "%s" that is no day on the calendar', async (param) => {
+    const { agent } = await appWith([]);
+    const { body } = await agent
+      .get('/api/transactions/search')
+      .query({ [param]: '2026-02-31' })
+      .expect(400);
+    expect(body.error.code).toBe('validation_error');
+  });
+
   test('supports date range, category and text search', async () => {
     const { agent } = await appWith([
       { id: 'a', date: '2026-01-15', description: 'Conta de luz', categoryId: 'c-energia' },

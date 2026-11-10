@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { aTransaction } from '../test/builders';
 import {
   FORM_MESSAGES,
+  MAX_ENTRY_CENTS,
   applyTypeChange,
   draftFromTransaction,
   draftToInput,
@@ -139,8 +140,17 @@ describe('transactionInputSchema', () => {
     expect(transactionInputSchema.safeParse(input).success).toBe(true);
   });
 
-  test('rejects an amount too large to add up exactly', () => {
-    expect(transactionInputSchema.safeParse({ ...input, valueCents: 1e300 }).success).toBe(false);
+  test('accepts the largest amount an entry may have', () => {
+    expect(transactionInputSchema.safeParse({ ...input, valueCents: MAX_ENTRY_CENTS }).success).toBe(true);
+  });
+
+  test.each([MAX_ENTRY_CENTS + 1, 1e300])('rejects %p, above the largest amount', (valueCents) => {
+    expect(transactionInputSchema.safeParse({ ...input, valueCents }).success).toBe(false);
+  });
+
+  test('keeps the total of a very large ledger exact', () => {
+    const HOUSEHOLD_ENTRY_CEILING = 50_000;
+    expect(Number.isSafeInteger(MAX_ENTRY_CENTS * HOUSEHOLD_ENTRY_CEILING)).toBe(true);
   });
 });
 
