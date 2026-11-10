@@ -23,13 +23,13 @@ export function AppShell() {
 
   return (
     <>
-      <header className="bg-ink text-background">
+      <header className="bg-ink text-background md:sticky md:top-0 md:z-40">
         <div className="mx-auto flex min-h-14 max-w-[1280px] flex-wrap items-center gap-x-4 px-4 sm:px-6 md:min-h-16 md:gap-y-1 md:py-2 lg:py-0">
           <div className="mr-auto flex items-center gap-2.5">
             <LedgerIcon />
             <span className="text-lg font-bold tracking-[-0.01em]">Livro-caixa</span>
           </div>
-          {/* A bar along the bottom on phones, its own header row on tablets, inline from 1024px. */}
+          {/* A bar along the bottom on phones, its own header row on tablets, inline from 1024px. The header sticks to the top from 768px, so the nav is always in reach; on phones it scrolls away. */}
           <nav
             aria-label="Principal"
             className="fixed inset-x-0 bottom-0 z-40 flex border-t border-header-active bg-ink pb-[env(safe-area-inset-bottom)] md:static md:z-auto md:order-last md:basis-full md:gap-1 md:border-0 md:pb-0 lg:order-none lg:basis-auto"
