@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-10, with two fixes open for review: entry validation (PR #31) and the login burst (PR #32, stacked on #31). Before it: Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-10, after the entry validation fix (PR #31) and the login burst fix (PR #32). Before them: Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -17,7 +17,7 @@ _Last updated: 2026-11-10, with two fixes open for review: entry validation (PR 
 
 ## What comes next
 
-No phase is planned. Two fixes are open for review: PR #31, entry validation, and PR #32, the login burst, which is stacked on #31. What is left after them is optional:
+Nothing is in progress and no PR is open. No phase is planned. What is left:
 
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
@@ -26,6 +26,13 @@ No phase is planned. Two fixes are open for review: PR #31, entry validation, an
    - one web test uses a made-up fixture value
    - requests that join a refresh already running wait for it even when it started before their own read
 2. **Keep typed values when leaving the closing to edit an asset.** The dialog restarts from stored values on each open, so following its advice loses what was typed. Editing the price inside the dialog would solve both.
+3. **Found in the review of 2026-11-10 and not started**, most useful first:
+   - backup and export: there is no way to get the data out or restore it
+   - a closing cannot be corrected or undone
+   - pages show nothing when a query fails
+   - the password can only be changed from the CLI
+   - security headers (CSP, `frame-ancestors`, `nosniff`, HSTS) and a boot warning when cookies are not secure
+   - no handler for `SIGTERM` closes the server and the database
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
@@ -55,8 +62,8 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#27](https://github.com/matheus-ferreira1/livro-caixa/pull/27) | `chore/add-license` | MIT license, which makes the login page's "Código aberto" true |
 | [#28](https://github.com/matheus-ferreira1/livro-caixa/pull/28) | `feat/mobile-layout` | Phone layout: bottom nav bar, stacked rows in place of sideways-scrolling tables, charts that fit the screen, a shorter login panel; e2e spec at 375px |
 | [#30](https://github.com/matheus-ferreira1/livro-caixa/pull/30) | `chore/slim-claude-md` | `CLAUDE.md` keeps the rules every task needs; the status moved to `docs/status.md`, the user stories to `docs/user-stories.md` and the design system to `apps/web/CLAUDE.md` |
-| [#31](https://github.com/matheus-ferreira1/livro-caixa/pull/31) | `fix/entry-validation` | `isIsoDate` accepts only real calendar days from 1900 on; an entry's amount is capped at `MAX_ENTRY_CENTS` (open for review) |
-| [#32](https://github.com/matheus-ferreira1/livro-caixa/pull/32) | `fix/login-throttle-burst` | `Login` handles one attempt per client IP at a time (`KeyedQueue`), so a burst cannot outrun the lock (open for review) |
+| [#31](https://github.com/matheus-ferreira1/livro-caixa/pull/31) | `fix/entry-validation` | `isIsoDate` accepts only real calendar days from 1900 on; an entry's amount is capped at `MAX_ENTRY_CENTS` |
+| [#32](https://github.com/matheus-ferreira1/livro-caixa/pull/32) | `fix/login-throttle-burst` | `Login` handles one attempt per client IP at a time (`KeyedQueue`), so a burst cannot outrun the lock |
 
 ### Web routes
 
