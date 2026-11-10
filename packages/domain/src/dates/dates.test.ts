@@ -4,6 +4,7 @@ import {
   daysBetween,
   defaultDateForMonth,
   elapsedLabel,
+  isIsoDate,
   lastDayOfMonth,
   monthLabel,
   monthName,
@@ -85,4 +86,17 @@ describe('elapsedLabel', () => {
   test('reads a time ahead of a slow clock as now', () => {
     expect(elapsedLabel(NOW + HOUR, NOW)).toBe('agora');
   });
+});
+
+describe('isIsoDate', () => {
+  test.each(['2026-11-06', '2026-01-31', '2028-02-29'])('accepts the calendar date %p', (date) => {
+    expect(isIsoDate(date)).toBe(true);
+  });
+
+  test.each(['2026-02-31', '2027-02-29', '2026-13-01', '2026-00-10', '2026-01-00', '2026-1-5', 'hoje'])(
+    'rejects %p, which is no day on the calendar',
+    (date) => {
+      expect(isIsoDate(date)).toBe(false);
+    },
+  );
 });

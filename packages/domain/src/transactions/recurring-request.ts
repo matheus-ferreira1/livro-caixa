@@ -8,7 +8,7 @@ const MAX_GENERATED_ITEMS = 500;
 export const recurringGenerateSchema = z.object({
   month: z.string().refine(isMonthKey),
   items: z
-    .array(z.object({ seriesId: z.string(), date: z.string(), valueCents: z.number().int() }))
+    .array(z.object({ seriesId: z.string(), date: z.string(), valueCents: z.number().int().safe() }))
     .max(MAX_GENERATED_ITEMS),
 });
 

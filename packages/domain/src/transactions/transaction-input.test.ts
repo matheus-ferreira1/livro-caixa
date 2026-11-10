@@ -7,6 +7,7 @@ import {
   draftToInput,
   emptyDraft,
   toTransaction,
+  transactionInputSchema,
   validateInput,
   type TransactionDraft,
 } from './transaction-input';
@@ -128,5 +129,24 @@ describe('draftFromTransaction', () => {
       recurring: true,
       categoryId: t.categoryId,
     });
+  });
+});
+
+describe('transactionInputSchema', () => {
+  const input = { ...aTransaction(), note: '' };
+
+  test('accepts an amount in whole cents', () => {
+    expect(transactionInputSchema.safeParse(input).success).toBe(true);
+  });
+
+  test('rejects an amount too large to add up exactly', () => {
+    expect(transactionInputSchema.safeParse({ ...input, valueCents: 1e300 }).success).toBe(false);
+  });
+});
+
+describe('validateInput', () => {
+  test('asks for the date when the day does not exist', () => {
+    const input = { ...aTransaction(), date: '2026-02-31' };
+    expect(validateInput(input)).toBe(FORM_MESSAGES.date);
   });
 });

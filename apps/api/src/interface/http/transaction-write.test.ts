@@ -81,6 +81,27 @@ describe('POST /api/transactions', () => {
   });
 });
 
+describe('POST /api/transactions with values no ledger can hold', () => {
+  test('rejects a day that does not exist', async () => {
+    const { agent } = await signedIn();
+    const { body } = await agent
+      .post('/api/transactions')
+      .send({ ...input, date: '2026-02-31' })
+      .expect(400);
+    expect(body.error.message).toBe('Informe a data.');
+  });
+
+  test('rejects an amount too large to add up exactly', async () => {
+    const { agent } = await signedIn();
+    await agent
+      .post('/api/transactions')
+      .send({ ...input, valueCents: 1e300 })
+      .expect(400);
+    const month = await agent.get('/api/transactions?month=2026-11').expect(200);
+    expect(month.body.transactions).toHaveLength(0);
+  });
+});
+
 describe('PUT /api/transactions/:id', () => {
   test('replaces an entry and keeps its series', async () => {
     const { agent } = await signedIn();

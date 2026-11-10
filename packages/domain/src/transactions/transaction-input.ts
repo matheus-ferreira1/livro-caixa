@@ -30,7 +30,8 @@ export const transactionInputSchema = z.object({
   note: z.string().max(500).default(''),
   type: z.enum(TRANSACTION_TYPES),
   categoryId: z.string().nullable(),
-  valueCents: z.number().int(),
+  // Safe integers only: a larger amount would be stored as a float and no longer add up exactly.
+  valueCents: z.number().int().safe(),
   split: z.boolean(),
   confirmed: z.boolean(),
   recurring: z.boolean(),

@@ -65,10 +65,7 @@ export function validateRecurringSelection(choices: RecurringChoice[], month: Mo
   return invalid ? RECURRING_MESSAGES.review(invalid.description, month) : null;
 }
 
-function isDateInMonth(date: string, month: MonthKey): boolean {
-  const day = Number(date.slice(8, 10));
-  return isIsoDate(date) && monthOf(date) === month && day >= 1 && day <= lastDayOfMonth(month);
-}
+const isDateInMonth = (date: string, month: MonthKey): boolean => isIsoDate(date) && monthOf(date) === month;
 
 /** The new occurrence: pending and without the source's note, in the same series. */
 export const recurringEntry = (

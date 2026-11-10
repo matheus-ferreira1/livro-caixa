@@ -78,7 +78,14 @@ export function daysBetween(from: IsoDate, to: IsoDate): number {
 export const defaultDateForMonth = (key: MonthKey, today: IsoDate): IsoDate =>
   today.startsWith(key) ? today : `${key}-01`;
 
-export const isIsoDate = (value: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value);
+const ISO_DATE_PATTERN = /^(\d{4}-(?:0[1-9]|1[0-2]))-(\d{2})$/;
+
+/** A day that exists on the calendar, so "2026-02-31" is refused and never lands in a month's totals. */
+export function isIsoDate(value: string): boolean {
+  const [, month, day] = ISO_DATE_PATTERN.exec(value) ?? [];
+  if (!month || !day) return false;
+  return Number(day) >= 1 && Number(day) <= lastDayOfMonth(month);
+}
 export const isMonthKey = (value: string): boolean => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 
 /** How long ago an instant was, in epoch ms. `now` comes from the client, like every "today". */
