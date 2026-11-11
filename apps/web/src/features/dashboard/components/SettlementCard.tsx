@@ -1,3 +1,4 @@
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import type { SettlementTone, SettlementViewModel } from '../view-model';
 
@@ -14,6 +15,7 @@ interface SettlementCardProps {
 }
 
 export function SettlementCard({ settlement, partnerName, onOpen }: SettlementCardProps) {
+  const { t } = usePreferences();
   return (
     <section
       aria-labelledby="dash-acerto-title"
@@ -21,7 +23,7 @@ export function SettlementCard({ settlement, partnerName, onOpen }: SettlementCa
     >
       <div className="flex items-center justify-between gap-3">
         <h2 id="dash-acerto-title" className="m-0 text-base font-bold">
-          Acerto com {partnerName}
+          {t('dashboard.settlementTitle', partnerName)}
         </h2>
         <span
           className={cn(
@@ -35,7 +37,7 @@ export function SettlementCard({ settlement, partnerName, onOpen }: SettlementCa
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-2xl font-semibold text-settlement">{settlement.pending}</span>
         <span className="text-[13px] text-muted-foreground">
-          a receber de {settlement.expected} esperados
+          {t('dashboard.settlementToReceive', settlement.expected)}
         </span>
       </div>
       <div
@@ -52,7 +54,7 @@ export function SettlementCard({ settlement, partnerName, onOpen }: SettlementCa
           onClick={onOpen}
           className="min-h-11 rounded-[10px] border border-settlement bg-card px-3.5 text-sm font-semibold text-settlement hover:bg-settlement-bg"
         >
-          Abrir acerto
+          {t('dashboard.settlementOpen')}
         </button>
       </div>
     </section>

@@ -4,7 +4,8 @@ import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { useRecurringCandidates } from '@/features/recurring/api';
 import { useToggleFlags } from '@/features/transactions/api';
-import { cn, pluralize } from '@/shared/lib/utils';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { cn } from '@/shared/lib/utils';
 import type { OpenRow, OpenViewModel } from '../view-model';
 
 const DUE_TEXT: Record<DueTone, string> = {
@@ -21,12 +22,13 @@ interface OpenItemsCardProps {
 }
 
 export function OpenItemsCard({ open, month, monthLabel, onReviewRecurring }: OpenItemsCardProps) {
+  const { t } = usePreferences();
   const { data: candidates = [] } = useRecurringCandidates(month, true);
   const toggle = useToggleFlags();
   const confirm = (row: OpenRow) =>
     toggle.mutate(
       { id: row.id, confirmed: true },
-      { onSuccess: () => toast(`“${row.description}” confirmado`) },
+      { onSuccess: () => toast(t('dashboard.confirmed', row.description)) },
     );
 
   return (
@@ -34,7 +36,7 @@ export function OpenItemsCard({ open, month, monthLabel, onReviewRecurring }: Op
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-[18px] pb-3">
         <div className="flex flex-col gap-0.5">
           <h2 id="open-title" className="m-0 text-base font-bold">
-            Em aberto no mês
+            {t('dashboard.openTitle')}
           </h2>
           <span className="text-[13px] text-muted-foreground">{open.summary}</span>
         </div>
@@ -45,15 +47,13 @@ export function OpenItemsCard({ open, month, monthLabel, onReviewRecurring }: Op
       </div>
       {candidates.length > 0 && (
         <div className="mx-5 mb-3 flex flex-wrap items-center justify-between gap-2.5 rounded-[10px] bg-settlement-bg px-3.5 py-3 text-sm text-info-text">
-          <span className="font-semibold">
-            {pluralize(candidates.length, 'recorrente ainda não gerado', 'recorrentes ainda não gerados')}
-          </span>
+          <span className="font-semibold">{t('dashboard.recurringPending', candidates.length)}</span>
           <button
             type="button"
             onClick={onReviewRecurring}
             className="min-h-11 rounded-lg bg-settlement px-3 text-[13px] font-semibold text-white hover:bg-settlement/90"
           >
-            Revisar e gerar
+            {t('dashboard.recurringReview')}
           </button>
         </div>
       )}
@@ -72,7 +72,7 @@ export function OpenItemsCard({ open, month, monthLabel, onReviewRecurring }: Op
       )}
       {open.rows.length === 0 && (
         <p className="m-0 border-t border-divider px-5 pt-[18px] pb-[22px] text-sm text-muted-foreground">
-          Nada pendente em {monthLabel}.
+          {t('dashboard.openNothing', monthLabel)}
         </p>
       )}
     </section>
@@ -88,6 +88,7 @@ function OpenRowItem({
   disabled: boolean;
   onConfirm: () => void;
 }) {
+  const { t } = usePreferences();
   return (
     // On phones the button takes a line of its own, or the description would have no room.
     <div className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-t border-divider px-5 py-2.5 sm:grid-cols-[64px_minmax(0,1fr)_auto_auto]">
@@ -110,7 +111,7 @@ function OpenRowItem({
         className="col-span-full flex min-h-11 items-center gap-1.5 justify-self-end rounded-lg border border-income-border bg-card px-2.5 text-[13px] font-semibold text-income hover:bg-income-bg disabled:opacity-60 sm:col-span-1"
       >
         <Check className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
-        Confirmar
+        {t('dashboard.confirm')}
       </button>
     </div>
   );
