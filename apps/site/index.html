@@ -41,11 +41,11 @@
   <body class="antialiased">
     <a
       href="#main"
-      class="sr-only z-50 rounded-control bg-mint px-4 py-3 font-semibold text-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      class="sr-only z-50 rounded-control bg-mint font-semibold text-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:px-4 focus:py-3 focus-visible:outline-mint"
       >Skip to content</a
     >
 
-    <header class="z-40 bg-ink text-white sm:sticky sm:top-0">
+    <header class="on-dark z-40 bg-ink text-white sm:sticky sm:top-0">
       <div
         class="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-2 sm:px-6"
       >
@@ -97,7 +97,7 @@
     </header>
 
     <main id="main" tabindex="-1">
-      <section aria-labelledby="hero-title" class="ledger-ruling text-white">
+      <section aria-labelledby="hero-title" class="ledger-ruling on-dark text-white">
         <div class="mx-auto max-w-[1280px] px-4 pt-16 sm:px-6 sm:pt-24">
           <div class="max-w-3xl">
             <h1
@@ -384,7 +384,7 @@
                   <code class="font-mono text-[0.92em]">ADMIN_EMAIL</code> and that password.
                 </li>
               </ol>
-              <div class="mt-6 overflow-hidden rounded-card bg-ink text-white">
+              <div class="on-dark mt-6 overflow-hidden rounded-card bg-ink text-white">
                 <div
                   class="flex min-h-[48px] items-center justify-between gap-4 border-b border-header-active px-4"
                 >
@@ -399,7 +399,7 @@
                       type="button"
                       data-copy="quick-start-commands"
                       hidden
-                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active"
+                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
                     >
                       Copy commands
                     </button>
@@ -407,14 +407,15 @@
                 </div>
                 <pre
                   class="overflow-x-auto p-5 font-mono text-[14px] leading-7"
-                ><code id="quick-start-commands"><span class="text-on-dark-muted"># after git clone, inside the repository</span>
+                ><code id="quick-start-commands"><span data-comment class="text-on-dark-muted"># after git clone, inside the repository</span>
 cp .env.example .env
-<span class="text-on-dark-muted"># set ADMIN_PASSWORD in .env, then:</span>
+<span data-comment class="text-on-dark-muted"># set ADMIN_PASSWORD in .env, then:</span>
 docker compose up --build</code></pre>
               </div>
               <p class="mt-4 max-w-[60ch] text-sm text-muted">
-                Behind HTTPS, set <code class="font-mono">SECURE_COOKIES=true</code>. The README lists every
-                variable, including <code class="font-mono">TRUST_PROXY</code> for a reverse proxy.
+                Behind HTTPS, set <code class="font-mono">SECURE_COOKIES=true</code>. The other settings, such
+                as <code class="font-mono">TRUST_PROXY</code> for a reverse proxy, are in
+                <code class="font-mono">.env.example</code>.
               </p>
             </div>
           </div>
@@ -453,8 +454,8 @@ docker compose up --build</code></pre>
             <div class="border-t border-ink pt-4">
               <dt class="font-semibold">TypeScript, strict</dt>
               <dd class="mt-1.5 text-muted">
-                Strict mode in every workspace, no <code class="font-mono text-[0.92em]">any</code>, ESLint
-                and Prettier in CI.
+                Strict mode in every workspace, no <code class="font-mono text-[0.92em]">any</code>, and
+                ESLint in CI.
               </dd>
             </div>
             <div class="border-t border-ink pt-4">
@@ -499,7 +500,7 @@ docker compose up --build</code></pre>
       <section
         id="contribute"
         aria-labelledby="contribute-title"
-        class="ledger-ruling py-20 text-white sm:py-28"
+        class="ledger-ruling on-dark py-20 text-white sm:py-28"
       >
         <div class="mx-auto grid max-w-[1280px] [&>*]:min-w-0 gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:gap-20">
           <div>
@@ -580,7 +581,7 @@ docker compose up --build</code></pre>
                     type="button"
                     data-copy="contribute-commands"
                     hidden
-                    class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active"
+                    class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
                   >
                     Copy commands
                   </button>
@@ -589,11 +590,11 @@ docker compose up --build</code></pre>
               <pre
                 class="overflow-x-auto p-5 font-mono text-[14px] leading-7"
               ><code id="contribute-commands">bun install
-bun run seed:demo     <span class="text-on-dark-muted"># a year of sample data</span>
-<span class="text-on-dark-muted"># your dev account; it asks for a password</span>
+bun run seed:demo     <span data-comment class="text-on-dark-muted"># a year of sample data</span>
+<span data-comment class="text-on-dark-muted"># your dev account; it asks for a password</span>
 bun run --cwd=apps/api cli create-user you@example.com
-bun run dev           <span class="text-on-dark-muted"># API on :3000, web on :5173</span>
-bun run test          <span class="text-on-dark-muted"># unit, integration and component</span></code></pre>
+bun run dev           <span data-comment class="text-on-dark-muted"># API on :3000, web on :5173</span>
+bun run test          <span data-comment class="text-on-dark-muted"># unit, integration and component</span></code></pre>
             </div>
             <p class="mt-5 max-w-[56ch] text-on-dark-muted">
               Work test first, one branch and one pull request per change, with Conventional Commits in
@@ -605,7 +606,7 @@ bun run test          <span class="text-on-dark-muted"># unit, integration and c
       </section>
     </main>
 
-    <footer class="bg-ink text-on-dark-muted">
+    <footer class="on-dark bg-ink text-on-dark-muted">
       <div
         class="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 border-t border-header-active px-4 py-8 sm:px-6"
       >

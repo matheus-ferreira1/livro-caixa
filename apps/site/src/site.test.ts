@@ -132,6 +132,7 @@ describe('project site', () => {
   });
 
   it('writes negative money with the minus sign, never a hyphen', () => {
-    expect(page.body.textContent).not.toMatch(/-\s?R\$/);
+    // The whole source, so alt text and meta descriptions are covered too.
+    expect(html).not.toMatch(/-\s?R\$/);
   });
 });

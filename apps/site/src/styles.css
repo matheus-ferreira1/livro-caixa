@@ -58,6 +58,11 @@
     border-radius: 4px;
   }
 
+  /* The blue ring is too faint on ink; mint keeps focus visible there. */
+  .on-dark :focus-visible {
+    outline-color: var(--color-mint);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

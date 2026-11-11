@@ -14,8 +14,22 @@ export function enableCopyButtons(root: Document): void {
     const status = root.querySelector<HTMLElement>(`[data-copy-status="${targetId}"]`);
     if (!source) continue;
     button.hidden = false;
-    button.addEventListener('click', () => void copy(source.textContent ?? '', status));
+    button.addEventListener('click', () => void copy(commandsOf(source), status));
   }
+}
+
+/**
+ * The block's text without its `data-comment` spans or blank lines. Pasted into a shell such as zsh,
+ * which by default does not treat `#` as a comment, a comment line would run as a command.
+ */
+function commandsOf(block: HTMLElement): string {
+  const copy = block.cloneNode(true) as HTMLElement;
+  for (const comment of copy.querySelectorAll('[data-comment]')) comment.remove();
+  return (copy.textContent ?? '')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .join('\n');
 }
 
 async function copy(text: string, status: HTMLElement | null): Promise<void> {

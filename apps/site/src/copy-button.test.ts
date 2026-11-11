@@ -3,8 +3,9 @@ import { enableCopyButtons } from './copy-button';
 
 function renderBlock() {
   document.body.innerHTML = `
-    <pre id="commands"><code># a comment
+    <pre><code id="commands"><span data-comment># a comment</span>
 cp .env.example .env
+bun run test   <span data-comment># a trailing comment</span>
 docker compose up --build</code></pre>
     <button type="button" data-copy="commands" hidden>Copy commands</button>
     <span data-copy-status="commands" role="status"></span>`;
@@ -28,7 +29,7 @@ describe('enableCopyButtons', () => {
     expect(button.hidden).toBe(true);
   });
 
-  it('shows the button and copies the block’s text', async () => {
+  it('shows the button and copies the commands without their comments', async () => {
     const writeText = vi.fn(() => Promise.resolve());
     stubClipboard(writeText);
     const { button, status } = renderBlock();
@@ -37,7 +38,8 @@ describe('enableCopyButtons', () => {
 
     button.click();
     await vi.waitFor(() => expect(status.textContent).toBe('Copied'));
-    expect(writeText).toHaveBeenCalledWith('# a comment\ncp .env.example .env\ndocker compose up --build');
+    // Pasted into a shell, a comment line would be run as a command and a trailing one passed as arguments.
+    expect(writeText).toHaveBeenCalledWith('cp .env.example .env\nbun run test\ndocker compose up --build');
   });
 
   it('says so when copying fails', async () => {
