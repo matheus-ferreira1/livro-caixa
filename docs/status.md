@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-10, after the entry validation fix (PR #31) and the login burst fix (PR #32). Before them: Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-11, after the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -12,13 +12,18 @@ _Last updated: 2026-11-10, after the entry validation fix (PR #31) and the login
 | 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
-| 5 — Visão geral | US-09 (the landing page) | ✅ Done (PR #19) |
+| 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PR #19) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
+| Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
 
-Nothing is in progress and no PR is open. No phase is planned. What is left:
+No phase is planned. What is left:
 
+0. **Turn on the project site.** After PR #37 merges, the repository owner enables Pages with Source = GitHub Actions (Settings › Pages), and the repository must be public. Then run the "Project site" workflow once (or push a change under `apps/site`). Follow-ups for the site, none of them blocking:
+   - retake the screenshots with `bun run capture:site` whenever a captured screen changes, so the site never shows an old UI
+   - the hero shows the desktop dashboard at 375px too, where its text is too small to read; a phone shot via `<picture>` would fit better
+   - no screenshot shows Gerar recorrentes, because the demo seed has no pending recurring entries for October 2026
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
    - `dayAndMonth` could be shared with the closing's date label
@@ -67,6 +72,18 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#34](https://github.com/matheus-ferreira1/livro-caixa/pull/34) | `fix/sticky-navbar` | The header sticks to the top from 768px; `scroll-padding-top` keeps focus and anchors clear of it; only on screens at least 480px tall; e2e spec at 1440px, 768px, 844×390 and 375px |
 | [#35](https://github.com/matheus-ferreira1/livro-caixa/pull/35) | `fix/sticky-header-height` | The header takes its minimum height from `--sticky-header-height`, the variable `scroll-padding-top` reads, so the two cannot drift; e2e guard at 1440px and 768px |
 | [#36](https://github.com/matheus-ferreira1/livro-caixa/pull/36) | `chore/e2e-shared-helpers` | The e2e specs share one `signIn` in `e2e/helpers.ts`; the sticky header spec seeds its entries once and checks every response |
+| [#37](https://github.com/matheus-ferreira1/livro-caixa/pull/37) | `feat/project-site` | The project site (`apps/site`): one static page with real screenshots, a screenshot capture script, the Pages workflow, `CONTRIBUTING.md`, and the site built in CI |
+
+### Project site (`apps/site`)
+
+Not to be confused with Visão geral, the app's landing page after sign-in. This is the public page for contributors and self-hosters, at https://matheus-ferreira1.github.io/livro-caixa/.
+
+- One static `index.html` styled with Tailwind 4 through Vite 7, with the app's tokens and self-hosted `@fontsource` fonts. No framework, no external request of any kind, no analytics. It works with JavaScript off; the only script shows the "Copy commands" buttons when the clipboard API exists.
+- Vite's `base` is `/livro-caixa/`, the Pages path. Canonical, Open Graph and Twitter URLs are absolute, because Vite does not rewrite `<meta>` content.
+- Screenshots in `apps/site/public/screenshots/` (WebP) and `public/og-image.jpg` are real captures of the app. `bun run capture:site` runs `apps/site/scripts/capture-screenshots.ts` with Playwright (`scripts/capture.config.ts`): it builds the SPA, seeds the demo data into a throwaway database in the OS temp directory, starts the API on port 4175 with every variable set explicitly, signs in with the e2e helper and pins the browser clock to 26 Oct 2026. It never reads `./data` or `.env`.
+- Commands: `bun run dev:site`, `bun run build:site` (into `apps/site/dist`), `bun run --filter '@livro-caixa/site' preview`, `bun run capture:site`. Root `build` still builds only the app.
+- Deploy: `.github/workflows/pages.yml` runs on pushes to `main` that touch `apps/site/**` or the workflow, and on demand. It tests and builds the site, uploads `apps/site/dist` and deploys it to the `github-pages` environment. CI also runs `bun run build:site` on every PR.
+- The Docker image copies `apps/site/package.json` into its manifests stage only so `bun install --frozen-lockfile` matches `bun.lock`; the site is not built or shipped in the image.
 
 ### Web routes
 
@@ -162,9 +179,10 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Domain unit | 317 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 222 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
+| Project site | 16: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
 | E2E | 15 tests: the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
-CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
+CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck`, `build` and `build:site`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
 ### Decisions taken in Phase 1
 
@@ -310,6 +328,14 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - From 768px the header is `position: sticky; top: 0` with `z-40`, below the `z-50` dialogs, sheets and menus. On phones it scrolls away as before and the nav stays a fixed bottom bar.
 - The header sticks only on screens at least 480px tall (the `tall` variant in `index.css`). A phone held sideways is 768px wide or more but under 450px tall, and the two-row header would keep over a quarter of it.
 - `html` gets `scroll-padding-top: var(--sticky-header-height)` from 768px on those tall screens, so a focused field or a scroll target is not hidden under the header. The variable is 6.75rem (108px, the two-row tablet header) and 4rem (64px, the single row) from 1024px. The header's inner container takes its `min-height` from the same variable, and an e2e guard fails if the header's content ever grows taller than it.
+
+### Decisions taken for the project site (PR #37)
+
+- It lives in this repository as the `@livro-caixa/site` workspace and deploys from GitHub Actions, not from a `gh-pages` branch.
+- Its copy is in English, for contributors and self-hosters. App terms appear in their exact pt-BR form from `docs/user-stories.md` with an English gloss, and screenshots stay in pt-BR.
+- It promises only what is built: backup, export and changing the password in the app are listed as open work, not as features.
+- Screenshots are WebP, re-encoded by Chromium in the capture script, so no image library is added. Desktop shots are 1440×900 at 1x, the phone shot is 375×812 at 2x, and the Open Graph image is the dashboard laid out at 1200×630.
+- The header sticks to the top from 640px only, so on phones it does not take a share of the screen, as in the app.
 
 ## Roadmap
 
