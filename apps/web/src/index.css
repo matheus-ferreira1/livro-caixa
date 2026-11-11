@@ -72,7 +72,9 @@
   --phone-nav-height: 3.5rem;
   --phone-nav-clearance: calc(var(--phone-nav-height) + env(safe-area-inset-bottom));
 
-  /* The sticky header's height from 768px on tall screens: two rows on tablets, one from 1024px. */
+  /* The header's height from 768px: two rows on tablets, one from 1024px. The header takes its
+     minimum height from this variable and scroll-padding-top reads it too, so they cannot drift
+     apart; the e2e spec fails if the header's content ever outgrows it. */
   --sticky-header-height: 6.75rem;
 }
 

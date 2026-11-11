@@ -99,3 +99,22 @@ test.describe('the top navigation while scrolling', () => {
     await expect(page.getByRole('navigation', { name: 'Principal' })).toBeInViewport({ ratio: 1 });
   });
 });
+
+// The header takes its height from --sticky-header-height, and so does the scroll padding that clears it.
+// If the header content outgrows the variable, the header gets taller than the padding and this fails.
+for (const viewport of [
+  { name: 'desktop', width: 1440, height: 900 },
+  { name: 'tablet', width: 768, height: 1024 },
+]) {
+  test(`keeps the ${viewport.name} header as tall as the scroll padding that clears it`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await signIn(page);
+
+    const header = await page.getByRole('banner').boundingBox();
+    const scrollPaddingTop = await page.evaluate(() =>
+      parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop),
+    );
+
+    expect(header?.height).toBe(scrollPaddingTop);
+  });
+}

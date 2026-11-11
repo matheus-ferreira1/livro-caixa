@@ -65,6 +65,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#31](https://github.com/matheus-ferreira1/livro-caixa/pull/31) | `fix/entry-validation` | `isIsoDate` accepts only real calendar days from 1900 on; an entry's amount is capped at `MAX_ENTRY_CENTS` |
 | [#32](https://github.com/matheus-ferreira1/livro-caixa/pull/32) | `fix/login-throttle-burst` | `Login` handles one attempt per client IP at a time (`KeyedQueue`), so a burst cannot outrun the lock |
 | [#34](https://github.com/matheus-ferreira1/livro-caixa/pull/34) | `fix/sticky-navbar` | The header sticks to the top from 768px; `scroll-padding-top` keeps focus and anchors clear of it; only on screens at least 480px tall; e2e spec at 1440px, 768px, 844×390 and 375px |
+| [#35](https://github.com/matheus-ferreira1/livro-caixa/pull/35) | `fix/sticky-header-height` | The header takes its minimum height from `--sticky-header-height`, the variable `scroll-padding-top` reads, so the two cannot drift; e2e guard at 1440px and 768px |
 
 ### Web routes
 
@@ -160,7 +161,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Domain unit | 317 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 222 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
-| E2E | 13 tests: the top navigation while scrolling (sticky at 1440px and 768px, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
+| E2E | 15 tests: the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -307,7 +308,7 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 - From 768px the header is `position: sticky; top: 0` with `z-40`, below the `z-50` dialogs, sheets and menus. On phones it scrolls away as before and the nav stays a fixed bottom bar.
 - The header sticks only on screens at least 480px tall (the `tall` variant in `index.css`). A phone held sideways is 768px wide or more but under 450px tall, and the two-row header would keep over a quarter of it.
-- `html` gets `scroll-padding-top: var(--sticky-header-height)` from 768px on those tall screens, so a focused field or a scroll target is not hidden under the header. The variable is 6.75rem (108px, the two-row tablet header) and 4rem (64px, the single row) from 1024px, as measured in the browser.
+- `html` gets `scroll-padding-top: var(--sticky-header-height)` from 768px on those tall screens, so a focused field or a scroll target is not hidden under the header. The variable is 6.75rem (108px, the two-row tablet header) and 4rem (64px, the single row) from 1024px. The header's inner container takes its `min-height` from the same variable, and an e2e guard fails if the header's content ever grows taller than it.
 
 ## Roadmap
 
