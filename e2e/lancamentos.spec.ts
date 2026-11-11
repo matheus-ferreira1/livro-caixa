@@ -1,17 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { E2E_ADMIN } from '../playwright.config';
-
-async function signIn(page: Page, password = E2E_ADMIN.password) {
-  await page.goto('/');
-  await page.getByLabel('E-mail').fill(E2E_ADMIN.email);
-  await page.getByLabel('Senha', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Entrar' }).click();
-}
+import { signIn } from './helpers';
 
 const tile = (page: Page, name: string) => page.getByRole('region', { name });
 
 test('signs in, manages an entry through its lifecycle, settles it and signs out', async ({ page }) => {
-  await signIn(page, 'senha-errada');
+  await signIn(page, { password: 'senha-errada', expectLanding: false });
   await expect(page.getByRole('alert')).toHaveText('E-mail ou senha incorretos.');
 
   await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);

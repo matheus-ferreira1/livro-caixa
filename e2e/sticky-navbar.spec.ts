@@ -1,24 +1,23 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type APIResponse, type Page } from '@playwright/test';
 import { E2E_ADMIN } from '../playwright.config';
+import { signIn } from './helpers';
 
 // A year far from today, so this spec never shares ledger data with the others.
 const MONTH = '2032-03';
 const ENTRY_COUNT = 40;
 
-async function signIn(page: Page) {
-  await page.goto('/');
-  await page.getByLabel('E-mail').fill(E2E_ADMIN.email);
-  await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);
-  await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/visao-geral/);
+async function expectOk(response: APIResponse, action: string) {
+  expect(response.ok(), `${action} answered ${response.status()}: ${await response.text()}`).toBe(true);
 }
 
-async function createEntries(page: Page): Promise<string[]> {
-  const { categories } = await (await page.request.get('/api/categories')).json();
+// Each id is recorded as soon as its entry exists, so a failure midway still leaves the list to clean up.
+async function createEntries(api: APIRequestContext, ids: string[]) {
+  const listed = await api.get('/api/categories');
+  await expectOk(listed, 'listing the categories');
+  const { categories } = await listed.json();
   const category = categories.find((candidate: { type: string }) => candidate.type === 'despesa');
-  const ids: string[] = [];
   for (let index = 0; index < ENTRY_COUNT; index += 1) {
-    const response = await page.request.post('/api/transactions', {
+    const response = await api.post('/api/transactions', {
       data: {
         description: `Lançamento ${index}`,
         note: '',
@@ -31,9 +30,19 @@ async function createEntries(page: Page): Promise<string[]> {
         categoryId: category.id,
       },
     });
+    await expectOk(response, `creating entry ${index}`);
     ids.push((await response.json()).transaction.id);
   }
-  return ids;
+}
+
+// One refused delete must not stop the rest from being removed, so the failures are reported together.
+async function deleteEntries(api: APIRequestContext, ids: string[]) {
+  const failures: string[] = [];
+  for (const id of ids) {
+    const response = await api.delete(`/api/transactions/${id}`);
+    if (!response.ok()) failures.push(`${id}: ${response.status()} ${await response.text()}`);
+  }
+  expect(failures, 'entries that could not be deleted').toEqual([]);
 }
 
 async function openLongPage(page: Page) {
@@ -53,15 +62,31 @@ async function scrollToBottom(page: Page) {
 }
 
 test.describe('the top navigation while scrolling', () => {
-  let entryIds: string[] = [];
+  const entryIds: string[] = [];
+  let api: APIRequestContext | undefined;
+
+  // The entries are the same for every test, so they are made once, through the API.
+  test.beforeAll(async ({ playwright, baseURL }) => {
+    const context = await playwright.request.newContext({ baseURL });
+    api = context;
+    const login = await context.post('/api/auth/login', {
+      data: { email: E2E_ADMIN.email, password: E2E_ADMIN.password, remember: false },
+    });
+    await expectOk(login, 'signing in through the API');
+    await createEntries(context, entryIds);
+  });
+
+  test.afterAll(async () => {
+    if (!api) return;
+    try {
+      await deleteEntries(api, entryIds);
+    } finally {
+      await api.dispose();
+    }
+  });
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-    entryIds = await createEntries(page);
-  });
-
-  test.afterEach(async ({ page }) => {
-    for (const id of entryIds) await page.request.delete(`/api/transactions/${id}`);
   });
 
   for (const viewport of [
