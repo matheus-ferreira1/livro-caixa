@@ -65,7 +65,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#31](https://github.com/matheus-ferreira1/livro-caixa/pull/31) | `fix/entry-validation` | `isIsoDate` accepts only real calendar days from 1900 on; an entry's amount is capped at `MAX_ENTRY_CENTS` |
 | [#32](https://github.com/matheus-ferreira1/livro-caixa/pull/32) | `fix/login-throttle-burst` | `Login` handles one attempt per client IP at a time (`KeyedQueue`), so a burst cannot outrun the lock |
 | [#34](https://github.com/matheus-ferreira1/livro-caixa/pull/34) | `fix/sticky-navbar` | The header sticks to the top from 768px; `scroll-padding-top` keeps focus and anchors clear of it; only on screens at least 480px tall; e2e spec at 1440px, 768px, 844×390 and 375px |
-| (this PR) | `fix/sticky-header-height` | The header takes its minimum height from `--sticky-header-height`, the variable `scroll-padding-top` reads, so the two cannot drift; e2e guard at 1440px and 768px |
+| [#35](https://github.com/matheus-ferreira1/livro-caixa/pull/35) | `fix/sticky-header-height` | The header takes its minimum height from `--sticky-header-height`, the variable `scroll-padding-top` reads, so the two cannot drift; e2e guard at 1440px and 768px |
 
 ### Web routes
 
