@@ -21,20 +21,20 @@ Read these when the task needs them; they are not loaded automatically.
 - **UI copy is Brazilian Portuguese (pt-BR), verbatim from the design.** Never translate the UI and never paraphrase its strings. Quoted strings in this file and in [docs/user-stories.md](docs/user-stories.md) are the exact copy.
 - Domain terms keep the English names below in code. The pt-BR terms appear only in UI copy and in the persisted enum values listed here.
 
-| pt-BR (UI)                   | Code                                   | Notes                                                              |
-| ---------------------------- | -------------------------------------- | ------------------------------------------------------------------ |
-| lançamento                   | `Transaction`                          | One entry in the cash book                                         |
-| receita                      | `'receita'` type, "income"             | Persisted enum value stays pt-BR                                   |
-| despesa                      | `'despesa'` type, "expense"            |                                                                    |
-| acerto                       | `'acerto'` type, "settlement"          | Money received from the partner for split bills. It is not income. |
-| previsto                     | `confirmed = false`, "pending"         |                                                                    |
-| confirmado                   | `confirmed = true`                     |                                                                    |
-| conta dividida / dividido    | `split`                                | Only expenses can be split                                         |
-| recorrente                   | `recurring`, `seriesId`                |                                                                    |
-| companheira / companheiro(a) | `partner`                              | `settings.partnerName`                                             |
-| patrimônio                   | net worth / `Asset`                    |                                                                    |
-| fechamento                   | monthly net-worth closing / `Snapshot` |                                                                    |
-| aporte / resgate             | contribution / withdrawal              |                                                                    |
+| pt-BR (UI) | Code | Notes |
+|---|---|---|
+| lançamento | `Transaction` | One entry in the cash book |
+| receita | `'receita'` type, "income" | Persisted enum value stays pt-BR |
+| despesa | `'despesa'` type, "expense" | |
+| acerto | `'acerto'` type, "settlement" | Money received from the partner for split bills. It is not income. |
+| previsto | `confirmed = false`, "pending" | |
+| confirmado | `confirmed = true` | |
+| conta dividida / dividido | `split` | Only expenses can be split |
+| recorrente | `recurring`, `seriesId` | |
+| companheira / companheiro(a) | `partner` | `settings.partnerName` |
+| patrimônio | net worth / `Asset` | |
+| fechamento | monthly net-worth closing / `Snapshot` | |
+| aporte / resgate | contribution / withdrawal | |
 
 ## Commands
 
@@ -59,15 +59,15 @@ The first user comes from `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` on fir
 
 Environment variables (`apps/api/src/config.ts`):
 
-| Variable                                      | Default                                                            | Purpose                                                                                                                                                                                                                                                                                     |
-| --------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                                        | `3000`                                                             | HTTP port                                                                                                                                                                                                                                                                                   |
-| `DATABASE_PATH`                               | `./data/livro-caixa.sqlite` (`/data/livro-caixa.sqlite` in Docker) | SQLite file; `:memory:` for tests                                                                                                                                                                                                                                                           |
-| `STATIC_DIR`                                  | unset (`/app/apps/web/dist` in Docker)                             | Built SPA to serve; may be relative                                                                                                                                                                                                                                                         |
-| `SECURE_COOKIES`                              | `false`                                                            | Set `true` behind HTTPS                                                                                                                                                                                                                                                                     |
-| `TRUST_PROXY`                                 | `loopback`                                                         | Proxies allowed to set `X-Forwarded-For`, which decides the client IP for the per-IP login limit: `true`, `false`, a hop count, or a comma-separated list of IPs, CIDRs and `loopback` / `linklocal` / `uniquelocal`. Behind a reverse proxy in another container use `1` or `uniquelocal`. |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | unset                                                              | First user, created only while the database has no users                                                                                                                                                                                                                                    |
-| `BRAPI_TOKEN`                                 | unset                                                              | Token for [brapi.dev](https://brapi.dev) quotes of ETFs and FIIs. Unset, the instance makes no outbound request and prices stay as typed.                                                                                                                                                   |
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3000` | HTTP port |
+| `DATABASE_PATH` | `./data/livro-caixa.sqlite` (`/data/livro-caixa.sqlite` in Docker) | SQLite file; `:memory:` for tests |
+| `STATIC_DIR` | unset (`/app/apps/web/dist` in Docker) | Built SPA to serve; may be relative |
+| `SECURE_COOKIES` | `false` | Set `true` behind HTTPS |
+| `TRUST_PROXY` | `loopback` | Proxies allowed to set `X-Forwarded-For`, which decides the client IP for the per-IP login limit: `true`, `false`, a hop count, or a comma-separated list of IPs, CIDRs and `loopback` / `linklocal` / `uniquelocal`. Behind a reverse proxy in another container use `1` or `uniquelocal`. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | unset | First user, created only while the database has no users |
+| `BRAPI_TOKEN` | unset | Token for [brapi.dev](https://brapi.dev) quotes of ETFs and FIIs. Unset, the instance makes no outbound request and prices stay as typed. |
 
 ## Architecture
 
@@ -82,7 +82,7 @@ infrastructure (sqlite, hashing) implements application ports
 - Use cases receive their dependencies (repositories, clock, hasher) through constructor injection. They never import Express or SQLite.
 - Repositories are **ports** (interfaces) in `application`. Their **adapters** live in `infrastructure`.
 - HTTP handlers stay thin: parse the input with zod, call a use case, map the result or error to a response.
-- The frontend is **folder-by-feature**. Components render; _view-model mappers_ (pure functions) turn domain data into display data such as labels, colors and aria strings. Server state lives in TanStack Query. Purely visual state stays local to its component.
+- The frontend is **folder-by-feature**. Components render; *view-model mappers* (pure functions) turn domain data into display data such as labels, colors and aria strings. Server state lives in TanStack Query. Purely visual state stays local to its component.
 
 ### Design patterns in use
 
@@ -103,19 +103,19 @@ infrastructure (sqlite, hashing) implements application ports
 - The minus sign shown in the UI is U+2212 `−`, as in the design.
 - Fail fast at boundaries: validate requests with zod and return `400` with `{ error: { code, message } }`. Write user-facing messages in pt-BR, verbatim from the design.
 - No dead code, no commented-out code, no TODOs without an issue link.
-- Comments explain _why_, not _what_.
+- Comments explain *why*, not *what*.
 - ESLint and Prettier must pass. Imports are ordered automatically.
 
 ## Testing strategy — TDD
 
 Work **red → green → refactor**. Write the failing test first, make it pass with the simplest code, then refactor with the tests green.
 
-| Level       | Tool                                 | What                                                                                                      | Location                       |
-| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| Unit        | `bun test`                           | Every domain rule: money parsing and formatting, tiles, settlement, filters, sort, pagination, validation | `packages/domain/**/*.test.ts` |
-| Integration | `bun test` + supertest               | HTTP endpoints against in-memory SQLite: auth, lockout, CRUD, authorization                               | `apps/api/**/*.test.ts`        |
-| Component   | Vitest + Testing Library + happy-dom | Pages and forms. Query by role and label, as a user would.                                                | `apps/web/**/*.test.tsx`       |
-| E2E         | Playwright                           | Critical flows only: login, create, edit, delete, logout                                                  | `e2e/*.spec.ts`                |
+| Level | Tool | What | Location |
+|---|---|---|---|
+| Unit | `bun test` | Every domain rule: money parsing and formatting, tiles, settlement, filters, sort, pagination, validation | `packages/domain/**/*.test.ts` |
+| Integration | `bun test` + supertest | HTTP endpoints against in-memory SQLite: auth, lockout, CRUD, authorization | `apps/api/**/*.test.ts` |
+| Component | Vitest + Testing Library + happy-dom | Pages and forms. Query by role and label, as a user would. | `apps/web/**/*.test.tsx` |
+| E2E | Playwright | Critical flows only: login, create, edit, delete, logout | `e2e/*.spec.ts` |
 
 - Test behavior, not implementation. One reason to fail per test. Use test-data builders instead of large literals.
 - Every bug fix starts with a test that reproduces the bug.
@@ -135,3 +135,4 @@ Work **red → green → refactor**. Write the failing test first, make it pass 
    git fetch --prune
    ```
 6. To complete the task, update `docs/status.md` with the current state, expliciting which phases are completed and what are the next steps.
+
