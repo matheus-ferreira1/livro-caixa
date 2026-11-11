@@ -103,7 +103,10 @@ export interface WealthViewModel {
   institutions: string[];
 }
 
-/** Unit shown next to the quantity of foreign-currency holdings. */
+/**
+ * Unit shown next to the quantity of foreign-currency holdings, which are taken to be dollars. In a
+ * dollar instance they are not, and which currency they are is not recorded, so none is named.
+ */
 const FOREIGN_CURRENCY_UNIT = ' USD';
 
 const neutral = (label: string): TileDelta => ({ label, tone: 'neutral', direction: null });
@@ -291,7 +294,7 @@ export function pricingOf(
 
 function quantityOf(asset: ValuedAsset, { money }: Localization): string {
   if (asset.pricing !== 'auto') return NO_VALUE;
-  const unit = asset.assetClass === 'cambio' ? FOREIGN_CURRENCY_UNIT : '';
+  const unit = asset.assetClass === 'cambio' && money.currency !== 'USD' ? FOREIGN_CURRENCY_UNIT : '';
   return `${money.formatQuantity(asset.quantityE8)}${unit}`;
 }
 

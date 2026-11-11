@@ -181,11 +181,22 @@ describe('wealthViewModel in English with US dollars', () => {
     expect(groups.find((g) => g.name === 'Account and savings')?.percent).toBe('<0.1%');
   });
 
-  test('formats a quantity with a dot and keeps the currency unit', () => {
+  test('formats a quantity with a dot and names no unit in dollars, where the foreign currency is unknown', () => {
     const [group] = viewInEnglish([
       auto({ assetClass: 'cambio', quantityE8: 123_450_000_000, priceCents: 519 }),
     ]).groups;
-    expect(group?.rows[0]?.quantity).toBe('1,234.5 USD');
+    expect(group?.rows[0]?.quantity).toBe('1,234.5');
+  });
+
+  test.each([
+    ['BRL', '1.234,5 USD'],
+    ['EUR', '1.234,5 USD'],
+    ['GBP', '1,234.5 USD'],
+  ] as const)('keeps the dollar unit of a foreign-currency holding in %s', (currency, expected) => {
+    const [group] = viewOf([auto({ assetClass: 'cambio', quantityE8: 123_450_000_000, priceCents: 519 })], {
+      l10n: localization('pt-BR', currency),
+    }).groups;
+    expect(group?.rows[0]?.quantity).toBe(expected);
   });
 
   test('words the closing tiles and the chart in English', () => {
