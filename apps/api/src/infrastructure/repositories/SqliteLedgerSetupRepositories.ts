@@ -1,6 +1,13 @@
 import type { Database } from 'bun:sqlite';
-import type { Category, Settings } from '@livro-caixa/domain';
+import type { Category, Currency, Language, Settings } from '@livro-caixa/domain';
 import type { CategoryRepository, SettingsRepository } from '../../application/ports';
+
+interface SettingsRow {
+  partner_name: string;
+  partner_share: number;
+  language: Language;
+  currency: Currency;
+}
 
 export class SqliteCategoryRepository implements CategoryRepository {
   constructor(private readonly db: Database) {}
@@ -35,17 +42,24 @@ export class SqliteSettingsRepository implements SettingsRepository {
 
   get(): Settings {
     const row = this.db
-      .query<{ partner_name: string; partner_share: number }, []>(
-        'SELECT partner_name, partner_share FROM settings WHERE id = 1',
+      .query<SettingsRow, []>(
+        'SELECT partner_name, partner_share, language, currency FROM settings WHERE id = 1',
       )
       .get();
     if (!row) throw new Error('Settings row missing; migrations did not run');
-    return { partnerName: row.partner_name, partnerShare: row.partner_share };
+    return {
+      partnerName: row.partner_name,
+      partnerShare: row.partner_share,
+      language: row.language,
+      currency: row.currency,
+    };
   }
 
-  save({ partnerName, partnerShare }: Settings): void {
+  save({ partnerName, partnerShare, language, currency }: Settings): void {
     this.db
-      .query('UPDATE settings SET partner_name = ?, partner_share = ? WHERE id = 1')
-      .run(partnerName, partnerShare);
+      .query(
+        'UPDATE settings SET partner_name = ?, partner_share = ?, language = ?, currency = ? WHERE id = 1',
+      )
+      .run(partnerName, partnerShare, language, currency);
   }
 }

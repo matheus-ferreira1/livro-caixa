@@ -4,7 +4,7 @@ import { computeSettlement } from '../transactions/month-summary';
 import {
   displayPartnerName,
   type Category,
-  type Settings,
+  type PartnerSettings,
   type Transaction,
 } from '../transactions/transaction';
 import { monthSummary, type SummaryMode } from '../transactions/year-summary';
@@ -112,7 +112,7 @@ export function buildDashboard({
 }: {
   transactions: Transaction[];
   categories: Category[];
-  settings: Settings;
+  settings: PartnerSettings;
   month: MonthKey;
   mode: SummaryMode;
 }): Dashboard {

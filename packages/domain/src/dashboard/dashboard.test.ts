@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { aTransaction } from '../test/builders';
-import type { Settings } from '../transactions/transaction';
+import type { PartnerSettings } from '../transactions/transaction';
 import { buildDashboard, niceAxis, settlementCard } from './dashboard';
 
-const SETTINGS: Settings = { partnerName: 'Bia', partnerShare: 50 };
+const SETTINGS: PartnerSettings = { partnerName: 'Bia', partnerShare: 50 };
 const MONTH = '2026-10';
 
 const income = (date: string, valueCents: number, overrides = {}) =>

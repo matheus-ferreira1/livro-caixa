@@ -8,6 +8,7 @@ export * from './dashboard/kpis';
 export * from './dashboard/open-items';
 export * from './dates/dates';
 export * from './money/money';
+export * from './settings/preferences';
 export * from './settings/settings';
 export * from './transactions/list-query';
 export * from './transactions/month-summary';

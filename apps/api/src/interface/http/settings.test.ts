@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import request from 'supertest';
 import { buildTestApp, signIn } from '../../test/harness';
+
+const DEFAULT_SETTINGS = { partnerName: 'Companheira', partnerShare: 50, language: 'pt-BR', currency: 'BRL' };
 
 const newCategory = { name: '  Pets ', type: 'despesa', color: '#E87BA4' };
 
@@ -154,21 +157,58 @@ describe('PUT /api/settings', () => {
       .put('/api/settings')
       .send({ partnerName: ' Bia ', partnerShare: 40 })
       .expect(200);
-    expect(body.settings).toEqual({ partnerName: 'Bia', partnerShare: 40 });
+    expect(body.settings).toEqual({ ...DEFAULT_SETTINGS, partnerName: 'Bia', partnerShare: 40 });
     const saved = await agent.get('/api/settings').expect(200);
-    expect(saved.body.settings).toEqual({ partnerName: 'Bia', partnerShare: 40 });
+    expect(saved.body.settings).toEqual({ ...DEFAULT_SETTINGS, partnerName: 'Bia', partnerShare: 40 });
   });
 
-  test.each([[{ partnerShare: 42 }], [{ partnerShare: 105 }], [{ partnerName: 7 }]])(
-    'rejects %p',
-    async (patch) => {
-      const { agent } = await signedIn();
-      await agent
-        .put('/api/settings')
-        .send({ partnerName: 'Bia', partnerShare: 50, ...patch })
-        .expect(400);
-    },
-  );
+  test('saves the language and the currency without touching the partner fields', async () => {
+    const { agent } = await signedIn();
+    await agent.put('/api/settings').send({ partnerName: 'Bia', partnerShare: 40 }).expect(200);
+    const { body } = await agent.put('/api/settings').send({ language: 'en', currency: 'USD' }).expect(200);
+    expect(body.settings).toEqual({ partnerName: 'Bia', partnerShare: 40, language: 'en', currency: 'USD' });
+    const saved = await agent.get('/api/settings').expect(200);
+    expect(saved.body.settings).toEqual(body.settings);
+  });
+
+  test('keeps the language and the currency when only the partner fields are saved', async () => {
+    const { agent } = await signedIn();
+    await agent.put('/api/settings').send({ language: 'en', currency: 'EUR' }).expect(200);
+    const { body } = await agent
+      .put('/api/settings')
+      .send({ partnerName: 'Bia', partnerShare: 30 })
+      .expect(200);
+    expect(body.settings).toEqual({ partnerName: 'Bia', partnerShare: 30, language: 'en', currency: 'EUR' });
+  });
+
+  test.each([
+    [{ partnerShare: 42 }],
+    [{ partnerShare: 105 }],
+    [{ partnerName: 7 }],
+    [{ language: 'fr' }],
+    [{ currency: 'JPY' }],
+  ])('rejects %p', async (patch) => {
+    const { agent } = await signedIn();
+    await agent
+      .put('/api/settings')
+      .send({ partnerName: 'Bia', partnerShare: 50, ...patch })
+      .expect(400);
+  });
+});
+
+describe('GET /api/preferences', () => {
+  test('answers without a session with the language and the currency only', async () => {
+    const { agent } = await buildTestApp();
+    const { body } = await agent.get('/api/preferences').expect(200);
+    expect(body).toEqual({ language: 'pt-BR', currency: 'BRL' });
+  });
+
+  test('follows what the settings say', async () => {
+    const { agent, app } = await signedIn();
+    await agent.put('/api/settings').send({ language: 'en', currency: 'GBP' }).expect(200);
+    const { body } = await request(app).get('/api/preferences').expect(200);
+    expect(body).toEqual({ language: 'en', currency: 'GBP' });
+  });
 });
 
 describe('authorization', () => {

@@ -25,6 +25,10 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
   });
+  app.get('/api/preferences', (_req, res) => {
+    const { language, currency } = container.settings.get();
+    res.json({ language, currency });
+  });
   app.use('/api/auth', authRouter(container));
   app.use('/api', ledgerRouter(container));
   app.use('/api', (_req, res) => {

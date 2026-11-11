@@ -14,6 +14,19 @@ describe('settingsInputSchema', () => {
   });
 });
 
+describe('settingsInputSchema language and currency', () => {
+  test('accepts each language and currency on its own', () => {
+    expect(settingsInputSchema.parse({ language: 'en', currency: 'GBP' })).toEqual({
+      language: 'en',
+      currency: 'GBP',
+    });
+  });
+
+  test.each([{ language: 'fr' }, { currency: 'JPY' }, { currency: 'brl' }])('rejects %p', (patch) => {
+    expect(settingsInputSchema.safeParse(patch).success).toBe(false);
+  });
+});
+
 describe('splitExample', () => {
   test('splits a R$ 100,00 bill by the partner share', () => {
     expect(splitExample(35)).toEqual({ totalCents: 10_000, partnerCents: 3_500, mineCents: 6_500 });

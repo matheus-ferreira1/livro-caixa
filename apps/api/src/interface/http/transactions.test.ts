@@ -56,7 +56,12 @@ describe('GET /api/categories and /api/settings', () => {
       color: '#EB6834',
     });
     const settings = await agent.get('/api/settings').expect(200);
-    expect(settings.body.settings).toEqual({ partnerName: 'Companheira', partnerShare: 50 });
+    expect(settings.body.settings).toEqual({
+      partnerName: 'Companheira',
+      partnerShare: 50,
+      language: 'pt-BR',
+      currency: 'BRL',
+    });
   });
 });
 
