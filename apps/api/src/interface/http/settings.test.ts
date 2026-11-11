@@ -211,6 +211,36 @@ describe('GET /api/preferences', () => {
   });
 });
 
+describe('error messages follow the instance language', () => {
+  test('are in pt-BR by default and in English once the language changes', async () => {
+    const { agent, app } = await signedIn();
+    const invalid = { ...expense, description: ' ' };
+    const before = await agent.post('/api/transactions').send(invalid).expect(400);
+    expect(before.body.error.message).toBe('Informe a descrição.');
+
+    await agent.put('/api/settings').send({ language: 'en' }).expect(200);
+
+    const after = await agent.post('/api/transactions').send(invalid).expect(400);
+    expect(after.body.error.message).toBe('Enter the description.');
+    const notFound = await agent.get('/api/nope').expect(404);
+    expect(notFound.body.error.message).toBe('Route not found.');
+    const malformed = await agent.post('/api/categories').send({}).expect(400);
+    expect(malformed.body.error.message).toBe('Invalid data.');
+    const signedOut = await request(app).get('/api/categories').expect(401);
+    expect(signedOut.body.error.message).toBe('Session expired. Sign in again.');
+  });
+
+  test('reach the login attempt of a signed-out client', async () => {
+    const { agent, app } = await signedIn();
+    await agent.put('/api/settings').send({ language: 'en' }).expect(200);
+    const wrong = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'ana@casa.dev', password: 'wrong-password' })
+      .expect(401);
+    expect(wrong.body.error.message).toBe('Wrong email or password.');
+  });
+});
+
 describe('authorization', () => {
   test.each([
     ['post', '/api/categories'],

@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { ASSET_MESSAGES, CLOSING_MESSAGES } from '@livro-caixa/domain';
+import { translator } from '@livro-caixa/domain';
 import request from 'supertest';
 import { buildTestApp, signIn } from '../../test/harness';
+
+const t = translator('pt-BR');
 
 const TODAY = '2026-11-03';
 
@@ -109,13 +111,13 @@ describe('POST /api/assets', () => {
   });
 
   test.each([
-    [{ ...manualAsset, institution: ' ' }, ASSET_MESSAGES.institution],
-    [{ ...manualAsset, name: '' }, ASSET_MESSAGES.name],
-    [{ ...manualAsset, currentCents: null }, ASSET_MESSAGES.current],
-    [{ ...manualAsset, investedCents: -1 }, ASSET_MESSAGES.invested],
-    [{ ...autoAsset, quantityE8: 0 }, ASSET_MESSAGES.quantity],
-    [{ ...autoAsset, priceCents: null }, ASSET_MESSAGES.price],
-    [{ ...autoAsset, avgPriceCents: -1 }, ASSET_MESSAGES.avgPrice],
+    [{ ...manualAsset, institution: ' ' }, t('asset.institution')],
+    [{ ...manualAsset, name: '' }, t('asset.name')],
+    [{ ...manualAsset, currentCents: null }, t('asset.current')],
+    [{ ...manualAsset, investedCents: -1 }, t('asset.invested')],
+    [{ ...autoAsset, quantityE8: 0 }, t('asset.quantity')],
+    [{ ...autoAsset, priceCents: null }, t('asset.price')],
+    [{ ...autoAsset, avgPriceCents: -1 }, t('asset.avgPrice')],
   ])('answers 400 with the design message for %j', async (asset, message) => {
     const { agent } = await signedIn();
     const { body } = await agent.post('/api/assets').send(asset).expect(400);
@@ -167,7 +169,7 @@ describe('PUT /api/assets/:id', () => {
   test('answers 404 for an unknown asset', async () => {
     const { agent } = await signedIn();
     const { body } = await agent.put('/api/assets/nope').send(manualAsset).expect(404);
-    expect(body.error.message).toBe(ASSET_MESSAGES.notFound);
+    expect(body.error.message).toBe(t('asset.notFound'));
   });
 });
 
@@ -228,7 +230,7 @@ describe('POST /api/wealth/closings', () => {
     const { agent, assetId } = await withManualAsset();
     await agent.post('/api/wealth/closings').send(closing(assetId)).expect(201);
     const { body } = await agent.post('/api/wealth/closings').send(closing(assetId)).expect(409);
-    expect(body.error.message).toBe(CLOSING_MESSAGES.stale);
+    expect(body.error.message).toBe(t('closing.stale'));
   });
 
   test('refuses the next closing before the 25th and accepts it from then on', async () => {

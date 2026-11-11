@@ -18,7 +18,7 @@ export const requireAuth =
   (req, _res, next) => {
     const user = container.authenticate.execute(readSessionCookie(req));
     if (!user) {
-      next(new ApplicationError('unauthenticated', 'Sessão expirada. Entre novamente.'));
+      next(new ApplicationError('unauthenticated', container.translate()('api.sessionExpired')));
       return;
     }
     req.user = user;

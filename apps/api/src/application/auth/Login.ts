@@ -1,6 +1,6 @@
-import { LOGIN_MESSAGES, lockedOutMessage, type LoginRequest, type PublicUser } from '@livro-caixa/domain';
+import type { LoginRequest, PublicUser } from '@livro-caixa/domain';
 import { ApplicationError } from '../errors';
-import type { Clock, PasswordHasher, SessionRepository, UserRepository } from '../ports';
+import type { Clock, PasswordHasher, SessionRepository, TranslateProvider, UserRepository } from '../ports';
 import { KeyedQueue } from './KeyedQueue';
 import type { LoginThrottle } from './LoginThrottle';
 import {
@@ -30,6 +30,7 @@ export class Login {
     private readonly accountThrottle: LoginThrottle,
     private readonly ipThrottle: LoginThrottle,
     private readonly clock: Clock,
+    private readonly translate: TranslateProvider,
   ) {}
 
   /**
@@ -50,7 +51,7 @@ export class Login {
       this.accountThrottle.registerFailure(accountKey);
       this.ipThrottle.registerFailure(clientKey);
       this.assertNotLocked(accountKey, clientKey);
-      throw new ApplicationError('invalid_credentials', LOGIN_MESSAGES.invalidCredentials);
+      throw new ApplicationError('invalid_credentials', this.translate()('login.invalidCredentials'));
     }
 
     // The IP counter is not reset on success: a sprayer who knows one valid login must
@@ -64,7 +65,8 @@ export class Login {
       this.accountThrottle.secondsLocked(accountKey),
       this.ipThrottle.secondsLocked(clientKey),
     );
-    if (seconds > 0) throw new ApplicationError('too_many_attempts', lockedOutMessage(seconds));
+    if (seconds > 0)
+      throw new ApplicationError('too_many_attempts', this.translate()('login.lockedOut', seconds));
   }
 
   private openSession(user: PublicUser, persistent: boolean): LoginResult {
