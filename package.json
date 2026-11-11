@@ -6,13 +6,16 @@
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "dev": "bun run --filter '@livro-caixa/api' dev & bun run --filter '@livro-caixa/web' dev",
+    "dev:site": "bun run --filter '@livro-caixa/site' dev",
     "test": "bun run --filter '*' test",
     "test:e2e": "playwright test",
     "seed:demo": "bun run --cwd=apps/api seed:demo",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "bun run --filter '*' typecheck && tsc -p e2e/tsconfig.json",
-    "build": "bun run --filter '@livro-caixa/web' build"
+    "build": "bun run --filter '@livro-caixa/web' build",
+    "build:site": "bun run --filter '@livro-caixa/site' build",
+    "capture:site": "bun run --filter '@livro-caixa/site' capture-screenshots"
   },
   "devDependencies": {
     "@eslint/js": "9",
