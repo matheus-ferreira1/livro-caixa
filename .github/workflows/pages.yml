@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - 'apps/site/**'
+      # Inputs of the site's build and tests that live outside apps/site.
+      - 'bun.lock'
+      - 'package.json'
+      - 'tsconfig.base.json'
+      - 'README.md'
+      - 'apps/web/public/favicon.svg'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
