@@ -6,6 +6,8 @@ COPY package.json bun.lock ./
 COPY packages/domain/package.json packages/domain/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+# Not part of the image, but bun install --frozen-lockfile needs every workspace in bun.lock.
+COPY apps/site/package.json apps/site/
 
 FROM manifests AS build
 RUN bun install --frozen-lockfile

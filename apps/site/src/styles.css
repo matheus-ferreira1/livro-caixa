@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+@import '@fontsource/schibsted-grotesk/latin-400.css';
+@import '@fontsource/schibsted-grotesk/latin-500.css';
+@import '@fontsource/schibsted-grotesk/latin-600.css';
+@import '@fontsource/schibsted-grotesk/latin-700.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+/* The app's design tokens (apps/web/CLAUDE.md › Design system), so the site reads as the same product. */
+@theme {
+  --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-paper: #f4f5f1;
+  --color-ink: #17201c;
+  --color-mint: #9fd8be;
+  --color-header-active: #2c3832;
+  --color-on-dark-muted: #c9d3cd;
+  --color-muted: #5b6560;
+  --color-border: #dfe2dc;
+  --color-divider: #eceee9;
+  --color-band: #f8f9f6;
+  --color-track: #e6e9e3;
+  --color-income: #136b4a;
+  --color-income-bg: #e3f1ea;
+  --color-expense: #a8401a;
+  --color-expense-bg: #fbe9e0;
+  --color-settlement: #2a4fb8;
+  --color-settlement-bg: #e5ebfa;
+  --color-info-text: #1f3c8f;
+
+  --radius-control: 10px;
+  --radius-banner: 12px;
+  --radius-card: 14px;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Keeps anchored headings clear of the header, which sticks from this width. */
+  @media (min-width: 40rem) {
+    html {
+      scroll-padding-top: 5rem;
+    }
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-settlement);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* The blue ring is too faint on ink; mint keeps focus visible there. */
+  .on-dark :focus-visible {
+    outline-color: var(--color-mint);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The faint ruled lines of a cash book, as on the app's sign-in panel. */
+  .ledger-ruling {
+    background-color: var(--color-ink);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 43px,
+      rgb(159 216 190 / 0.09) 43px 44px
+    );
+  }
+
+  .shot {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: #fff;
+    box-shadow: 0 24px 48px -28px rgb(23 32 28 / 0.35);
+  }
+}

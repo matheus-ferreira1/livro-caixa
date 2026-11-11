@@ -33,6 +33,19 @@
         "supertest": "^7.3.1",
       },
     },
+    "apps/site": {
+      "name": "@livro-caixa/site",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@fontsource/ibm-plex-mono": "^5.3.0",
+        "@fontsource/schibsted-grotesk": "^5.3.0",
+        "@tailwindcss/vite": "4",
+        "happy-dom": "^21.0.4",
+        "tailwindcss": "4",
+        "vite": "7",
+        "vitest": "4",
+      },
+    },
     "apps/web": {
       "name": "@livro-caixa/web",
       "version": "0.0.0",
@@ -227,6 +240,8 @@
     "@livro-caixa/api": ["@livro-caixa/api@workspace:apps/api"],
 
     "@livro-caixa/domain": ["@livro-caixa/domain@workspace:packages/domain"],
+
+    "@livro-caixa/site": ["@livro-caixa/site@workspace:apps/site"],
 
     "@livro-caixa/web": ["@livro-caixa/web@workspace:apps/web"],
 

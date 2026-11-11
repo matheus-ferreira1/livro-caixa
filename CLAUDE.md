@@ -12,6 +12,7 @@ Read these when the task needs them; they are not loaded automatically.
 
 - [docs/status.md](docs/status.md): status by phase, what comes next, web routes, API endpoints, database schema, domain modules, test counts, the decisions taken in each phase, and the roadmap. Read it before changing behavior a past decision may cover.
 - [docs/user-stories.md](docs/user-stories.md): the user stories (US-01 to US-11) with the exact pt-BR UI copy. Read it before touching a screen or its strings.
+- `apps/site`: the public project site (static HTML + Tailwind, no framework, English copy) at https://matheus-ferreira1.github.io/livro-caixa/, deployed by `.github/workflows/pages.yml`. It is not part of the Docker image.
 - [apps/web/CLAUDE.md](apps/web/CLAUDE.md): the design system (fonts, color tokens, radii, shadcn mapping, accessibility rules). It loads on its own when working under `apps/web`.
 
 ## Language rules
@@ -46,6 +47,9 @@ bun run test:e2e       # Playwright: builds the SPA and serves it from the API o
 bun run lint
 bun run typecheck      # all workspaces plus e2e/
 bun run build          # builds the SPA into apps/web/dist
+bun run dev:site       # the project site (apps/site) on :5174, under /livro-caixa/
+bun run build:site     # builds the project site into apps/site/dist (deployed to GitHub Pages)
+bun run capture:site   # retakes the site's screenshots from the app with the demo seed, on a temp database
 docker compose up --build             # production image on http://localhost:3000
 docker compose exec app bun run cli create-user <email> <name>
 docker compose exec app bun run cli reset-password <email>
