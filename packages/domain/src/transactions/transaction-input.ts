@@ -1,14 +1,9 @@
 import { z } from 'zod';
 import { defaultDateForMonth, isIsoDate, type IsoDate, type MonthKey } from '../dates/dates';
-import { parseMoney, toMoneyInput, type Cents } from '../money/money';
+import type { Localization } from '../i18n/localization';
+import type { Translate } from '../i18n/translate';
+import type { Cents, MoneyFormat } from '../money/money';
 import { TRANSACTION_TYPES, type Category, type Transaction, type TransactionType } from './transaction';
-
-export const FORM_MESSAGES = {
-  date: 'Informe a data.',
-  description: 'Informe a descrição.',
-  value: 'Informe um valor maior que zero.',
-  category: 'Escolha uma categoria.',
-} as const;
 
 /** What the Novo/Editar lançamento form holds: the value is still the text being typed. */
 export interface TransactionDraft {
@@ -24,7 +19,7 @@ export interface TransactionDraft {
 }
 
 /**
- * R$ 1 bilhão. No household entry comes near it, and it keeps totals exact: a ledger far
+ * 1 billion in the currency. No household entry comes near it, and it keeps totals exact: a ledger far
  * larger than any household's still adds up below Number.MAX_SAFE_INTEGER.
  */
 export const MAX_ENTRY_CENTS = 100_000_000_000;
@@ -61,14 +56,14 @@ export function emptyDraft(month: MonthKey, today: IsoDate, categories: Category
   };
 }
 
-export function draftFromTransaction(t: Transaction): TransactionDraft {
+export function draftFromTransaction(t: Transaction, money: MoneyFormat): TransactionDraft {
   return {
     date: t.date,
     description: t.description,
     note: t.note,
     type: t.type,
     categoryId: t.categoryId,
-    value: toMoneyInput(t.valueCents),
+    value: money.toInput(t.valueCents),
     split: t.split,
     confirmed: t.confirmed,
     recurring: t.recurring,
@@ -92,16 +87,20 @@ export function applyTypeChange(
 /** Returns the first problem in the order the design lists them, or null. */
 export function validateInput(
   input: Omit<TransactionInput, 'valueCents'> & { valueCents: Cents | null },
+  t: Translate,
 ): string | null {
-  if (!isIsoDate(input.date)) return FORM_MESSAGES.date;
-  if (!input.description.trim()) return FORM_MESSAGES.description;
-  if (input.valueCents === null || input.valueCents <= 0) return FORM_MESSAGES.value;
-  if (input.type !== 'acerto' && !input.categoryId) return FORM_MESSAGES.category;
+  if (!isIsoDate(input.date)) return t('form.date');
+  if (!input.description.trim()) return t('form.description');
+  if (input.valueCents === null || input.valueCents <= 0) return t('form.value');
+  if (input.type !== 'acerto' && !input.categoryId) return t('form.category');
   return null;
 }
 
-export function draftToInput(draft: TransactionDraft): { input: TransactionInput } | { error: string } {
-  const valueCents = parseMoney(draft.value);
+export function draftToInput(
+  draft: TransactionDraft,
+  { money, t }: Pick<Localization, 'money' | 't'>,
+): { input: TransactionInput } | { error: string } {
+  const valueCents = money.parse(draft.value);
   const fields = {
     date: draft.date,
     description: draft.description.trim(),
@@ -112,8 +111,8 @@ export function draftToInput(draft: TransactionDraft): { input: TransactionInput
     confirmed: draft.confirmed,
     recurring: draft.recurring,
   };
-  const error = validateInput({ ...fields, valueCents });
-  if (error || valueCents === null) return { error: error ?? FORM_MESSAGES.value };
+  const error = validateInput({ ...fields, valueCents }, t);
+  if (error || valueCents === null) return { error: error ?? t('form.value') };
   return { input: { ...fields, valueCents } };
 }
 

@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '../i18n/translate';
 import { aTransaction } from '../test/builders';
 import type { PartnerSettings } from '../transactions/transaction';
 import { buildDashboard, niceAxis, settlementCard } from './dashboard';
 
 const SETTINGS: PartnerSettings = { partnerName: 'Bia', partnerShare: 50 };
+const t = translator('pt-BR');
 const MONTH = '2026-10';
 
 const income = (date: string, valueCents: number, overrides = {}) =>
@@ -14,7 +16,7 @@ const settlement = (date: string, valueCents: number, confirmed = true) =>
   aTransaction({ type: 'acerto', date, valueCents, confirmed, categoryId: null });
 
 const dashboardOf = (entries: ReturnType<typeof income>[], mode: 'real' | 'proj' = 'real') =>
-  buildDashboard({ transactions: entries, categories: [], settings: SETTINGS, month: MONTH, mode });
+  buildDashboard({ transactions: entries, categories: [], settings: SETTINGS, month: MONTH, mode, t });
 
 describe('niceAxis', () => {
   test('rounds the step up to a nice value and covers the maximum', () => {
@@ -88,6 +90,7 @@ describe('buildDashboard', () => {
       settings: { partnerName: ' ', partnerShare: 50 },
       month: MONTH,
       mode: 'real',
+      t,
     });
     expect(result.partnerName).toBe('Companheira');
   });

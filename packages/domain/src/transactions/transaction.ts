@@ -1,3 +1,4 @@
+import type { Translate } from '../i18n/translate';
 import type { IsoDate } from '../dates/dates';
 import type { Cents } from '../money/money';
 import type { Currency, Language } from '../settings/preferences';
@@ -40,10 +41,8 @@ export interface Settings extends PartnerSettings {
   currency: Currency;
 }
 
-export const DEFAULT_PARTNER_NAME = 'Companheira';
-
-export const displayPartnerName = (settings: PartnerSettings): string =>
-  settings.partnerName.trim() || DEFAULT_PARTNER_NAME;
+export const displayPartnerName = (settings: PartnerSettings, t: Translate): string =>
+  settings.partnerName.trim() || t('partner.default');
 
 /** Income-side entries count positive in balances; expenses count negative. */
 export const signedCents = (t: Pick<Transaction, 'type' | 'valueCents'>): Cents =>

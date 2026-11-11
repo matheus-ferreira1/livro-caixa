@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import { localization } from '../i18n/localization';
 import { aTransaction } from '../test/builders';
 import {
-  FORM_MESSAGES,
   MAX_ENTRY_CENTS,
   applyTypeChange,
   draftFromTransaction,
@@ -12,6 +12,8 @@ import {
   validateInput,
   type TransactionDraft,
 } from './transaction-input';
+
+const l10n = localization('pt-BR', 'BRL');
 
 const categories = [
   { id: 'c-salario', name: 'Salário', type: 'receita' as const, color: '#2A78D6' },
@@ -63,21 +65,21 @@ describe('applyTypeChange', () => {
 
 describe('draftToInput + validateInput', () => {
   const check = (patch: Partial<TransactionDraft>) => {
-    const result = draftToInput({ ...valid, ...patch });
-    return 'error' in result ? result.error : validateInput(result.input);
+    const result = draftToInput({ ...valid, ...patch }, l10n);
+    return 'error' in result ? result.error : validateInput(result.input, l10n.t);
   };
 
   test('reports the first problem, in the design order', () => {
-    expect(check({ date: '', description: '' })).toBe(FORM_MESSAGES.date);
-    expect(check({ description: '   ' })).toBe(FORM_MESSAGES.description);
-    expect(check({ value: '0' })).toBe(FORM_MESSAGES.value);
-    expect(check({ value: 'abc' })).toBe(FORM_MESSAGES.value);
-    expect(check({ categoryId: null })).toBe(FORM_MESSAGES.category);
+    expect(check({ date: '', description: '' })).toBe(l10n.t('form.date'));
+    expect(check({ description: '   ' })).toBe(l10n.t('form.description'));
+    expect(check({ value: '0' })).toBe(l10n.t('form.value'));
+    expect(check({ value: 'abc' })).toBe(l10n.t('form.value'));
+    expect(check({ categoryId: null })).toBe(l10n.t('form.category'));
     expect(check({ type: 'acerto', categoryId: null })).toBeNull();
   });
 
   test('normalizes a valid draft', () => {
-    const result = draftToInput(valid);
+    const result = draftToInput(valid, l10n);
     expect(result).toEqual({
       input: {
         date: '2026-11-06',
@@ -96,7 +98,7 @@ describe('draftToInput + validateInput', () => {
 
 describe('toTransaction', () => {
   const input = (overrides = {}) => {
-    const result = draftToInput({ ...valid, ...overrides });
+    const result = draftToInput({ ...valid, ...overrides }, l10n);
     if ('error' in result) throw new Error(result.error);
     return result.input;
   };
@@ -124,7 +126,7 @@ describe('toTransaction', () => {
 describe('draftFromTransaction', () => {
   test('prefills the edit form', () => {
     const t = aTransaction({ valueCents: 18_000, note: 'x', recurring: true });
-    expect(draftFromTransaction(t)).toMatchObject({
+    expect(draftFromTransaction(t, l10n.money)).toMatchObject({
       value: '180,00',
       note: 'x',
       recurring: true,
@@ -157,6 +159,6 @@ describe('transactionInputSchema', () => {
 describe('validateInput', () => {
   test('asks for the date when the day does not exist', () => {
     const input = { ...aTransaction(), date: '2026-02-31' };
-    expect(validateInput(input)).toBe(FORM_MESSAGES.date);
+    expect(validateInput(input, l10n.t)).toBe(l10n.t('form.date'));
   });
 });

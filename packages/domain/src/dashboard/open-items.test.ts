@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { aTransaction } from '../test/builders';
 import type { Category } from '../transactions/transaction';
+import { translator } from '../i18n/translate';
 import { openItems, relativeDue } from './open-items';
+
+const t = translator('pt-BR');
 
 const groceries: Category = { id: 'c-mercado', name: 'Mercado', type: 'despesa', color: '#2A78D6' };
 
@@ -58,11 +61,11 @@ describe('relativeDue', () => {
     ['2026-10-13', { label: 'Em 3 dias', tone: 'soon' }],
     ['2026-10-14', { label: 'Em 4 dias', tone: 'later' }],
   ])('labels %s against 2026-10-10', (date, expected) => {
-    expect(relativeDue(date, '2026-10-10')).toEqual(expected as ReturnType<typeof relativeDue>);
+    expect(relativeDue(date, '2026-10-10', t)).toEqual(expected as ReturnType<typeof relativeDue>);
   });
 
   test('counts across months and leap days', () => {
-    expect(relativeDue('2028-03-01', '2028-02-28').label).toBe('Em 2 dias');
-    expect(relativeDue('2027-01-01', '2026-12-31').label).toBe('Amanhã');
+    expect(relativeDue('2028-03-01', '2028-02-28', t).label).toBe('Em 2 dias');
+    expect(relativeDue('2027-01-01', '2026-12-31', t).label).toBe('Amanhã');
   });
 });

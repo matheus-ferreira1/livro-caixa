@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '../i18n/translate';
 import { anAutoAsset, aManualAsset, aSnapshot } from '../test/builders';
 import { allocationSegments, groupAssets } from './allocation';
 import { valueAssets } from './asset';
@@ -161,18 +162,21 @@ describe('groupAssets', () => {
   ]);
 
   test('groups by class with the label and color, biggest first', () => {
-    const groups = groupAssets(assets, 'class');
+    const groups = groupAssets(assets, 'class', translator('pt-BR'));
     expect(groups.map((g) => g.name)).toEqual(['Tesouro Direto', 'Garantias']);
     expect(groups[0]).toMatchObject({ color: '#EB6834', valueCents: 14_000 });
     expect(groups[0]?.share).toBeCloseTo(14 / 15);
   });
 
   test('sorts the assets of a group by value', () => {
-    expect(groupAssets(assets, 'class')[0]?.assets.map((a) => a.name)).toEqual(['Selic', 'Tesouro']);
+    expect(groupAssets(assets, 'class', translator('pt-BR'))[0]?.assets.map((a) => a.name)).toEqual([
+      'Selic',
+      'Tesouro',
+    ]);
   });
 
   test('groups by institution with palette colors in order of first use', () => {
-    const groups = groupAssets(assets, 'institution');
+    const groups = groupAssets(assets, 'institution', translator('pt-BR'));
     expect(groups.map((g) => [g.name, g.color, g.valueCents])).toEqual([
       ['BB', '#2A78D6', 10_000],
       ['XP', '#EB6834', 5000],
@@ -185,7 +189,7 @@ describe('groupAssets', () => {
         aManualAsset({ institution: `Banco ${index}`, currentCents: 100 }),
       ),
     );
-    const last = groupAssets(many, 'institution').find((g) => g.name === 'Banco 8');
+    const last = groupAssets(many, 'institution', translator('pt-BR')).find((g) => g.name === 'Banco 8');
     expect(last?.color).toBe('#9AA29D');
   });
 });
@@ -197,7 +201,7 @@ describe('allocationSegments', () => {
       aManualAsset({ assetClass: 'reserva', currentCents: 90_000 }),
       aManualAsset({ assetClass: 'conta', currentCents: 1 }),
     ]);
-    const segments = allocationSegments(groupAssets(assets, 'class'));
+    const segments = allocationSegments(groupAssets(assets, 'class', translator('pt-BR')));
     expect(segments.map((s) => s.name)).toEqual(['Reserva', 'Tesouro Direto']);
   });
 });

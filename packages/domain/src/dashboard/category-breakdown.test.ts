@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '../i18n/translate';
 import { aTransaction } from '../test/builders';
 import type { Category } from '../transactions/transaction';
 import { categoryBreakdown, OTHERS_COLOR, OTHERS_SLICE_ID } from './category-breakdown';
 
+const t = translator('pt-BR');
 const MONTH = '2026-10';
 const previousMonth = (index: number) => `2026-${String(index).padStart(2, '0')}`;
 
@@ -17,7 +19,7 @@ const expense = (categoryId: string | null, valueCents: number, overrides = {}) 
   aTransaction({ type: 'despesa', date: `${MONTH}-10`, categoryId, valueCents, ...overrides });
 
 const breakdownOf = (current: ReturnType<typeof expense>[], categories: Category[], history = new Map()) =>
-  categoryBreakdown({ current, history, categories, mode: 'real' });
+  categoryBreakdown({ current, history, categories, mode: 'real', t });
 
 describe('categoryBreakdown', () => {
   test('ranks categories by value, with their share of the total', () => {
@@ -41,9 +43,9 @@ describe('categoryBreakdown', () => {
     const entries = [expense('a', 1_000), expense('a', 3_000, { confirmed: false })];
     const categories = [aCategory('a')];
     const base = { current: entries, history: new Map(), categories };
-    expect(categoryBreakdown({ ...base, mode: 'real' }).totalCents).toBe(1_000);
-    expect(categoryBreakdown({ ...base, mode: 'proj' }).totalCents).toBe(4_000);
-    expect(categoryBreakdown({ ...base, mode: 'proj' }).count).toBe(2);
+    expect(categoryBreakdown({ ...base, mode: 'real', t }).totalCents).toBe(1_000);
+    expect(categoryBreakdown({ ...base, mode: 'proj', t }).totalCents).toBe(4_000);
+    expect(categoryBreakdown({ ...base, mode: 'proj', t }).count).toBe(2);
   });
 
   test('keeps the top 6 and puts the rest in "Outras (n)"', () => {

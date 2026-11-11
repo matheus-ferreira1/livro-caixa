@@ -1,4 +1,5 @@
 import { monthOf, pad2, shiftMonth, type MonthKey } from '../dates/dates';
+import type { Translate } from '../i18n/translate';
 import type { Cents } from '../money/money';
 import { computeSettlement } from '../transactions/month-summary';
 import {
@@ -109,12 +110,14 @@ export function buildDashboard({
   settings,
   month,
   mode,
+  t,
 }: {
   transactions: Transaction[];
   categories: Category[];
   settings: PartnerSettings;
   month: MonthKey;
   mode: SummaryMode;
+  t: Translate;
 }): Dashboard {
   const byMonth = groupByMonth(transactions);
   const entriesOf = (key: MonthKey) => byMonth.get(key) ?? [];
@@ -132,7 +135,7 @@ export function buildDashboard({
   return {
     month,
     mode,
-    partnerName: displayPartnerName(settings),
+    partnerName: displayPartnerName(settings, t),
     kpis: dashboardKpis({
       current: summaryOf(month),
       previous: summaryOf(shiftMonth(month, -1)),
@@ -145,6 +148,7 @@ export function buildDashboard({
       history: new Map(priorMonths.map((key) => [key, entriesOf(key)])),
       categories,
       mode,
+      t,
     }),
     open: openItems(current, categories),
     settlement: settlementCard(current, settings.partnerShare),

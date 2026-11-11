@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { isIsoDate } from '../dates/dates';
-import { parseMoney, toMoneyInput, type Cents } from '../money/money';
+import type { Localization } from '../i18n/localization';
+import type { Translate } from '../i18n/translate';
+import type { Cents, MoneyFormat } from '../money/money';
 import {
   ASSET_CLASS_KEYS,
   PRICING_MODES,
@@ -9,18 +11,6 @@ import {
   type AutoAsset,
   type PricingMode,
 } from './asset';
-import { parseQuantity, toQuantityInput } from './quantity';
-
-export const ASSET_MESSAGES = {
-  institution: 'Informe o banco ou a corretora.',
-  name: 'Informe o nome do ativo.',
-  quantity: 'Informe uma quantidade maior que zero.',
-  price: 'Informe a cotação atual.',
-  avgPrice: 'Preço médio inválido.',
-  current: 'Informe o valor atual.',
-  invested: 'Valor aplicado inválido.',
-  notFound: 'Ativo não encontrado.',
-} as const;
 
 /** What the Novo/Editar ativo sheet holds: the amounts are still the text being typed. */
 export interface AssetDraft {
@@ -70,9 +60,10 @@ export function emptyAssetDraft(): AssetDraft {
   };
 }
 
-const optionalMoneyInput = (cents: Cents | null) => (cents === null ? '' : toMoneyInput(cents));
+const optionalMoneyInput = (cents: Cents | null, money: MoneyFormat) =>
+  cents === null ? '' : money.toInput(cents);
 
-export function draftFromAsset(asset: Asset): AssetDraft {
+export function draftFromAsset(asset: Asset, money: MoneyFormat): AssetDraft {
   const base = {
     ...emptyAssetDraft(),
     institution: asset.institution,
@@ -83,15 +74,15 @@ export function draftFromAsset(asset: Asset): AssetDraft {
   if (asset.pricing === 'manual') {
     return {
       ...base,
-      invested: optionalMoneyInput(asset.investedCents),
-      current: toMoneyInput(asset.currentCents),
+      invested: optionalMoneyInput(asset.investedCents, money),
+      current: money.toInput(asset.currentCents),
     };
   }
   return {
     ...base,
-    quantity: toQuantityInput(asset.quantityE8),
-    avgPrice: optionalMoneyInput(asset.avgPriceCents),
-    price: toMoneyInput(asset.priceCents),
+    quantity: money.toQuantityInput(asset.quantityE8),
+    avgPrice: optionalMoneyInput(asset.avgPriceCents, money),
+    price: money.toInput(asset.priceCents),
   };
 }
 
@@ -100,26 +91,27 @@ const isPositive = (value: number | null) => value !== null && value > 0;
 const isValidOptional = (value: number | null) => value === null || value >= 0;
 
 /** Returns the first problem in the order the design lists them, or null. */
-export function validateAssetFields(fields: AssetFields): string | null {
-  if (!fields.institution.trim()) return ASSET_MESSAGES.institution;
-  if (!fields.name.trim()) return ASSET_MESSAGES.name;
+export function validateAssetFields(fields: AssetFields, t: Translate): string | null {
+  if (!fields.institution.trim()) return t('asset.institution');
+  if (!fields.name.trim()) return t('asset.name');
   if (fields.pricing === 'auto') {
-    if (!isPositive(fields.quantityE8)) return ASSET_MESSAGES.quantity;
-    if (!isPositive(fields.priceCents)) return ASSET_MESSAGES.price;
-    if (!isValidOptional(fields.avgPriceCents)) return ASSET_MESSAGES.avgPrice;
+    if (!isPositive(fields.quantityE8)) return t('asset.quantity');
+    if (!isPositive(fields.priceCents)) return t('asset.price');
+    if (!isValidOptional(fields.avgPriceCents)) return t('asset.avgPrice');
     return null;
   }
-  if (fields.currentCents === null || fields.currentCents < 0) return ASSET_MESSAGES.current;
-  if (!isValidOptional(fields.investedCents)) return ASSET_MESSAGES.invested;
+  if (fields.currentCents === null || fields.currentCents < 0) return t('asset.current');
+  if (!isValidOptional(fields.investedCents)) return t('asset.invested');
   return null;
 }
 
-const parseOptionalMoney = (raw: string): number | null =>
-  raw.trim() === '' ? null : (parseMoney(raw) ?? Number.NaN);
+const parseOptionalMoney = (raw: string, money: MoneyFormat): number | null =>
+  raw.trim() === '' ? null : (money.parse(raw) ?? Number.NaN);
 
 export function draftToAssetInput(
   draft: AssetDraft,
   today: string,
+  { money, t }: Pick<Localization, 'money' | 't'>,
 ): { input: AssetInput } | { error: string } {
   const isAuto = draft.pricing === 'auto';
   const input: AssetInput = {
@@ -127,14 +119,14 @@ export function draftToAssetInput(
     name: draft.name.trim(),
     assetClass: draft.assetClass,
     pricing: draft.pricing,
-    quantityE8: isAuto ? parseQuantity(draft.quantity) : null,
-    avgPriceCents: isAuto ? parseOptionalMoney(draft.avgPrice) : null,
-    priceCents: isAuto ? parseMoney(draft.price) : null,
-    investedCents: isAuto ? null : parseOptionalMoney(draft.invested),
-    currentCents: isAuto ? null : parseMoney(draft.current),
+    quantityE8: isAuto ? money.parseQuantity(draft.quantity) : null,
+    avgPriceCents: isAuto ? parseOptionalMoney(draft.avgPrice, money) : null,
+    priceCents: isAuto ? money.parse(draft.price) : null,
+    investedCents: isAuto ? null : parseOptionalMoney(draft.invested, money),
+    currentCents: isAuto ? null : money.parse(draft.current),
     today,
   };
-  const error = validateAssetFields(input);
+  const error = validateAssetFields(input, t);
   return error ? { error } : { input };
 }
 

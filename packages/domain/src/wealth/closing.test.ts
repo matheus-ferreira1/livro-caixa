@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
+import { localization } from '../i18n/localization';
 import { anAutoAsset, aManualAsset, aSnapshot } from '../test/builders';
 import { applyClosing, closingAvailable, closingDraft, closingRequestFrom } from './closing';
+
+const { money, t } = localization('pt-BR', 'BRL');
 
 describe('closingAvailable', () => {
   const closedSeptember = [aSnapshot({ month: '2026-09' })];
@@ -35,30 +38,34 @@ describe('closingDraft', () => {
   const auto = anAutoAsset({ id: 'auto', quantityE8: 200_000_000, priceCents: 1000 });
 
   test('lists manual assets by institution and name, prefilled', () => {
-    const draft = closingDraft([xp, auto, bb], {});
+    const draft = closingDraft([xp, auto, bb], {}, money);
     expect(draft.rows.map((r) => r.asset.id)).toEqual(['bb', 'xp']);
     expect(draft.rows[0]).toMatchObject({ flowInput: '0,00', valueInput: '50,00', valid: true });
     expect(draft.autoAssets.map((a) => a.id)).toEqual(['auto']);
   });
 
   test('totals automatic values, typed values and flows', () => {
-    const draft = closingDraft([xp, auto, bb], {
-      xp: { value: '120,00', flow: '10,00' },
-      bb: { flow: '−5,50' },
-    });
+    const draft = closingDraft(
+      [xp, auto, bb],
+      {
+        xp: { value: '120,00', flow: '10,00' },
+        bb: { flow: '−5,50' },
+      },
+      money,
+    );
     expect(draft.totalCents).toBe(2000 + 12_000 + 5000);
     expect(draft.contributionsCents).toBe(450);
   });
 
   test('marks unreadable input and leaves it out of the totals', () => {
-    const draft = closingDraft([xp], { xp: { value: 'abc', flow: 'abc' } });
+    const draft = closingDraft([xp], { xp: { value: 'abc', flow: 'abc' } }, money);
     expect(draft.rows[0]?.valid).toBe(false);
     expect(draft.totalCents).toBe(0);
     expect(draft.contributionsCents).toBe(0);
   });
 
   test('refuses a negative current value', () => {
-    expect(closingDraft([xp], { xp: { value: '-1' } }).rows[0]?.valid).toBe(false);
+    expect(closingDraft([xp], { xp: { value: '-1' } }, money).rows[0]?.valid).toBe(false);
   });
 });
 
@@ -66,15 +73,15 @@ describe('closingRequestFrom', () => {
   const asset = aManualAsset({ id: 'xp', institution: 'XP', name: 'Tesouro', currentCents: 10_000 });
 
   test('names the first asset to review', () => {
-    const draft = closingDraft([asset], { xp: { flow: 'abc' } });
-    expect(closingRequestFrom(draft, '2026-10', '2026-11-03')).toEqual({
+    const draft = closingDraft([asset], { xp: { flow: 'abc' } }, money);
+    expect(closingRequestFrom(draft, '2026-10', '2026-11-03', t)).toEqual({
       error: 'Revise os valores de “Tesouro” (XP).',
     });
   });
 
   test('builds the request from valid rows', () => {
-    const draft = closingDraft([asset], { xp: { flow: '-10,00', value: '90,00' } });
-    expect(closingRequestFrom(draft, '2026-10', '2026-11-03')).toEqual({
+    const draft = closingDraft([asset], { xp: { flow: '-10,00', value: '90,00' } }, money);
+    expect(closingRequestFrom(draft, '2026-10', '2026-11-03', t)).toEqual({
       request: {
         month: '2026-10',
         today: '2026-11-03',

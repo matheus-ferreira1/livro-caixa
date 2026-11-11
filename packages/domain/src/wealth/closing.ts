@@ -1,18 +1,13 @@
 import { z } from 'zod';
 import { isIsoDate, isMonthKey, monthOf, shiftMonth, type IsoDate, type MonthKey } from '../dates/dates';
-import { parseMoney, parseSignedMoney, sumCents, toMoneyInput, type Cents } from '../money/money';
+import type { Translate } from '../i18n/translate';
+import { sumCents, type Cents, type MoneyFormat } from '../money/money';
 import { assetValue, type Asset, type AutoAsset, type ManualAsset, type Snapshot } from './asset';
 
 /** A closing opens on this day of its month, once the month's balances have settled. */
 export const CLOSING_OPEN_DAY = 25;
 
 const DAY_START = 8;
-const NO_FLOW = '0,00';
-
-export const CLOSING_MESSAGES = {
-  review: (name: string, institution: string) => `Revise os valores de “${name}” (${institution}).`,
-  stale: 'Esse fechamento não está mais em aberto ou a carteira mudou. Atualize a página e revise de novo.',
-} as const;
 
 export const closingRequestSchema = z.object({
   month: z.string().refine(isMonthKey),
@@ -69,11 +64,11 @@ export function closingAvailable(snapshots: Snapshot[], assetCount: number, toda
 const isManual = (asset: Asset): asset is ManualAsset => asset.pricing === 'manual';
 const isAuto = (asset: Asset): asset is AutoAsset => asset.pricing === 'auto';
 
-function closingRow(asset: ManualAsset, edits: ClosingEdits): ClosingRow {
-  const flowInput = edits[asset.id]?.flow ?? NO_FLOW;
-  const valueInput = edits[asset.id]?.value ?? toMoneyInput(asset.currentCents);
-  const flowCents = parseSignedMoney(flowInput);
-  const valueCents = parseMoney(valueInput);
+function closingRow(asset: ManualAsset, edits: ClosingEdits, money: MoneyFormat): ClosingRow {
+  const flowInput = edits[asset.id]?.flow ?? money.toInput(0);
+  const valueInput = edits[asset.id]?.value ?? money.toInput(asset.currentCents);
+  const flowCents = money.parseSigned(flowInput);
+  const valueCents = money.parse(valueInput);
   return {
     asset,
     flowInput,
@@ -85,13 +80,13 @@ function closingRow(asset: ManualAsset, edits: ClosingEdits): ClosingRow {
 }
 
 /** What the closing dialog shows: untouched rows keep the last value and no flow. */
-export function closingDraft(assets: Asset[], edits: ClosingEdits): ClosingDraft {
+export function closingDraft(assets: Asset[], edits: ClosingEdits, money: MoneyFormat): ClosingDraft {
   const rows = assets
     .filter(isManual)
     .sort(
       (a, b) => a.institution.localeCompare(b.institution, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'),
     )
-    .map((asset) => closingRow(asset, edits));
+    .map((asset) => closingRow(asset, edits, money));
   const autoAssets = assets.filter(isAuto);
   return {
     rows,
@@ -105,11 +100,12 @@ export function closingRequestFrom(
   draft: ClosingDraft,
   month: MonthKey,
   today: IsoDate,
+  t: Translate,
 ): { request: ClosingRequest } | { error: string } {
   const items: ClosingRequest['items'] = [];
   for (const { asset, flowCents, valueCents } of draft.rows) {
     if (flowCents === null || valueCents === null) {
-      return { error: CLOSING_MESSAGES.review(asset.name, asset.institution) };
+      return { error: t('closing.review', asset.name, asset.institution) };
     }
     items.push({ assetId: asset.id, flowCents, currentCents: valueCents });
   }

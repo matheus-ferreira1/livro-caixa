@@ -1,4 +1,5 @@
 import { daysBetween, type IsoDate } from '../dates/dates';
+import type { Translate } from '../i18n/translate';
 import { sumCents, type Cents } from '../money/money';
 import { compareByDate } from '../transactions/list-query';
 import type { Category, Transaction } from '../transactions/transaction';
@@ -37,10 +38,10 @@ export function openItems(monthTransactions: Transaction[], categories: Category
   };
 }
 
-function dueLabel(days: number): string {
-  if (days < 0) return 'Atrasado';
-  if (days === 0) return 'Hoje';
-  return days === 1 ? 'Amanhã' : `Em ${days} dias`;
+function dueLabel(days: number, t: Translate): string {
+  if (days < 0) return t('due.late');
+  if (days === 0) return t('due.today');
+  return days === 1 ? t('due.tomorrow') : t('due.inDays', days);
 }
 
 function dueTone(days: number): DueTone {
@@ -49,7 +50,7 @@ function dueTone(days: number): DueTone {
 }
 
 /** How an open item's date reads against the client's "today". */
-export function relativeDue(date: IsoDate, today: IsoDate): { label: string; tone: DueTone } {
+export function relativeDue(date: IsoDate, today: IsoDate, t: Translate): { label: string; tone: DueTone } {
   const days = daysBetween(today, date);
-  return { label: dueLabel(days), tone: dueTone(days) };
+  return { label: dueLabel(days, t), tone: dueTone(days) };
 }

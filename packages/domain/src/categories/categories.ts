@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Translate } from '../i18n/translate';
 import type { Category, Transaction } from '../transactions/transaction';
 
 export type CategoryType = Category['type'];
@@ -27,13 +28,6 @@ export const toPaletteColor = (color: string): CategoryColor =>
 
 const MAX_CATEGORY_NAME_LENGTH = 60;
 
-export const CATEGORY_MESSAGES = {
-  nameRequired: 'Dê um nome para a categoria.',
-  duplicate: 'Já existe uma categoria com esse nome nesse tipo.',
-  notFound: 'Categoria não encontrada.',
-  inUse: (name: string) => `${name} está em uso e não pode ser excluída`,
-} as const;
-
 const categoryName = z.string().max(MAX_CATEGORY_NAME_LENGTH);
 const categoryColor = z.enum(CATEGORY_PALETTE);
 
@@ -50,17 +44,31 @@ export type CategoryPatch = z.infer<typeof categoryPatchSchema>;
 
 const sameName = (a: string, b: string) => a.toLocaleLowerCase('pt-BR') === b.toLocaleLowerCase('pt-BR');
 
+export type CategoryNameProblem = 'nameRequired' | 'duplicate';
+
+/** What is wrong with the name, or null when it is usable for that type. */
+export function categoryNameProblem(
+  name: string,
+  type: CategoryType,
+  existing: readonly Category[],
+  excludeId?: string,
+): CategoryNameProblem | null {
+  const trimmed = name.trim();
+  if (!trimmed) return 'nameRequired';
+  const duplicate = existing.some((c) => c.id !== excludeId && c.type === type && sameName(c.name, trimmed));
+  return duplicate ? 'duplicate' : null;
+}
+
 /** Returns the first error message, or null when the name is usable for that type. */
 export function validateCategoryName(
   name: string,
   type: CategoryType,
   existing: readonly Category[],
+  t: Translate,
   excludeId?: string,
 ): string | null {
-  const trimmed = name.trim();
-  if (!trimmed) return CATEGORY_MESSAGES.nameRequired;
-  const duplicate = existing.some((c) => c.id !== excludeId && c.type === type && sameName(c.name, trimmed));
-  return duplicate ? CATEGORY_MESSAGES.duplicate : null;
+  const problem = categoryNameProblem(name, type, existing, excludeId);
+  return problem ? t(`category.${problem}`) : null;
 }
 
 export type CategoryUsage = Record<string, number>;
