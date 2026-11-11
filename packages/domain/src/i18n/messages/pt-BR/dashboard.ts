@@ -8,9 +8,6 @@ export const dashboardPtBR = {
   'dashboard.modeRealHint': 'Só lançamentos confirmados.',
   'dashboard.modeProjHint': 'Inclui previstos e o acerto esperado.',
 
-  'dashboard.type.receita': 'Receita',
-  'dashboard.type.despesa': 'Despesa',
-  'dashboard.type.acerto': 'Acerto',
 
   'dashboard.balanceLabel': 'Balanço do mês',
   'dashboard.balanceHint': 'Receitas + acertos − despesas',

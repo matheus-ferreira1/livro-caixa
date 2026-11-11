@@ -339,7 +339,7 @@ function openOf(
       const meta = TYPE_META[item.type];
       const { dd, mm } = dateParts(item.date, t);
       const due = relativeDue(item.date, today, t);
-      const typeLabel = t(`dashboard.type.${item.type}`);
+      const typeLabel = t(meta.labelKey);
       return {
         id: item.id,
         description: item.description,

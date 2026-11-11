@@ -9,9 +9,6 @@ export const dashboardEn: typeof dashboardPtBR = {
   'dashboard.modeRealHint': 'Confirmed entries only.',
   'dashboard.modeProjHint': 'Includes pending entries and the expected settlement.',
 
-  'dashboard.type.receita': 'Income',
-  'dashboard.type.despesa': 'Expense',
-  'dashboard.type.acerto': 'Settlement',
 
   'dashboard.balanceLabel': 'Month balance',
   'dashboard.balanceHint': 'Income + settlements − expenses',
