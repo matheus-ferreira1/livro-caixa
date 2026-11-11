@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { signIn } from '../../../e2e/helpers';
+import { E2E_ADMIN } from '../../../playwright.config';
 
 const OUTPUT_DIR = resolve(import.meta.dirname, '../public/screenshots');
 // The demo seed runs from Nov 2025 to Oct 2026. On the 26th, October has open items and its closing is due.
@@ -30,6 +30,20 @@ async function toWebp(page: Page, png: Buffer): Promise<Buffer> {
   return Buffer.from(dataUrl.split(',')[1] ?? '', 'base64');
 }
 
+/**
+ * Signs in through the API, since the sign-in page speaks the instance's language and a second
+ * capture in the same run would find it in English. Then sets the instance to English with
+ * dollars, which is how the site shows the app.
+ */
+async function signInInEnglishWithDollars(page: Page) {
+  const login = await page.request.post('/api/auth/login', {
+    data: { email: E2E_ADMIN.email, password: E2E_ADMIN.password, remember: false },
+  });
+  expect(login.ok()).toBe(true);
+  const settings = await page.request.put('/api/settings', { data: { language: 'en', currency: 'USD' } });
+  expect(settings.ok()).toBe(true);
+}
+
 async function settle(page: Page, heading: string | RegExp) {
   await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -55,13 +69,14 @@ test.beforeEach(async ({ page }) => {
 
 test('desktop screens at 1440px', async ({ page }) => {
   await page.setViewportSize(DESKTOP);
-  await signIn(page);
+  await signInInEnglishWithDollars(page);
+  await page.goto('/visao-geral');
 
-  await settle(page, 'Outubro 2026');
+  await settle(page, 'October 2026');
   await save(page, 'visao-geral');
   // Link previews crop to 1.91:1, so the app is laid out at that size rather than cropped.
   await page.setViewportSize(OPEN_GRAPH);
-  await settle(page, 'Outubro 2026');
+  await settle(page, 'October 2026');
   await snapshot(page, {
     path: resolve(OUTPUT_DIR, '../og-image.jpg'),
     type: 'jpeg',
@@ -70,11 +85,11 @@ test('desktop screens at 1440px', async ({ page }) => {
   await page.setViewportSize(DESKTOP);
 
   await page.goto('/lancamentos');
-  await settle(page, 'Outubro 2026');
+  await settle(page, 'October 2026');
   await save(page, 'lancamentos');
 
-  await page.getByRole('button', { name: 'Gerar acerto' }).click();
-  await expect(page.getByRole('dialog', { name: 'Acerto de contas' })).toBeVisible();
+  await page.getByRole('button', { name: 'Generate settlement' }).click();
+  await expect(page.getByRole('dialog', { name: 'Bill settlement' })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await save(page, 'acerto');
   await page.keyboard.press('Escape');
@@ -84,7 +99,7 @@ test('desktop screens at 1440px', async ({ page }) => {
   await save(page, 'resumo');
 
   await page.goto('/patrimonio');
-  await expect(page.getByRole('heading', { name: 'Evolução mês a mês' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Month by month' })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.waitForLoadState('networkidle');
   await save(page, 'patrimonio');
@@ -95,11 +110,12 @@ test.describe('phone', () => {
   test.use({ viewport: PHONE, deviceScaleFactor: 2 });
 
   test('phone screens at 375px', async ({ page }) => {
-    await signIn(page);
-    await settle(page, 'Outubro 2026');
+    await signInInEnglishWithDollars(page);
+    await page.goto('/visao-geral');
+    await settle(page, 'October 2026');
     await save(page, 'visao-geral-phone');
     await page.goto('/lancamentos');
-    await settle(page, 'Outubro 2026');
+    await settle(page, 'October 2026');
     await save(page, 'lancamentos-phone');
   });
 });

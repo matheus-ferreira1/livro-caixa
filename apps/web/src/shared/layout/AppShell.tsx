@@ -43,8 +43,8 @@ export function AppShell() {
                 to={to}
                 className={({ isActive }) =>
                   cn(
-                    'group min-h-(--phone-nav-height) flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold no-underline',
-                    'md:min-h-11 md:flex-none md:flex-row md:rounded-[10px] md:px-4 md:text-[15px]',
+                    'group min-h-(--phone-nav-height) flex-1 flex-col items-center justify-start gap-1 px-0.5 pt-2 text-center text-[11px] leading-[1.15] font-semibold no-underline',
+                    'md:min-h-11 md:flex-none md:flex-row md:justify-center md:rounded-[10px] md:px-4 md:pt-0 md:text-[15px] md:leading-normal',
                     onPhoneBar ? 'flex' : 'hidden md:flex',
                     isActive ? 'text-white md:bg-header-active' : 'text-on-dark-muted hover:text-white',
                   )
