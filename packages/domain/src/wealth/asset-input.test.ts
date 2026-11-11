@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import { localization } from '../i18n/localization';
 import { anAutoAsset, aManualAsset } from '../test/builders';
 import {
-  ASSET_MESSAGES,
   draftFromAsset,
   draftToAssetInput,
   emptyAssetDraft,
@@ -11,6 +11,8 @@ import {
 } from './asset-input';
 
 const TODAY = '2026-11-03';
+const l10n = localization('pt-BR', 'BRL');
+const { t, money } = l10n;
 
 const manualDraft = (overrides: Partial<AssetDraft> = {}): AssetDraft => ({
   ...emptyAssetDraft(),
@@ -33,7 +35,7 @@ const autoDraft = (overrides: Partial<AssetDraft> = {}): AssetDraft => ({
 });
 
 const errorOf = (draft: AssetDraft) => {
-  const result = draftToAssetInput(draft, TODAY);
+  const result = draftToAssetInput(draft, TODAY, l10n);
   return 'error' in result ? result.error : null;
 };
 
@@ -45,42 +47,42 @@ describe('emptyAssetDraft', () => {
 
 describe('draftToAssetInput', () => {
   test.each([
-    [{ institution: '  ' }, ASSET_MESSAGES.institution],
-    [{ name: '' }, ASSET_MESSAGES.name],
-    [{ current: '' }, ASSET_MESSAGES.current],
-    [{ current: 'abc' }, ASSET_MESSAGES.current],
-    [{ invested: 'abc' }, ASSET_MESSAGES.invested],
+    [{ institution: '  ' }, t('asset.institution')],
+    [{ name: '' }, t('asset.name')],
+    [{ current: '' }, t('asset.current')],
+    [{ current: 'abc' }, t('asset.current')],
+    [{ invested: 'abc' }, t('asset.invested')],
   ])('rejects the manual draft %j', (overrides, message) => {
     expect(errorOf(manualDraft(overrides))).toBe(message);
   });
 
   test.each([
-    [{ quantity: '' }, ASSET_MESSAGES.quantity],
-    [{ quantity: '0' }, ASSET_MESSAGES.quantity],
-    [{ price: '' }, ASSET_MESSAGES.price],
-    [{ price: '0' }, ASSET_MESSAGES.price],
-    [{ avgPrice: 'abc' }, ASSET_MESSAGES.avgPrice],
+    [{ quantity: '' }, t('asset.quantity')],
+    [{ quantity: '0' }, t('asset.quantity')],
+    [{ price: '' }, t('asset.price')],
+    [{ price: '0' }, t('asset.price')],
+    [{ avgPrice: 'abc' }, t('asset.avgPrice')],
   ])('rejects the automatic draft %j', (overrides, message) => {
     expect(errorOf(autoDraft(overrides))).toBe(message);
   });
 
   test('reports the first problem in the order of the design', () => {
     expect(errorOf(autoDraft({ institution: '', name: '', quantity: '', price: '' }))).toBe(
-      ASSET_MESSAGES.institution,
+      t('asset.institution'),
     );
-    expect(errorOf(autoDraft({ quantity: '', price: '', avgPrice: 'abc' }))).toBe(ASSET_MESSAGES.quantity);
-    expect(errorOf(autoDraft({ price: '', avgPrice: 'abc' }))).toBe(ASSET_MESSAGES.price);
+    expect(errorOf(autoDraft({ quantity: '', price: '', avgPrice: 'abc' }))).toBe(t('asset.quantity'));
+    expect(errorOf(autoDraft({ price: '', avgPrice: 'abc' }))).toBe(t('asset.price'));
   });
 
   test('accepts a manual asset worth zero, with an unknown invested amount', () => {
-    const result = draftToAssetInput(manualDraft({ current: '0' }), TODAY);
+    const result = draftToAssetInput(manualDraft({ current: '0' }), TODAY, l10n);
     expect(result).toEqual({
       input: expect.objectContaining({ currentCents: 0, investedCents: null }),
     });
   });
 
   test('trims text and converts amounts', () => {
-    const result = draftToAssetInput(autoDraft({ institution: ' XP ', avgPrice: '10,25' }), TODAY);
+    const result = draftToAssetInput(autoDraft({ institution: ' XP ', avgPrice: '10,25' }), TODAY, l10n);
     expect(result).toEqual({
       input: expect.objectContaining({
         institution: 'XP',
@@ -105,11 +107,9 @@ describe('validateAssetFields', () => {
       investedCents: null,
       currentCents: null,
     };
-    expect(validateAssetFields(fields)).toBe(ASSET_MESSAGES.quantity);
-    expect(validateAssetFields({ ...fields, quantityE8: 1 })).toBeNull();
-    expect(validateAssetFields({ ...fields, quantityE8: 1, avgPriceCents: -1 })).toBe(
-      ASSET_MESSAGES.avgPrice,
-    );
+    expect(validateAssetFields(fields, t)).toBe(t('asset.quantity'));
+    expect(validateAssetFields({ ...fields, quantityE8: 1 }, t)).toBeNull();
+    expect(validateAssetFields({ ...fields, quantityE8: 1, avgPriceCents: -1 }, t)).toBe(t('asset.avgPrice'));
   });
 });
 
@@ -117,19 +117,20 @@ describe('draftFromAsset', () => {
   test('prefills the fields of an automatic asset', () => {
     const draft = draftFromAsset(
       anAutoAsset({ quantityE8: 389_610, avgPriceCents: null, priceCents: 1_393_769 }),
+      money,
     );
     expect(draft).toMatchObject({ pricing: 'auto', quantity: '0,0038961', avgPrice: '', price: '13937,69' });
   });
 
   test('prefills the fields of a manual asset', () => {
-    const draft = draftFromAsset(aManualAsset({ investedCents: null, currentCents: 5110 }));
+    const draft = draftFromAsset(aManualAsset({ investedCents: null, currentCents: 5110 }), money);
     expect(draft).toMatchObject({ pricing: 'manual', invested: '', current: '51,10' });
   });
 });
 
 describe('toAsset', () => {
   const inputOf = (draft: AssetDraft) => {
-    const result = draftToAssetInput(draft, TODAY);
+    const result = draftToAssetInput(draft, TODAY, l10n);
     if ('error' in result) throw new Error(result.error);
     return result.input;
   };

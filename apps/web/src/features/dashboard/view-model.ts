@@ -2,12 +2,11 @@ import {
   CATEGORY_PALETTE,
   dateParts,
   formatCompactAmount,
-  formatMoney,
-  formatPercent,
   MINUS,
   monthLabel,
   monthName,
   niceAxis,
+  numberMarks,
   OTHERS_SLICE_ID,
   relativeDue,
   type AverageComparison,
@@ -18,6 +17,8 @@ import {
   type DashboardMonth,
   type DueTone,
   type IsoDate,
+  type Localization,
+  type MessageKey,
   type MonthKey,
   type OpenItems,
   type SettlementCard,
@@ -25,7 +26,6 @@ import {
 } from '@livro-caixa/domain';
 import { TYPE_META } from '@/features/transactions/view-model';
 import { monthAxisLabel, tooltipAlignOf, type TooltipAlign } from '@/shared/lib/month-chart';
-import { pluralize } from '@/shared/lib/utils';
 import type { TileDelta, TileSpec } from '@/shared/SummaryTiles';
 
 const NO_VALUE = '—';
@@ -130,30 +130,34 @@ export interface DashboardViewModel {
   tableHref: string;
 }
 
+type Words = Pick<Localization, 't' | 'money'>;
+
 const neutral = (label: string): TileDelta => ({ label, tone: 'neutral', direction: null });
 
-function balanceDelta({
-  hasData,
-  previousHasData,
-  previousMonth,
-  differenceCents,
-}: DashboardKpis['balance']) {
-  if (!hasData) return neutral('Sem lançamentos no mês');
-  if (!previousHasData) return neutral(`Sem dados de ${monthName(previousMonth)}`);
+function balanceDelta(
+  { hasData, previousHasData, previousMonth, differenceCents }: DashboardKpis['balance'],
+  { t, money }: Words,
+) {
+  if (!hasData) return neutral(t('dashboard.noEntriesInMonth'));
+  const previous = monthName(previousMonth, t);
+  if (!previousHasData) return neutral(t('dashboard.noDataFor', previous));
   const better = differenceCents >= 0;
+  const amount = money.format(Math.abs(differenceCents));
   return {
-    label: `${formatMoney(Math.abs(differenceCents))} ${better ? 'a mais' : 'a menos'} que ${monthName(previousMonth)}`,
+    label: better
+      ? t('dashboard.balanceMore', amount, previous)
+      : t('dashboard.balanceLess', amount, previous),
     tone: better ? 'good' : 'bad',
     direction: better ? 'up' : 'down',
   } satisfies TileDelta;
 }
 
-function savingsDelta(points: number | null): TileDelta {
-  if (points === null) return neutral('Sem média para comparar');
+function savingsDelta(points: number | null, { t, money }: Words): TileDelta {
+  if (points === null) return neutral(t('dashboard.noAverage'));
   const better = points >= 0;
-  const amount = Math.abs(points).toFixed(1).replace('.', ',');
+  const amount = Math.abs(points).toFixed(1).replace('.', numberMarks(money.currency).decimal);
   return {
-    label: `${better ? '+' : MINUS}${amount} p.p. vs média de 12 meses`,
+    label: t('dashboard.savingsDelta', `${better ? '+' : MINUS}${amount}`),
     tone: better ? 'good' : 'bad',
     direction: better ? 'up' : 'down',
   };
@@ -164,59 +168,69 @@ function directionOfSpending(kind: 'above' | 'below'): Pick<TileDelta, 'tone' | 
   return kind === 'above' ? { tone: 'bad', direction: 'up' } : { tone: 'good', direction: 'down' };
 }
 
-function netSpendDelta(comparison: AverageComparison): TileDelta {
-  if (comparison.kind === 'none') return neutral('Sem média para comparar');
-  if (comparison.kind === 'near') return neutral('Na média dos últimos 12 meses');
-  const side = comparison.kind === 'above' ? 'acima' : 'abaixo';
+function netSpendDelta(comparison: AverageComparison, { t, money }: Words): TileDelta {
+  if (comparison.kind === 'none') return neutral(t('dashboard.noAverage'));
+  if (comparison.kind === 'near') return neutral(t('dashboard.nearAverage12'));
+  const percent = money.formatPercent(comparison.ratio, 0);
   return {
-    label: `${formatPercent(comparison.ratio, 0)} ${side} da média de 12 meses`,
+    label:
+      comparison.kind === 'above'
+        ? t('dashboard.aboveAverage12', percent)
+        : t('dashboard.belowAverage12', percent),
     ...directionOfSpending(comparison.kind),
   };
 }
 
-function legendDelta(comparison: AverageComparison): TileDelta {
-  if (comparison.kind === 'none') return neutral('Sem histórico');
-  if (comparison.kind === 'near') return neutral('Na média');
-  return { label: `${formatPercent(comparison.ratio, 0)} vs média`, ...directionOfSpending(comparison.kind) };
+function legendDelta(comparison: AverageComparison, { t, money }: Words): TileDelta {
+  if (comparison.kind === 'none') return neutral(t('dashboard.noHistory'));
+  if (comparison.kind === 'near') return neutral(t('dashboard.onAverage'));
+  return {
+    label: t('dashboard.vsAverage', money.formatPercent(comparison.ratio, 0)),
+    ...directionOfSpending(comparison.kind),
+  };
 }
 
-function tilesOf({ kpis, month, partnerName }: Dashboard): TileSpec[] {
+function tilesOf({ kpis, month, partnerName }: Dashboard, words: Words): TileSpec[] {
+  const { t, money } = words;
   const { balance, savingsRate, netSpend, yearToDate } = kpis;
   const hasYear = yearToDate.activeMonths > 0;
   return [
     {
-      label: 'Balanço do mês',
-      hint: 'Receitas + acertos − despesas',
-      value: balance.hasData ? formatMoney(balance.cents) : NO_VALUE,
+      label: t('dashboard.balanceLabel'),
+      hint: t('dashboard.balanceHint'),
+      value: balance.hasData ? money.format(balance.cents) : NO_VALUE,
       negative: balance.cents < 0,
-      delta: balanceDelta(balance),
+      delta: balanceDelta(balance, words),
     },
     {
-      label: 'Taxa de poupança',
-      hint: 'Parte da receita que sobrou',
-      value: savingsRate.rate === null ? NO_VALUE : formatPercent(savingsRate.rate),
+      label: t('dashboard.savingsLabel'),
+      hint: t('dashboard.savingsHint'),
+      value: savingsRate.rate === null ? NO_VALUE : money.formatPercent(savingsRate.rate),
       negative: savingsRate.rate !== null && savingsRate.rate < 0,
-      delta: savingsDelta(savingsRate.differencePoints),
+      delta: savingsDelta(savingsRate.differencePoints, words),
     },
     {
-      label: 'Gasto líquido',
-      hint: `Despesas menos o acerto de ${partnerName}`,
-      value: netSpend.cents === null ? NO_VALUE : formatMoney(netSpend.cents),
-      delta: netSpendDelta(netSpend.comparison),
+      label: t('dashboard.netSpendLabel'),
+      hint: t('dashboard.netSpendHint', partnerName),
+      value: netSpend.cents === null ? NO_VALUE : money.format(netSpend.cents),
+      delta: netSpendDelta(netSpend.comparison, words),
     },
     {
-      label: 'Acumulado no ano',
+      label: t('dashboard.yearLabel'),
       hint: hasYear
-        ? `Janeiro a ${monthName(month)} de ${month.slice(0, 4)}`
-        : 'Ainda sem lançamentos no ano',
-      value: hasYear ? formatMoney(yearToDate.cents) : NO_VALUE,
+        ? t('dashboard.yearHint', monthName(month, t), month.slice(0, 4))
+        : t('dashboard.yearEmpty'),
+      value: hasYear ? money.format(yearToDate.cents) : NO_VALUE,
       negative: yearToDate.cents < 0,
-      delta: neutral(hasYear ? `Média de ${formatMoney(yearToDate.averageCents)} por mês` : ''),
+      delta: neutral(hasYear ? t('dashboard.yearAverage', money.format(yearToDate.averageCents)) : ''),
     },
   ];
 }
 
-function chartOf(series: DashboardMonth[]): DashboardViewModel['chart'] {
+function chartOf(
+  series: DashboardMonth[],
+  { t, money, language }: Localization,
+): DashboardViewModel['chart'] {
   const { ticks, topCents } = niceAxis(
     Math.max(...series.map((m) => Math.max(m.incomeCents, m.expenseCents))),
   );
@@ -225,24 +239,31 @@ function chartOf(series: DashboardMonth[]): DashboardViewModel['chart'] {
 
   return {
     ticks: ticks.map((cents) => ({
-      label: formatCompactAmount(cents),
+      label: formatCompactAmount(cents, language),
       top: `${(100 - (cents / topCents) * 100).toFixed(2)}%`,
       isZero: cents === 0,
     })),
     groups: series.map((m, index) => ({
       month: m.month,
-      label: monthAxisLabel(m.month, index),
+      label: monthAxisLabel(m.month, index, t),
       current: index === series.length - 1,
       incomeHeight: height(m.incomeCents),
       expenseHeight: height(m.expenseCents),
       tooltipAlign: tooltipAlignOf(index, series.length),
-      title: monthLabel(m.month),
+      title: monthLabel(m.month, t),
       hasData: m.hasData,
-      income: formatMoney(m.incomeCents),
-      expense: formatMoney(m.expenseCents),
-      settlement: formatMoney(m.settlementCents),
-      balance: formatMoney(m.balanceCents),
-      ariaLabel: `${monthLabel(m.month)}: receitas ${formatMoney(m.incomeCents)}, despesas ${formatMoney(m.expenseCents)}, acertos ${formatMoney(m.settlementCents)}, balanço ${formatMoney(m.balanceCents)}`,
+      income: money.format(m.incomeCents),
+      expense: money.format(m.expenseCents),
+      settlement: money.format(m.settlementCents),
+      balance: money.format(m.balanceCents),
+      ariaLabel: t(
+        'dashboard.monthAria',
+        monthLabel(m.month, t),
+        money.format(m.incomeCents),
+        money.format(m.expenseCents),
+        money.format(m.settlementCents),
+        money.format(m.balanceCents),
+      ),
     })),
   };
 }
@@ -273,7 +294,8 @@ function segmentsOf(slices: CategorySlice[]): DonutSegment[] {
     });
 }
 
-function donutOf({ slices, totalCents, count }: CategoryBreakdown): DonutViewModel | null {
+function donutOf({ slices, totalCents, count }: CategoryBreakdown, words: Words): DonutViewModel | null {
+  const { t, money } = words;
   if (totalCents === 0) return null;
   return {
     segments: segmentsOf(slices),
@@ -281,87 +303,105 @@ function donutOf({ slices, totalCents, count }: CategoryBreakdown): DonutViewMod
       id: slice.id,
       name: slice.name,
       color: slice.color,
-      value: formatMoney(slice.valueCents),
-      percent: formatPercent(slice.share, 0),
-      delta: legendDelta(slice.comparison),
+      value: money.format(slice.valueCents),
+      percent: money.formatPercent(slice.share, 0),
+      delta: legendDelta(slice.comparison, words),
       center: {
         title: slice.name,
-        value: formatMoney(slice.valueCents),
-        sub: `${formatPercent(slice.share)} das despesas`,
+        value: money.format(slice.valueCents),
+        sub: t('dashboard.donutShare', money.formatPercent(slice.share)),
       },
     })),
     center: {
-      title: 'Total de despesas',
-      value: formatMoney(totalCents),
-      sub: pluralize(count, 'lançamento', 'lançamentos'),
+      title: t('dashboard.donutTotal'),
+      value: money.format(totalCents),
+      sub: t('dashboard.entryCount', count),
     },
-    ariaLabel: `Despesas por categoria: ${slices.map((s) => `${s.name} ${formatPercent(s.share, 0)}`).join(', ')}`,
+    ariaLabel: t(
+      'dashboard.donutAria',
+      slices.map((s) => `${s.name} ${money.formatPercent(s.share, 0)}`).join(', '),
+    ),
   };
 }
 
-function openOf({ items, count, outflowCents, inflowCents }: OpenItems, month: MonthKey, today: IsoDate) {
+function openOf(
+  { items, count, outflowCents, inflowCents }: OpenItems,
+  month: MonthKey,
+  today: IsoDate,
+  { t, money }: Words,
+) {
   const hidden = count - items.length;
   return {
-    summary: count ? pluralize(count, 'lançamento previsto', 'lançamentos previstos') : 'Tudo confirmado',
-    outflow: formatMoney(outflowCents),
-    inflow: formatMoney(inflowCents),
+    summary: count ? t('dashboard.openCount', count) : t('dashboard.openAllConfirmed'),
+    outflow: money.format(outflowCents),
+    inflow: money.format(inflowCents),
     rows: items.map((item): OpenRow => {
       const meta = TYPE_META[item.type];
-      const { dd, mm } = dateParts(item.date);
-      const due = relativeDue(item.date, today);
+      const { dd, mm } = dateParts(item.date, t);
+      const due = relativeDue(item.date, today, t);
+      const typeLabel = t(meta.labelKey);
       return {
         id: item.id,
         description: item.description,
         day: `${dd}/${mm}`,
         when: due.label,
         whenTone: due.tone,
-        meta: item.categoryName ? `${meta.label} · ${item.categoryName}` : meta.label,
-        value: `${meta.sign} ${formatMoney(item.valueCents)}`,
+        meta: item.categoryName ? `${typeLabel} · ${item.categoryName}` : typeLabel,
+        value: `${meta.sign} ${money.format(item.valueCents)}`,
         valueClass: meta.text,
-        confirmLabel: `Confirmar ${item.description}`,
+        confirmLabel: t('dashboard.confirmEntry', item.description),
       };
     }),
     more:
       hidden > 0
         ? {
-            label: `Ver mais ${pluralize(hidden, 'previsto', 'previstos')}`,
+            label: t('dashboard.openMore', hidden),
             href: `/lancamentos?mes=${month}&status=pending`,
           }
         : null,
   };
 }
 
-const SETTLEMENT_STATUS: Record<SettlementCardStatus, { label: string; tone: SettlementTone }> = {
-  none: { label: 'Sem contas divididas', tone: 'none' },
-  settled: { label: 'Quitado', tone: 'settled' },
-  partial: { label: 'Parcial', tone: 'open' },
-  pending: { label: 'Pendente', tone: 'open' },
-};
+const SETTLEMENT_STATUS = {
+  none: { label: 'dashboard.settlementNone', tone: 'none' },
+  settled: { label: 'dashboard.settlementSettled', tone: 'settled' },
+  partial: { label: 'dashboard.settlementPartial', tone: 'open' },
+  pending: { label: 'dashboard.settlementPending', tone: 'open' },
+} as const satisfies Record<SettlementCardStatus, { label: MessageKey; tone: SettlementTone }>;
 
-function settlementOf(card: SettlementCard): SettlementViewModel {
+function settlementOf(card: SettlementCard, { t, money }: Words): SettlementViewModel {
   const { label, tone } = SETTLEMENT_STATUS[card.status];
-  const bills = pluralize(card.itemCount, 'conta dividida', 'contas divididas');
+  const bills = t('dashboard.settlementBills', card.itemCount);
   return {
-    status: label,
+    status: t(label),
     statusTone: tone,
-    pending: formatMoney(card.pendingCents),
-    expected: formatMoney(card.expectedCents),
+    pending: money.format(card.pendingCents),
+    expected: money.format(card.expectedCents),
     progress: `${(card.progress * 100).toFixed(1)}%`,
-    progressAria: `Recebido ${formatPercent(card.progress, 0)} do acerto`,
-    detail: `${formatMoney(card.receivedCents)} recebido · ${bills} (${formatMoney(card.totalCents)})`,
+    progressAria: t('dashboard.settlementProgressAria', money.formatPercent(card.progress, 0)),
+    detail: t(
+      'dashboard.settlementDetail',
+      money.format(card.receivedCents),
+      bills,
+      money.format(card.totalCents),
+    ),
   };
 }
 
 /** Display data for Visão geral, labeled as in the design. */
-export function dashboardViewModel(dashboard: Dashboard, today: IsoDate): DashboardViewModel {
+export function dashboardViewModel(
+  dashboard: Dashboard,
+  today: IsoDate,
+  l10n: Localization,
+): DashboardViewModel {
   const { month, mode, series, categories, open, settlement } = dashboard;
   const year = month.slice(0, 4);
   return {
-    tiles: tilesOf(dashboard),
-    chart: chartOf(series),
-    donut: donutOf(categories),
-    open: openOf(open, month, today),
-    settlement: settlementOf(settlement),
+    tiles: tilesOf(dashboard, l10n),
+    chart: chartOf(series, l10n),
+    donut: donutOf(categories, l10n),
+    open: openOf(open, month, today, l10n),
+    settlement: settlementOf(settlement, l10n),
     tableHref: mode === 'proj' ? `/resumo?ano=${year}&modo=proj` : `/resumo?ano=${year}`,
   };
 }

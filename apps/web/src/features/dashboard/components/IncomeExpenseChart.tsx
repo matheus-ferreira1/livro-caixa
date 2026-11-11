@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import type { ChartGroup, ChartTick } from '../view-model';
 
@@ -14,9 +15,9 @@ const TOOLTIP_ALIGN: Record<ChartGroup['tooltipAlign'], string> = {
 };
 
 const LEGEND = [
-  { label: 'Receitas', background: 'bg-chart-income' },
-  { label: 'Despesas', background: 'bg-chart-expense' },
-];
+  { label: 'dashboard.income', background: 'bg-chart-income' },
+  { label: 'dashboard.expense', background: 'bg-chart-expense' },
+] as const;
 
 interface IncomeExpenseChartProps {
   ticks: ChartTick[];
@@ -25,6 +26,7 @@ interface IncomeExpenseChartProps {
 }
 
 export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseChartProps) {
+  const { t } = usePreferences();
   const [hovered, setHovered] = useState<string | null>(null);
 
   return (
@@ -35,24 +37,22 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <h2 id="bars-title" className="m-0 text-base font-bold">
-            Receitas e despesas · últimos 12 meses
+            {t('dashboard.chartTitle')}
           </h2>
-          <span className="text-[13px] text-muted-foreground">
-            Passe o mouse sobre um mês para ver acertos e balanço.
-          </span>
+          <span className="text-[13px] text-muted-foreground">{t('dashboard.chartHint')}</span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[13px] text-icon">
           {LEGEND.map(({ label, background }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={cn('size-3 rounded-[3px]', background)} />
-              {label}
+              {t(label)}
             </span>
           ))}
           <Link
             to={tableHref}
             className="flex min-h-11 items-center rounded-lg border bg-card px-3 text-[13px] font-semibold text-ink hover:bg-accent"
           >
-            Ver tabela
+            {t('dashboard.viewTable')}
           </Link>
         </div>
       </div>
@@ -148,6 +148,7 @@ function MonthBars({
 }
 
 function Tooltip({ group }: { group: ChartGroup }) {
+  const { t } = usePreferences();
   return (
     <div
       className={cn(
@@ -158,17 +159,21 @@ function Tooltip({ group }: { group: ChartGroup }) {
       <span className="font-bold">{group.title}</span>
       {group.hasData ? (
         <>
-          <TooltipRow label="Receitas" value={group.income} swatch="bg-chart-income-on-dark" />
-          <TooltipRow label="Despesas" value={group.expense} swatch="bg-chart-expense" />
-          <TooltipRow label="Acertos" value={group.settlement} className="text-on-dark-muted" />
+          <TooltipRow label={t('dashboard.income')} value={group.income} swatch="bg-chart-income-on-dark" />
+          <TooltipRow label={t('dashboard.expense')} value={group.expense} swatch="bg-chart-expense" />
           <TooltipRow
-            label="Balanço"
+            label={t('dashboard.settlement')}
+            value={group.settlement}
+            className="text-on-dark-muted"
+          />
+          <TooltipRow
+            label={t('dashboard.balance')}
             value={group.balance}
             className="border-t border-tooltip-divider pt-1.5 font-semibold"
           />
         </>
       ) : (
-        <span className="text-on-dark-muted">Sem lançamentos</span>
+        <span className="text-on-dark-muted">{t('dashboard.noEntries')}</span>
       )}
     </div>
   );

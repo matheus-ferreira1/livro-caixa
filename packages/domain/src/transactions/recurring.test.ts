@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '../i18n/translate';
 import { aTransaction } from '../test/builders';
 import { recurringCandidates, recurringEntry, validateRecurringSelection } from './recurring';
 
@@ -54,6 +55,8 @@ describe('recurringCandidates', () => {
   });
 });
 
+const t = translator('pt-BR');
+
 describe('validateRecurringSelection', () => {
   const row = (overrides = {}) => ({
     description: 'Internet',
@@ -63,21 +66,24 @@ describe('validateRecurringSelection', () => {
   });
 
   test('accepts dates in the month and positive values', () => {
-    expect(validateRecurringSelection([row()], '2026-11')).toBeNull();
+    expect(validateRecurringSelection([row()], '2026-11', t)).toBeNull();
   });
 
   test('asks for at least one entry', () => {
-    expect(validateRecurringSelection([], '2026-11')).toBe('Selecione ao menos um lançamento.');
+    expect(validateRecurringSelection([], '2026-11', t)).toBe('Selecione ao menos um lançamento.');
   });
 
-  test.each([{ date: '2026-12-01' }, { date: '2026-11-31' }, { date: '' }, { valueCents: 0 }, { valueCents: null }])(
-    'names the first row to review for %p',
-    (patch) => {
-      expect(validateRecurringSelection([row({ description: 'Luz', ...patch }), row()], '2026-11')).toBe(
-        'Revise “Luz”: a data deve ser em Novembro 2026 e o valor maior que zero.',
-      );
-    },
-  );
+  test.each([
+    { date: '2026-12-01' },
+    { date: '2026-11-31' },
+    { date: '' },
+    { valueCents: 0 },
+    { valueCents: null },
+  ])('names the first row to review for %p', (patch) => {
+    expect(validateRecurringSelection([row({ description: 'Luz', ...patch }), row()], '2026-11', t)).toBe(
+      'Revise “Luz”: a data deve ser em Novembro 2026 e o valor maior que zero.',
+    );
+  });
 });
 
 describe('recurringEntry', () => {

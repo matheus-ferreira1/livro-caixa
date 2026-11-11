@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-11, after the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-11, after language and currency selection (US-12, Phase 7). Before it: the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -14,14 +14,21 @@ _Last updated: 2026-11-11, after the project site (PR #37), the public GitHub Pa
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PR #19) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
+| 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
 
 No phase is planned. What is left:
 
+- **Follow-ups of language and currency (US-12)**, none of them blocking:
+   - the demo seed (`seed-demo.ts`) and the 12 seeded categories stay in Portuguese, so the site's English screenshots show Portuguese descriptions and category names
+   - the `PreferencesProvider` shows pt-BR and BRL until `GET /api/preferences` answers, so an English instance may flash Portuguese on first load
+   - `nameFromEmail` still falls back to "Usuário" for the name of a user created from the CLI, since it is stored data
+   - the preferences are read once per page load; a change made on another device shows after a reload
+
 0. **Turn on the project site.** After PR #37 merges, the repository owner enables Pages with Source = GitHub Actions (Settings › Pages), and the repository must be public. Then run the "Project site" workflow once (or push a change under `apps/site`). Follow-ups for the site, none of them blocking:
-   - retake the screenshots with `bun run capture:site` whenever a captured screen changes, so the site never shows an old UI
+   - retake the screenshots with `bun run capture:site` whenever a captured screen changes, so the site never shows an old UI (the capture sets the instance to English and USD through the API)
    - no screenshot shows Gerar recorrentes, because the demo seed has no pending recurring entries for October 2026
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
@@ -99,7 +106,7 @@ Not to be confused with Visão geral, the app's landing page after sign-in. This
 
 ### API
 
-All routes except `/api/health` and `/api/auth/login` require the `lc_session` cookie. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Validation messages are the pt-BR copy from the design.
+All routes except `/api/health` and `/api/auth/login` require the `lc_session` cookie. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Messages follow the instance language: the pt-BR copy from the design, or its English translation.
 
 | Method & path | Use case | Notes |
 |---|---|---|
@@ -111,8 +118,9 @@ All routes except `/api/health` and `/api/auth/login` require the `lc_session` c
 | `POST /api/categories` | `CreateCategory` | 201; body `{ name, type: receita\|despesa, color }`, color from the palette. 400 "Dê um nome para a categoria.", 409 "Já existe uma categoria com esse nome nesse tipo." (case-insensitive, per type) |
 | `PATCH /api/categories/:id` | `UpdateCategory` | Body `{ name, color }` only; the type cannot change. Same 400/409 rules. |
 | `DELETE /api/categories/:id` | `DeleteCategory` | 204; 409 "{nome} está em uso e não pode ser excluída" while any entry uses it |
-| `GET /api/settings` | — | `{ settings: { partnerName, partnerShare } }` |
-| `PUT /api/settings` | `UpdateSettings` | Body `{ partnerName, partnerShare }`; the name is trimmed, the share is an integer 0–100 in steps of 5 |
+| `GET /api/settings` | — | `{ settings: { partnerName, partnerShare, language, currency } }` |
+| `PUT /api/settings` | `UpdateSettings` | Body with any of `{ partnerName, partnerShare, language, currency }`; fields left out keep their stored value, so each section of Configurações saves only its own. The name is trimmed, the share is an integer 0–100 in steps of 5, 400 for an unknown language or currency. |
+| `GET /api/preferences` | — | No session needed: `{ language, currency }`, for the sign-in page |
 | `GET /api/transactions?month=YYYY-MM` | `ListMonthTransactions` | The month's entries; the client filters and sorts them |
 | `GET /api/transactions/search` | `SearchTransactions` | Query params `type, status, category ('all' \| id \| 'none'), q, from, to, sort, dir, page, pageSize (25\|50\|100)`. Returns `{ items, page, totalPages, start, end, total, totals, groups[{ monthKey, count, netCents, ids }] }`. Filters run in the domain over all rows. |
 | `POST /api/transactions` | `SaveTransaction` | 201; body is `TransactionInput` (`valueCents` as an integer). "Registrar acerto" posts `settlementEntry(...)` here. |
@@ -143,13 +151,16 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `003_wealth`:
   - `assets(id, institution, name, asset_class, pricing auto|manual, quantity_e8, avg_price_cents, price_cents, invested_cents, current_cents, day_change_bps, quote_checked_at, updated_at, created_at)`; a CHECK requires quantity and price for `auto` and the current value for `manual`
   - `snapshots(month PK, total_cents, contributions_cents, created_at)`
+- `005_language_and_currency`:
+  - `settings` gains `language` (`pt-BR` or `en`, default `pt-BR`) and `currency` (`BRL`, `USD`, `EUR` or `GBP`, default `BRL`), each with a CHECK
 - `004_quote_status`:
   - `assets` gains `quoted_at` (epoch ms) and `quote_failed`; `quote_checked_at` and `day_change_bps` are reset so the next read checks every quote again
 
 ### Domain (`packages/domain`)
 
 - `auth/`: login validation and messages, `nameFromEmail`, `initialsOf`
-- `money/`: `parseMoney` (pt-BR input → cents), `parseSignedMoney`, `formatMoney`, `formatSignedMoney`, `formatCompactAmount`, `formatPercent`, `toMoneyInput`, `percentOf`
+- `i18n/`: the message catalogs (`messages/pt-BR/*` define the keys, `messages/en/*` must match, one pair of files per section), `translator(language)` returning `t(key, ...values)`, `localization(language, currency)` returning `{ language, currency, t, money }`
+- `money/`: `moneyFormat(currency)` returning `{ format, formatSigned, formatPercent, parse, parseSigned, toInput, symbol, formatQuantity, parseQuantity, toQuantityInput }`, `formatCompactAmount(cents, language)`, `percentOf`, `numberMarks`
 - `dates/`: `monthLabel`, `monthName`, `monthShortName`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `daysBetween`, `defaultDateForMonth`, `elapsedLabel`
 - `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
 - `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation) and `monthTiles`
@@ -162,7 +173,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `dashboard/open-items.ts`: `openItems`, `relativeDue`
 - `dashboard/dashboard.ts`: `buildDashboard`, `niceAxis`, `settlementCard`
 - `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
-- `settings/`: `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
+- `settings/`: `LANGUAGES`, `CURRENCIES`, defaults, `Preferences`, `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
 - `wealth/asset.ts`: the `Asset` and `Snapshot` types, `ASSET_CLASSES`, `assetValue`, `assetCost`, `valueAssets`, `institutionsOf`
 - `wealth/quote-status.ts`: `quoteStatus` (updated, or unavailable with the last quote's time), `unavailableQuoteCount`
 - `wealth/quantity.ts`: `QUANTITY_SCALE`, `parseQuantity`, `formatQuantity`, `toQuantityInput`
@@ -175,11 +186,11 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 317 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 222 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 392 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 241 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 242 | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
-| E2E | 15 tests: the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
+| E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck`, `build` and `build:site`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -331,10 +342,26 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 ### Decisions taken for the project site (PR #37)
 
 - It lives in this repository as the `@livro-caixa/site` workspace and deploys from GitHub Actions, not from a `gh-pages` branch.
-- Its copy is in English, for contributors and self-hosters. App terms appear in their exact pt-BR form from `docs/user-stories.md` with an English gloss, and screenshots stay in pt-BR.
+- Its copy is in English, for contributors and self-hosters. The app is shown in English with dollars (US-12), screens carry their English names and the pt-BR name as a gloss.
 - It promises only what is built: backup, export and changing the password in the app are listed as open work, not as features.
 - Screenshots are WebP, re-encoded by Chromium in the capture script, so no image library is added. Desktop shots are 1440×900 at 1x, the phone shots (the dashboard in the hero below 640px, and Lançamentos) are 375×812 at 2x, and the Open Graph image is the dashboard laid out at 1200×630.
 - The header sticks to the top from 640px only, so on phones it does not take a share of the screen, as in the app.
+
+### Decisions taken for language and currency (US-12)
+
+- Both are instance-wide, in the single `settings` row, and default to pt-BR and BRL. Currency is display-only: stored cents never change and nothing is converted.
+- Each currency fixes its number locale (BRL pt-BR, USD en-US, EUR de-DE, GBP en-GB), so one decimal mark shows on screen at a time. Only the word in compact chart labels follows the language.
+- No i18n library. A typed flat catalog in the domain: pt-BR defines the keys, `en` is typed as the same shape, and entries with values are functions. A test checks that both languages have the same keys and arities and that no key is in two sections. The catalog is split by section so each feature owns its own pair of files.
+- The domain keeps no current language: validators, dates, share text and breakdown names take a translator or a money format as a required argument. Validators return the translated text.
+- Use cases receive a `TranslateProvider` that reads the instance language when it is needed, so a change applies at once. `ApplicationError` carries the already-translated text, and the error handler translates the messages it raises itself (invalid data, 404, 500, expired session). The 500 path falls back to pt-BR if reading the settings fails.
+- `PUT /api/settings` merges what it receives onto the stored settings. The language section and the split section each send only their own fields, so a stale draft in one cannot undo the other.
+- The web reads `GET /api/preferences` (public) into one query, updated when settings are saved, and sets `<html lang>`. Tests seed that query, so no request is made.
+- Typed amounts are read with the currency's marks, mirrored from the pt-BR rules. In USD and GBP `1,234` is 1234, and `1.234` is refused rather than rounded to 1.23.
+- Persisted enum values, routes, category names, entry descriptions and the description of an acerto already registered do not change with the language.
+- The instance language is cached in memory by `CachedSettingsRepository` (a save replaces it) and every message goes through one translator that falls back to pt-BR when the settings cannot be read, so even the 401, 404 and 400 answers keep the error shape.
+- Signing out keeps the preferences in the query cache, and the API client reads the language from them, not from `<html lang>`. Changing the language refetches the queries that carry server-written text (the dashboard).
+- Quantities read a group mark before three digits as thousands in USD, GBP and EUR; BRL keeps `1.000` as 1.
+- On phones the bottom bar's labels may wrap in English ("Monthly summary"), so its items align to the top.
 
 ## Roadmap
 
@@ -420,3 +447,10 @@ Follow-ups found during Phase 6:
 - [x] The closing's copy said automatic quotes were current even when they were not. It now follows each quote's status (PR #26).
 - [x] `parseMoney` read `1.234` (a dot with no comma) as R$ 3,34 instead of R$ 1.234,00. This predated Phase 6 and affected every money field (PR #23).
 
+### Phase 7 — Language and currency (US-12) (done)
+
+- [x] Migration `005_language_and_currency`, `PUT /api/settings` with optional fields, public `GET /api/preferences`.
+- [x] Domain: message catalogs, translator, `moneyFormat`, localized dates and domain copy.
+- [x] API: errors and the dashboard in the instance language.
+- [x] Web: preferences provider, "Idioma e moeda" section, every screen translated and formatted by the currency.
+- [x] E2E and the project site (screenshots retaken in English with dollars).

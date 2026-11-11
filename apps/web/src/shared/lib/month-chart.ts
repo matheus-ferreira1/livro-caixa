@@ -1,4 +1,4 @@
-import { monthShortName, type MonthKey } from '@livro-caixa/domain';
+import { monthShortName, type MonthKey, type Translate } from '@livro-caixa/domain';
 
 const JANUARY = '01';
 const TOOLTIP_EDGE_MONTHS = 2;
@@ -12,7 +12,7 @@ export function tooltipAlignOf(index: number, count: number): TooltipAlign {
 }
 
 /** Shows the year on the first month of the chart and on each January. */
-export function monthAxisLabel(month: MonthKey, index: number): string {
+export function monthAxisLabel(month: MonthKey, index: number, t: Translate): string {
   const showYear = index === 0 || month.slice(5) === JANUARY;
-  return showYear ? `${monthShortName(month)} ’${month.slice(2, 4)}` : monthShortName(month);
+  return showYear ? `${monthShortName(month, t)} ’${month.slice(2, 4)}` : monthShortName(month, t);
 }

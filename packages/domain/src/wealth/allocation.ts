@@ -1,6 +1,7 @@
 import { CATEGORY_PALETTE } from '../categories/categories';
 import { sumCents, type Cents } from '../money/money';
-import { ASSET_CLASSES, institutionsOf, type ValuedAsset } from './asset';
+import type { Translate } from '../i18n/translate';
+import { ASSET_CLASSES, assetClassLabel, institutionsOf, type ValuedAsset } from './asset';
 
 const NEUTRAL_COLOR = '#9AA29D';
 /** A slice below this is too thin to see, so it stays only in the legend. */
@@ -21,11 +22,17 @@ export interface AssetGroup {
 
 type GroupIdentity = Pick<AssetGroup, 'name' | 'color' | 'order'>;
 
-function classIdentity(key: string): GroupIdentity {
-  const order = ASSET_CLASSES.findIndex((c) => c.key === key);
-  const assetClass = ASSET_CLASSES[order];
-  return { name: assetClass?.label ?? key, color: assetClass?.color ?? NEUTRAL_COLOR, order };
-}
+const classIdentity =
+  (t: Translate) =>
+  (key: string): GroupIdentity => {
+    const order = ASSET_CLASSES.findIndex((c) => c.key === key);
+    const assetClass = ASSET_CLASSES[order];
+    return {
+      name: assetClass ? assetClassLabel(assetClass.key, t) : key,
+      color: assetClass?.color ?? NEUTRAL_COLOR,
+      order,
+    };
+  };
 
 const institutionIdentity =
   (institutions: string[]) =>
@@ -35,9 +42,9 @@ const institutionIdentity =
   };
 
 /** The groups shared by the allocation card and the assets table, biggest first. */
-export function groupAssets(assets: ValuedAsset[], grouping: WealthGrouping): AssetGroup[] {
+export function groupAssets(assets: ValuedAsset[], grouping: WealthGrouping, t: Translate): AssetGroup[] {
   const byClass = grouping === 'class';
-  const identityOf = byClass ? classIdentity : institutionIdentity(institutionsOf(assets));
+  const identityOf = byClass ? classIdentity(t) : institutionIdentity(institutionsOf(assets));
   const members = new Map<string, ValuedAsset[]>();
   for (const asset of assets) {
     const key = byClass ? asset.assetClass : asset.institution;

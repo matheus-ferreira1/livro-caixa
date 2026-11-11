@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { Currency } from '../settings/preferences';
 import { formatQuantity, parseQuantity, toQuantityInput } from './quantity';
 
 describe('parseQuantity', () => {
@@ -12,25 +13,71 @@ describe('parseQuantity', () => {
     [' 2 ', 200_000_000],
     ['0,00000001', 1],
   ])('reads %s', (input, expected) => {
-    expect(parseQuantity(input)).toBe(expected);
+    expect(parseQuantity(input, 'BRL')).toBe(expected);
   });
 
   test.each(['', 'abc', '-1', '1,2,3', '0,000000001', '1.5,2'])('rejects %p', (input) => {
-    expect(parseQuantity(input)).toBeNull();
+    expect(parseQuantity(input, 'BRL')).toBeNull();
   });
 });
 
 describe('formatQuantity', () => {
   test('shows up to 8 decimals in pt-BR', () => {
-    expect(formatQuantity(389_610)).toBe('0,0038961');
-    expect(formatQuantity(123_450_000_000)).toBe('1.234,5');
+    expect(formatQuantity(389_610, 'BRL')).toBe('0,0038961');
+    expect(formatQuantity(123_450_000_000, 'BRL')).toBe('1.234,5');
   });
 });
 
 describe('toQuantityInput', () => {
   test('gives a value that parses back to the same quantity', () => {
-    expect(toQuantityInput(389_610)).toBe('0,0038961');
-    expect(parseQuantity(toQuantityInput(389_610))).toBe(389_610);
-    expect(parseQuantity(toQuantityInput(300_000_000))).toBe(300_000_000);
+    expect(toQuantityInput(389_610, 'BRL')).toBe('0,0038961');
+    expect(parseQuantity(toQuantityInput(389_610, 'BRL'), 'BRL')).toBe(389_610);
+    expect(parseQuantity(toQuantityInput(300_000_000, 'BRL'), 'BRL')).toBe(300_000_000);
+  });
+});
+
+describe('quantities of a dot-decimal currency', () => {
+  test.each([
+    ['3', 300_000_000],
+    ['0.0038961', 389_610],
+    ['0,0038961', 389_610],
+    ['1,234.5', 123_450_000_000],
+    ['1.28952', 128_952_000],
+  ])('reads %s', (input, expected) => {
+    expect(parseQuantity(input, 'USD')).toBe(expected);
+  });
+
+  test.each(['1.234,5', '1.5.2', ''])('rejects %p', (input) => {
+    expect(parseQuantity(input, 'USD')).toBeNull();
+  });
+
+  test('shows and fills fields with a dot', () => {
+    expect(formatQuantity(123_450_000_000, 'USD')).toBe('1,234.5');
+    expect(toQuantityInput(389_610, 'GBP')).toBe('0.0038961');
+    expect(parseQuantity(toQuantityInput(389_610, 'GBP'), 'GBP')).toBe(389_610);
+  });
+});
+
+describe.each<[Currency, string, number | null]>([
+  ['USD', '1,000', 100_000_000_000],
+  ['GBP', '1,000', 100_000_000_000],
+  ['USD', '1,000.5', 100_050_000_000],
+  ['USD', '1,234,567', 123_456_700_000_000],
+  ['USD', '12,345', 1_234_500_000_000],
+  ['USD', '0,123', 12_300_000],
+  ['USD', '1,5', 150_000_000],
+  ['USD', '1,0038961', 100_389_610],
+  ['USD', '1,00', 100_000_000],
+  ['EUR', '1.000', 100_000_000_000],
+  ['EUR', '1.000,5', 100_050_000_000],
+  ['EUR', '0.123', 12_300_000],
+  ['EUR', '4.89', 489_000_000],
+  ['EUR', '0,0038961', 389_610],
+  ['BRL', '1.000', 100_000_000],
+  ['BRL', '1.000,5', 100_050_000_000],
+  ['BRL', '4.89', 489_000_000],
+])('a thousand-looking quantity in %s: parseQuantity(%p)', (currency, input, expected) => {
+  test(`gives ${expected}`, () => {
+    expect(parseQuantity(input, currency)).toBe(expected);
   });
 });

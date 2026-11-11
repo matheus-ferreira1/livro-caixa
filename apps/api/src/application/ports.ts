@@ -5,6 +5,7 @@ import type {
   MonthKey,
   PublicUser,
   Settings,
+  Translate,
   Snapshot,
   Transaction,
 } from '@livro-caixa/domain';
@@ -64,6 +65,9 @@ export interface CategoryRepository {
   update(category: Category): void;
   delete(id: string): void;
 }
+
+/** The instance language's translator, read when it is needed so a language change applies at once. */
+export type TranslateProvider = () => Translate;
 
 export interface SettingsRepository {
   get(): Settings;

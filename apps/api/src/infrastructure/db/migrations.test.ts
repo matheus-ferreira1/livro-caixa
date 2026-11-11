@@ -28,3 +28,27 @@ describe('004_quote_status', () => {
     });
   });
 });
+
+describe('005_language_and_currency', () => {
+  const columns = 'SELECT language, currency FROM settings WHERE id = 1';
+
+  test('keeps an existing instance in pt-BR and BRL', () => {
+    const db = new Database(':memory:');
+    db.exec(sqlOf('002_ledger'));
+
+    db.exec(sqlOf('005_language_and_currency'));
+
+    expect(db.query(columns).get()).toEqual({ language: 'pt-BR', currency: 'BRL' });
+  });
+
+  test.each([
+    ['language', 'fr'],
+    ['currency', 'JPY'],
+  ])('rejects an unknown %s', (column, value) => {
+    const db = new Database(':memory:');
+    db.exec(sqlOf('002_ledger'));
+    db.exec(sqlOf('005_language_and_currency'));
+
+    expect(() => db.query(`UPDATE settings SET ${column} = ? WHERE id = 1`).run(value)).toThrow();
+  });
+});

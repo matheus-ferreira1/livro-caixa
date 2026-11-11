@@ -1,22 +1,23 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  formatCompactAmount,
-  formatMoney,
-  formatPercent,
-  formatSignedMoney,
-  parseMoney,
-  parseSignedMoney,
-  toMoneyInput,
-} from './money';
+import type { Currency } from '../settings/preferences';
+import { formatCompactAmount, moneyFormat } from './money';
+
+const brl = moneyFormat('BRL');
+const formatMoney = brl.format;
+const formatSignedMoney = brl.formatSigned;
+const formatPercent = brl.formatPercent;
+const parseMoney = brl.parse;
+const parseSignedMoney = brl.parseSigned;
+const toMoneyInput = brl.toInput;
 
 describe('formatCompactAmount', () => {
   test('abbreviates thousands with one decimal, without the currency', () => {
-    expect(formatCompactAmount(123_456)).toBe('1,2 mil');
-    expect(formatCompactAmount(45_000)).toBe('450');
+    expect(formatCompactAmount(123_456, 'pt-BR')).toBe('1,2 mil');
+    expect(formatCompactAmount(45_000, 'pt-BR')).toBe('450');
   });
 
   test('uses the design minus sign for negatives', () => {
-    expect(formatCompactAmount(-123_456)).toBe('−1,2 mil');
+    expect(formatCompactAmount(-123_456, 'pt-BR')).toBe('−1,2 mil');
   });
 });
 
@@ -112,5 +113,82 @@ describe('parseSignedMoney', () => {
 
   test.each(['', 'abc', '--5', '5-'])('rejects %p', (input) => {
     expect(parseSignedMoney(input)).toBeNull();
+  });
+});
+
+describe('formatCompactAmount in English', () => {
+  test('follows the language, not the currency', () => {
+    expect(formatCompactAmount(123_456, 'en')).toBe('1.2K');
+    expect(formatCompactAmount(-123_456, 'en')).toBe('−1.2K');
+  });
+});
+
+// Intl separates the symbol with a no-break space in pt-BR and de-DE.
+const NBSP = ' ';
+
+describe.each<[Currency, string, string, string, string]>([
+  ['BRL', 'R$', `R$${NBSP}1.234,56`, `−R$${NBSP}50,00`, '1234,56'],
+  ['USD', '$', '$1,234.56', '−$50.00', '1234.56'],
+  ['EUR', '€', `1.234,56${NBSP}€`, `−50,00${NBSP}€`, '1234,56'],
+  ['GBP', '£', '£1,234.56', '−£50.00', '1234.56'],
+])('moneyFormat(%s)', (currency, symbol, formatted, negative, input) => {
+  const money = moneyFormat(currency);
+
+  test('shows the symbol, the marks of its locale and the design minus', () => {
+    expect(money.symbol).toBe(symbol);
+    expect(money.format(123_456)).toBe(formatted);
+    expect(money.format(-5_000)).toBe(negative);
+  });
+
+  test('puts the sign of a signed amount apart', () => {
+    expect(money.formatSigned(5_000)).toBe(`+ ${money.format(5_000)}`);
+    expect(money.formatSigned(-5_000)).toBe(`− ${money.format(5_000)}`);
+  });
+
+  test('renders cents for an editable field and reads them back', () => {
+    expect(money.toInput(123_456)).toBe(input);
+    expect(money.parse(money.toInput(123_456))).toBe(123_456);
+  });
+
+  test('reads the amount its own format shows', () => {
+    expect(money.parse(formatted)).toBe(123_456);
+    expect(money.parseSigned(negative)).toBe(-5_000);
+  });
+});
+
+describe.each<[Currency, string, number | null]>([
+  ['BRL', '1.234', 123_400],
+  ['EUR', '1.234', 123_400],
+  ['BRL', '1.234,5', 123_450],
+  ['USD', '1,234', 123_400],
+  ['GBP', '1,234', 123_400],
+  ['USD', '1,234.5', 123_450],
+  ['USD', '1,234,567.89', 123_456_789],
+  ['USD', '$ 10.5', 1_050],
+  ['USD', '10,5', 1_050],
+  ['USD', '1.234', null],
+  ['USD', '1.234,56', null],
+  ['BRL', '1,234.56', null],
+  ['EUR', '12,5€', 1_250],
+  ['GBP', '£1,000', 100_000],
+  ['USD', 'abc', null],
+])('moneyFormat(%s).parse(%p)', (currency, text, cents) => {
+  test(`gives ${cents}`, () => {
+    expect(moneyFormat(currency).parse(text)).toBe(cents);
+  });
+});
+
+describe('percentages', () => {
+  test.each<[Currency, string]>([
+    ['BRL', '12,5%'],
+    ['USD', '12.5%'],
+    ['GBP', '12.5%'],
+  ])('follow the number format of %s', (currency, expected) => {
+    expect(moneyFormat(currency).formatPercent(0.125)).toBe(expected);
+  });
+
+  test('keep the design minus in every format', () => {
+    expect(moneyFormat('USD').formatPercent(-0.5)).toBe('−50%');
+    expect(moneyFormat('EUR').formatPercent(-0.5)).toStartWith('−50');
   });
 });

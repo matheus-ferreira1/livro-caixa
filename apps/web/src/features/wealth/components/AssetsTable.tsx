@@ -1,6 +1,7 @@
 import type { ValuedAsset } from '@livro-caixa/domain';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState, type CSSProperties } from 'react';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { STACKED_CELL_LABEL } from '@/shared/stacked';
 import { useDeleteAsset } from '../api';
@@ -44,6 +45,7 @@ export function AssetsTable({
   onNew,
   onEdit,
 }: AssetsTableProps) {
+  const { t } = usePreferences();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const remove = useDeleteAsset();
   const columns = {
@@ -51,16 +53,16 @@ export function AssetsTable({
   } as CSSProperties;
 
   return (
-    <section aria-label="Ativos" className="overflow-hidden rounded-[14px] border bg-card">
+    <section aria-label={t('wealth.assetsLabel')} className="overflow-hidden rounded-[14px] border bg-card">
       {groups.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
-          <p className="m-0 font-semibold">Nenhum ativo na carteira.</p>
+          <p className="m-0 font-semibold">{t('wealth.noAssets')}</p>
           <button
             type="button"
             onClick={onNew}
             className="min-h-11 rounded-[10px] bg-ink px-[18px] font-semibold text-white"
           >
-            Novo ativo
+            {t('wealth.newAsset')}
           </button>
         </div>
       ) : (
@@ -73,16 +75,16 @@ export function AssetsTable({
               )}
               style={columns}
             >
-              <span>Ativo</span>
-              <span className="text-right">Qtd.</span>
-              <span className="text-right">Preço médio</span>
-              <span className="text-right">Cotação</span>
-              <span className="text-right">Aplicado</span>
-              <span className="text-right">Atual</span>
-              <span className="text-right">Resultado</span>
-              <span>% carteira</span>
-              {showDaily && <span className="text-right">Hoje</span>}
-              <span className="text-right">Ações</span>
+              <span>{t('wealth.colAsset')}</span>
+              <span className="text-right">{t('wealth.colQuantity')}</span>
+              <span className="text-right">{t('wealth.colAvgPrice')}</span>
+              <span className="text-right">{t('wealth.colQuote')}</span>
+              <span className="text-right">{t('wealth.colInvested')}</span>
+              <span className="text-right">{t('wealth.colCurrent')}</span>
+              <span className="text-right">{t('wealth.colResult')}</span>
+              <span>{t('wealth.colShare')}</span>
+              {showDaily && <span className="text-right">{t('wealth.colToday')}</span>}
+              <span className="text-right">{t('wealth.colActions')}</span>
             </div>
             {groups.map((group) => (
               <div key={group.key}>
@@ -111,20 +113,15 @@ export function AssetsTable({
       )}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted px-4 py-3.5 text-sm text-muted-foreground md:px-5">
         <span className="flex flex-col gap-1">
-          <span>
-            Resultado = valor atual − valor aplicado. Aportes informados no fechamento entram no valor
-            aplicado.
-          </span>
-          {hasUnavailableQuote && (
-            <span>Sem cotação, o ativo usa o último preço salvo. Para atualizar, edite o ativo.</span>
-          )}
+          <span>{t('wealth.footerFormula')}</span>
+          {hasUnavailableQuote && <span>{t('wealth.footerNoQuote')}</span>}
         </span>
         <span className="flex flex-wrap gap-5 font-mono">
           <span>
-            Aplicado <strong className="text-ink">{invested}</strong>
+            {t('wealth.totalInvested')} <strong className="text-ink">{invested}</strong>
           </span>
           <span>
-            Atual <strong className="text-ink">{total}</strong>
+            {t('wealth.totalCurrent')} <strong className="text-ink">{total}</strong>
           </span>
         </span>
       </div>
@@ -169,6 +166,7 @@ function Row({
   onCancelDelete: () => void;
   onDelete: () => void;
 }) {
+  const { t } = usePreferences();
   // Stacked, a manual asset has no quantity or prices to show, so that line goes.
   const unitCell = cn(DETAIL_CELL, row.asset.pricing === 'manual' && 'max-md:hidden');
   return (
@@ -194,17 +192,17 @@ function Row({
             <PricingTag tag={row.pricingTag} />
           </span>
         </span>
-        <span data-label="Qtd." className={unitCell}>
+        <span data-label={t('wealth.colQuantity')} className={unitCell}>
           {row.quantity}
         </span>
-        <span data-label="Preço médio" className={unitCell}>
+        <span data-label={t('wealth.colAvgPrice')} className={unitCell}>
           {row.avgPrice}
         </span>
-        <span data-label="Cotação" className={cn(unitCell, 'flex flex-col md:items-end')}>
+        <span data-label={t('wealth.colQuote')} className={cn(unitCell, 'flex flex-col md:items-end')}>
           <span>{row.price}</span>
           {row.priceNote && <span className="text-xs text-muted-foreground">{row.priceNote}</span>}
         </span>
-        <span data-label="Aplicado" className={cn(DETAIL_CELL, 'text-icon')}>
+        <span data-label={t('wealth.colInvested')} className={cn(DETAIL_CELL, 'text-icon')}>
           {row.invested}
         </span>
         <span className="text-right text-[15px] font-semibold [grid-area:1/4/2/7] md:text-[length:inherit] md:[grid-area:auto]">
@@ -220,7 +218,7 @@ function Row({
           <span className="text-xs">{row.resultPercent}</span>
         </span>
         <span
-          data-label="% carteira"
+          data-label={t('wealth.colShare')}
           className={cn(
             STACKED_CELL_LABEL,
             'col-span-2 flex min-w-0 flex-wrap items-center gap-x-2 max-md:before:basis-full md:col-auto md:flex-nowrap',
@@ -233,7 +231,7 @@ function Row({
         </span>
         {showDaily && (
           <span
-            data-label="Hoje"
+            data-label={t('wealth.colToday')}
             className={cn(DETAIL_CELL, 'text-[12.5px] font-semibold', TONE_TEXT[row.dayTone])}
           >
             {row.day}
@@ -243,7 +241,7 @@ function Row({
           <button
             type="button"
             onClick={onEdit}
-            aria-label={`Editar ${row.name}`}
+            aria-label={t('wealth.edit', row.name)}
             className="flex size-11 items-center justify-center rounded-lg text-icon hover:bg-accent"
           >
             <Pencil className="size-4" aria-hidden="true" />
@@ -251,7 +249,7 @@ function Row({
           <button
             type="button"
             onClick={onAskDelete}
-            aria-label={`Remover ${row.name}`}
+            aria-label={t('wealth.remove', row.name)}
             className="flex size-11 items-center justify-center rounded-lg text-expense hover:bg-expense-row"
           >
             <Trash2 className="size-4" aria-hidden="true" />
@@ -260,20 +258,20 @@ function Row({
       </div>
       {deleting && (
         <div className="flex flex-wrap items-center justify-end gap-2.5 px-4 pb-3.5 md:px-5">
-          <span className="text-sm font-semibold text-expense">Remover “{row.name}” da carteira?</span>
+          <span className="text-sm font-semibold text-expense">{t('wealth.removeAsk', row.name)}</span>
           <button
             type="button"
             onClick={onCancelDelete}
             className="min-h-11 rounded-lg border bg-card px-3.5 text-sm font-semibold text-ink"
           >
-            Cancelar
+            {t('wealth.cancel')}
           </button>
           <button
             type="button"
             onClick={onDelete}
             className="min-h-11 rounded-lg bg-expense px-3.5 text-sm font-semibold text-white"
           >
-            Remover
+            {t('wealth.removeConfirm')}
           </button>
         </div>
       )}

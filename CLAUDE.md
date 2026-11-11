@@ -18,7 +18,8 @@ Read these when the task needs them; they are not loaded automatically.
 ## Language rules
 
 - **Code, identifiers, comments, commits, branch names, PR titles and PR bodies are in English.**
-- **UI copy is Brazilian Portuguese (pt-BR), verbatim from the design.** Never translate the UI and never paraphrase its strings. Quoted strings in this file and in [docs/user-stories.md](docs/user-stories.md) are the exact copy.
+- **pt-BR is the source UI copy, verbatim from the design.** Never paraphrase its strings. Quoted strings in this file and in [docs/user-stories.md](docs/user-stories.md) are the exact copy.
+- **English (`en`) is a translation and lives only in the message catalog** (`packages/domain/src/i18n/messages/en/`), which must define the same keys as pt-BR (a missing key is a type error). A new string needs both languages, and no copy is ever hard-coded in a component, view model, validator or use case: it comes from the catalog through `t(key, ...values)`. Category names and entry descriptions are user data and are never translated.
 - Domain terms keep the English names below in code. The pt-BR terms appear only in UI copy and in the persisted enum values listed here.
 
 | pt-BR (UI) | Code | Notes |
@@ -33,6 +34,8 @@ Read these when the task needs them; they are not loaded automatically.
 | recorrente | `recurring`, `seriesId` | |
 | companheira / companheiro(a) | `partner` | `settings.partnerName` |
 | patrimônio | net worth / `Asset` | |
+| idioma | `Language` (`'pt-BR'`, `'en'`), `settings.language` | Changes only the UI copy |
+| moeda | `Currency` (`'BRL'`, `'USD'`, `'EUR'`, `'GBP'`), `settings.currency` | Display-only: it changes how amounts are formatted and typed. Nothing is converted and stored cents never change. |
 | fechamento | monthly net-worth closing / `Snapshot` | |
 | aporte / resgate | contribution / withdrawal | |
 

@@ -1,3 +1,4 @@
+import type { Preferences } from '@livro-caixa/domain';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
@@ -11,7 +12,11 @@ const CATEGORIES = [
 
 type Write = { method: string; url: string; body: unknown };
 
-function setup() {
+interface SetupOptions {
+  preferences?: Preferences;
+}
+
+function setup({ preferences }: SetupOptions = {}) {
   const writes: Write[] = [];
   mockApi((url, init) => {
     const method = init.method ?? 'GET';
@@ -28,7 +33,9 @@ function setup() {
     if (method === 'PUT') return { status: 200, body: { settings: body } };
     return undefined;
   });
-  const view = renderRoutes([{ path: '/configuracoes', element: <SettingsPage /> }], '/configuracoes');
+  const view = renderRoutes([{ path: '/configuracoes', element: <SettingsPage /> }], '/configuracoes', {
+    preferences,
+  });
   return { ...view, writes };
 }
 
@@ -110,5 +117,106 @@ describe('Configurações', () => {
         { method: 'PUT', url: '/api/settings', body: { partnerName: 'Bia', partnerShare: 30 } },
       ]),
     );
+  });
+
+  test('offers the languages in their own names and the currencies in the current language', async () => {
+    setup();
+    const section = (await screen.findByRole('heading', { name: 'Idioma e moeda' })).closest(
+      'section',
+    ) as HTMLElement;
+    expect(within(section).getByText(/Os valores não são convertidos\./)).toBeInTheDocument();
+    const language = within(section).getByLabelText('Idioma');
+    expect(
+      within(language)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Português (Brasil)', 'English']);
+    const currency = within(section).getByLabelText('Moeda');
+    expect(
+      within(currency)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Real brasileiro (R$)', 'Dólar americano ($)', 'Euro (€)', 'Libra esterlina (£)']);
+    expect(language).toHaveValue('pt-BR');
+    expect(currency).toHaveValue('BRL');
+  });
+
+  test('switches the language at once and saves only the language', async () => {
+    const { user, writes } = setup();
+    await screen.findByText('Mercado');
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Language and currency' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Currency')).toHaveValue('BRL');
+    expect(document.documentElement.lang).toBe('en');
+    expect(writes).toEqual([{ method: 'PUT', url: '/api/settings', body: { language: 'en' } }]);
+  });
+
+  test('switches the currency at once and keeps the amounts as they are', async () => {
+    const { user, writes } = setup();
+    await user.selectOptions(await screen.findByLabelText('Moeda'), 'USD');
+    expect(await screen.findByText(/Bia paga \$40\.00 e você paga \$60\.00/)).toBeInTheDocument();
+    expect(writes).toEqual([{ method: 'PUT', url: '/api/settings', body: { currency: 'USD' } }]);
+    expect(screen.getByLabelText('Idioma')).toHaveValue('pt-BR');
+  });
+
+  test('keeps the language when the partner is edited afterwards', async () => {
+    const { user, writes } = setup();
+    await user.selectOptions(await screen.findByLabelText('Idioma'), 'en');
+    const slider = await screen.findByLabelText('Bia’s share of split bills');
+    fireEvent.change(slider, { target: { value: '30' } });
+    await waitFor(() => expect(writes).toHaveLength(2));
+    expect(writes[1]).toEqual({
+      method: 'PUT',
+      url: '/api/settings',
+      body: { partnerName: 'Bia', partnerShare: 30 },
+    });
+    expect(screen.getByLabelText('Language')).toHaveValue('en');
+  });
+
+  test('keeps the partner fields when the language is changed after editing them', async () => {
+    const { user, writes } = setup();
+    const slider = await screen.findByLabelText('Parte de Bia nas contas divididas');
+    fireEvent.change(slider, { target: { value: '30' } });
+    await waitFor(() => expect(writes).toHaveLength(1));
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
+    await waitFor(() => expect(writes).toHaveLength(2));
+    expect(writes[1]?.body).toEqual({ language: 'en' });
+    expect(screen.getByLabelText('Bia’s share of split bills')).toHaveValue('30');
+  });
+
+  test('renders in English with dollars when the instance is set that way', async () => {
+    setup({ preferences: { language: 'en', currency: 'USD' } });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(await screen.findByText('Mercado')).toBeInTheDocument();
+    const expense = listCard('Expenses');
+    expect(within(expense).getByText('2 categories')).toBeInTheDocument();
+    expect(within(expense).getByText('3 entries')).toBeInTheDocument();
+    expect(within(expense).getByText('No entries')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mercado is in use and cannot be deleted' })).toBeDisabled();
+    expect(screen.getByText(/Example: on a split bill of/)).toHaveTextContent(
+      'Example: on a split bill of $100.00, Bia pays $40.00 and you pay $60.00.',
+    );
+    expect(screen.getByLabelText('Language')).toHaveValue('en');
+    expect(screen.getByLabelText('Currency')).toHaveValue('USD');
+  });
+
+  test('says in English that a category needs a name', async () => {
+    const { user } = setup({ preferences: { language: 'en', currency: 'USD' } });
+    await screen.findByText('Mercado');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Give the category a name.');
+  });
+
+  test('refetches what the server wrote in the old language when the language changes', async () => {
+    const { user, queryClient } = setup();
+    const dashboardKey = ['transactions', 'dashboard', '2026-03', 'real'];
+    queryClient.setQueryData(dashboardKey, { partnerName: 'Companheira' });
+    await user.selectOptions(await screen.findByLabelText('Moeda'), 'USD');
+    await waitFor(() => expect(screen.getByLabelText('Moeda')).toHaveValue('USD'));
+    expect(queryClient.getQueryState(dashboardKey)?.isInvalidated).toBe(false);
+
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
+    await waitFor(() => expect(queryClient.getQueryState(dashboardKey)?.isInvalidated).toBe(true));
   });
 });

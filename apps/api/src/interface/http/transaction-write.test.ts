@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSettlement, MAX_ENTRY_CENTS, settlementEntry } from '@livro-caixa/domain';
+import { computeSettlement, localization, MAX_ENTRY_CENTS, settlementEntry } from '@livro-caixa/domain';
 import { buildTestApp, signIn } from '../../test/harness';
 
 const input = {
@@ -48,7 +48,11 @@ describe('POST /api/transactions', () => {
     await agent.post('/api/transactions').send(input).expect(201);
     const month = await agent.get('/api/transactions?month=2026-11').expect(200);
     const settlement = computeSettlement(month.body.transactions, 50, { includePending: true });
-    const entry = settlementEntry(settlement, { month: '2026-11', partnerName: 'Ana' });
+    const entry = settlementEntry(
+      settlement,
+      { month: '2026-11', partnerName: 'Ana' },
+      localization('pt-BR', 'BRL'),
+    );
 
     const { body } = await agent.post('/api/transactions').send(entry).expect(201);
 

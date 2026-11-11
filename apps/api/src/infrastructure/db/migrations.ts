@@ -115,4 +115,14 @@ export const MIGRATIONS: Migration[] = [
       UPDATE assets SET quote_checked_at = NULL, day_change_bps = NULL;
     `,
   },
+  {
+    // Display-only choices for the whole instance; no stored amount or text is converted.
+    id: '005_language_and_currency',
+    sql: `
+      ALTER TABLE settings ADD COLUMN language TEXT NOT NULL DEFAULT 'pt-BR'
+        CHECK (language IN ('pt-BR', 'en'));
+      ALTER TABLE settings ADD COLUMN currency TEXT NOT NULL DEFAULT 'BRL'
+        CHECK (currency IN ('BRL', 'USD', 'EUR', 'GBP'));
+    `,
+  },
 ];

@@ -1,4 +1,13 @@
-import { isIsoDate, lastDayOfMonth, monthLabel, monthOf, pad2, type IsoDate, type MonthKey } from '../dates/dates';
+import {
+  isIsoDate,
+  lastDayOfMonth,
+  monthLabel,
+  monthOf,
+  pad2,
+  type IsoDate,
+  type MonthKey,
+} from '../dates/dates';
+import type { Translate } from '../i18n/translate';
 import type { Cents } from '../money/money';
 import { compareByDate } from './list-query';
 import type { Transaction } from './transaction';
@@ -45,12 +54,6 @@ function sameDayIn(month: MonthKey, date: IsoDate): IsoDate {
   return `${month}-${pad2(day)}`;
 }
 
-export const RECURRING_MESSAGES = {
-  noneSelected: 'Selecione ao menos um lançamento.',
-  review: (description: string, month: MonthKey) =>
-    `Revise “${description}”: a data deve ser em ${monthLabel(month)} e o valor maior que zero.`,
-} as const;
-
 export interface RecurringChoice {
   description: string;
   date: IsoDate;
@@ -59,10 +62,14 @@ export interface RecurringChoice {
 }
 
 /** The first problem with the chosen entries, in the order the dialog lists them, or null. */
-export function validateRecurringSelection(choices: RecurringChoice[], month: MonthKey): string | null {
-  if (choices.length === 0) return RECURRING_MESSAGES.noneSelected;
+export function validateRecurringSelection(
+  choices: RecurringChoice[],
+  month: MonthKey,
+  t: Translate,
+): string | null {
+  if (choices.length === 0) return t('recurring.noneSelected');
   const invalid = choices.find((c) => !isDateInMonth(c.date, month) || !(c.valueCents && c.valueCents > 0));
-  return invalid ? RECURRING_MESSAGES.review(invalid.description, month) : null;
+  return invalid ? t('recurring.review', invalid.description, monthLabel(month, t)) : null;
 }
 
 const isDateInMonth = (date: string, month: MonthKey): boolean => isIsoDate(date) && monthOf(date) === month;

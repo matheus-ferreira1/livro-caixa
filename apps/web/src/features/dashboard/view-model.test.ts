@@ -1,8 +1,9 @@
 import {
   buildDashboard,
   CATEGORY_PALETTE,
+  DEFAULT_LOCALIZATION,
   formatCompactAmount,
-  formatMoney,
+  localization,
   type Category,
   type Dashboard,
   type SummaryMode,
@@ -11,6 +12,8 @@ import {
 import { describe, expect, test } from 'vitest';
 import { dashboardViewModel } from './view-model';
 
+const { t, money } = DEFAULT_LOCALIZATION;
+const formatMoney = money.format;
 const MONTH = '2026-10';
 const TODAY = '2026-10-10';
 
@@ -49,9 +52,11 @@ const dashboardOf = (
     settings: { partnerName: 'Bia', partnerShare: 50 },
     month: MONTH,
     mode,
+    t,
   });
 
-const vmOf = (...args: Parameters<typeof dashboardOf>) => dashboardViewModel(dashboardOf(...args), TODAY);
+const vmOf = (...args: Parameters<typeof dashboardOf>) =>
+  dashboardViewModel(dashboardOf(...args), TODAY, DEFAULT_LOCALIZATION);
 
 const tile = (vm: ReturnType<typeof vmOf>, label: string) => {
   const found = vm.tiles.find((t) => t.label === label);
@@ -178,7 +183,7 @@ describe('chart', () => {
     expect(current?.expenseHeight).toBe('max(2px, 0.10%)');
     expect(groups[0]?.incomeHeight).toBe('0px');
     expect(ticks.map((t) => t.label)).toEqual(
-      [0, 250_000, 500_000, 750_000, 1_000_000].map(formatCompactAmount),
+      [0, 250_000, 500_000, 750_000, 1_000_000].map((cents) => formatCompactAmount(cents, 'pt-BR')),
     );
     expect(ticks.map((t) => t.top)).toEqual(['100.00%', '75.00%', '50.00%', '25.00%', '0.00%']);
   });
@@ -386,5 +391,68 @@ describe('links', () => {
   test('"Ver tabela" keeps the year and the mode', () => {
     expect(vmOf([]).tableHref).toBe('/resumo?ano=2026');
     expect(vmOf([], { mode: 'proj' }).tableHref).toBe('/resumo?ano=2026&modo=proj');
+  });
+});
+
+describe('in other languages and currencies', () => {
+  const english = localization('en', 'USD');
+  const dashboard = (words: typeof english, transactions: Transaction[]) =>
+    dashboardViewModel(
+      buildDashboard({
+        transactions,
+        categories: [],
+        settings: { partnerName: 'Bia', partnerShare: 50 },
+        month: MONTH,
+        mode: 'real',
+        t: words.t,
+      }),
+      TODAY,
+      words,
+    );
+  const entries = [income(`${MONTH}-05`, 123_456), expense(`${MONTH}-06`, 10_000)];
+
+  test('English and dollars write the labels, the dot decimal mark and the month names', () => {
+    const vm = dashboard(english, entries);
+    expect(vm.tiles.map((t) => t.label)).toEqual([
+      'Month balance',
+      'Savings rate',
+      'Net spending',
+      'Year to date',
+    ]);
+    expect(vm.tiles[0]).toMatchObject({
+      value: '$1,134.56',
+      delta: { label: 'No data for September' },
+    });
+    expect(vm.tiles[3]?.hint).toBe('January to October 2026');
+    expect(vm.chart.groups.at(-1)).toMatchObject({
+      title: 'October 2026',
+      income: '$1,234.56',
+      label: 'Oct',
+    });
+    expect(vm.chart.ticks.map((tick) => tick.label)).toContain('0');
+  });
+
+  test('English writes the open items and the settlement card', () => {
+    const vm = dashboard(english, [
+      entry({ date: '2026-10-11', confirmed: false, description: 'Luz', valueCents: 10_000 }),
+    ]);
+    expect(vm.open).toMatchObject({ summary: '1 pending entry', outflow: '$100.00' });
+    expect(vm.open.rows[0]).toMatchObject({
+      when: 'Tomorrow',
+      meta: 'Expense',
+      confirmLabel: 'Confirm Luz',
+    });
+    expect(vm.settlement.status).toBe('No split bills');
+  });
+
+  test('Portuguese with dollars keeps the words and takes the dot', () => {
+    const vm = dashboard(localization('pt-BR', 'USD'), entries);
+    expect(vm.tiles[0]).toMatchObject({ label: 'Balanço do mês', value: '$1,134.56' });
+  });
+
+  test('English with reais keeps the comma', () => {
+    const vm = dashboard(localization('en', 'BRL'), entries);
+    expect(vm.tiles[0]?.label).toBe('Month balance');
+    expect(vm.tiles[0]?.value).toBe(`R$\u00a01.134,56`);
   });
 });

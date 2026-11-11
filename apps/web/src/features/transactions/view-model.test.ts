@@ -1,4 +1,9 @@
-import type { Category, Transaction } from '@livro-caixa/domain';
+import {
+  DEFAULT_LOCALIZATION as pt,
+  localization,
+  type Category,
+  type Transaction,
+} from '@livro-caixa/domain';
 import { describe, expect, test } from 'vitest';
 import { rowViewModel, sortedCategoryChips } from './view-model';
 
@@ -25,7 +30,7 @@ const base: Transaction = {
 
 describe('rowViewModel', () => {
   test('maps an expense row', () => {
-    const vm = rowViewModel(base, byId, { withYear: false });
+    const vm = rowViewModel(base, byId, { withYear: false }, pt);
     expect(vm).toMatchObject({
       day: '10/10',
       weekday: 'sáb',
@@ -39,18 +44,18 @@ describe('rowViewModel', () => {
   });
 
   test('shows the year in the "Todos" listing', () => {
-    expect(rowViewModel(base, byId, { withYear: true }).day).toBe('10/10/26');
+    expect(rowViewModel(base, byId, { withYear: true }, pt).day).toBe('10/10/26');
   });
 
   test('labels uncategorized rows', () => {
     expect(
-      rowViewModel({ ...base, type: 'acerto', categoryId: null }, byId, { withYear: false }),
+      rowViewModel({ ...base, type: 'acerto', categoryId: null }, byId, { withYear: false }, pt),
     ).toMatchObject({
       categoryName: 'Acerto',
       canSplit: false,
       valueLabel: '+ R$ 138,42',
     });
-    expect(rowViewModel({ ...base, categoryId: 'gone' }, byId, { withYear: false }).categoryName).toBe(
+    expect(rowViewModel({ ...base, categoryId: 'gone' }, byId, { withYear: false }, pt).categoryName).toBe(
       'Sem categoria',
     );
   });
@@ -59,5 +64,26 @@ describe('rowViewModel', () => {
 describe('sortedCategoryChips', () => {
   test('lists income first, then expenses, each alphabetically', () => {
     expect(sortedCategoryChips(categories).map((c) => c.name)).toEqual(['Salário', 'Água', 'Mercado']);
+  });
+});
+
+describe('rowViewModel in English with US dollars', () => {
+  const english = localization('en', 'USD');
+
+  test('words the labels in English and formats the amount with a dot', () => {
+    expect(rowViewModel(base, byId, { withYear: false }, english)).toMatchObject({
+      weekday: 'sat',
+      typeLabel: 'Expense',
+      valueLabel: '− $138.42',
+      statusLabel: 'Pending',
+    });
+  });
+
+  test('labels uncategorized rows in English', () => {
+    const settlement = { ...base, type: 'acerto' as const, categoryId: null };
+    expect(rowViewModel(settlement, byId, { withYear: false }, english).categoryName).toBe('Settlement');
+    expect(
+      rowViewModel({ ...base, categoryId: 'gone' }, byId, { withYear: false }, english).categoryName,
+    ).toBe('No category');
   });
 });

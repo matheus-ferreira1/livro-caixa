@@ -1,4 +1,10 @@
-import { computeSettlement, type Category, type Transaction } from '@livro-caixa/domain';
+import {
+  computeSettlement,
+  DEFAULT_LOCALIZATION as pt,
+  localization,
+  type Category,
+  type Transaction,
+} from '@livro-caixa/domain';
 import { describe, expect, test } from 'vitest';
 import { settlementViewModel } from './view-model';
 
@@ -25,12 +31,16 @@ const acerto = (valueCents: number, confirmed: boolean) =>
   expense({ type: 'acerto', categoryId: null, split: false, valueCents, confirmed });
 
 const viewOf = (transactions: Transaction[], includePending = true) =>
-  settlementViewModel(computeSettlement(transactions, 40, { includePending }), {
-    month: '2026-10',
-    partnerName: 'Bia',
-    categories,
-    includePending,
-  });
+  settlementViewModel(
+    computeSettlement(transactions, 40, { includePending }),
+    {
+      month: '2026-10',
+      partnerName: 'Bia',
+      categories,
+      includePending,
+    },
+    pt,
+  );
 
 // Intl puts a no-break space after the currency symbol.
 const money = (text: string) => text.replaceAll('R$ ', 'R$ ');
@@ -99,5 +109,23 @@ describe('settlementViewModel', () => {
     const vm = viewOf([]);
     expect(vm.whatsappUrl).toBe(`https://wa.me/?text=${encodeURIComponent(vm.shareText)}`);
     expect(vm.shareText).toContain('Nenhuma conta dividida neste mês');
+  });
+});
+
+describe('settlementViewModel in English with US dollars', () => {
+  test('words the labels in English and formats amounts with a dot', () => {
+    const english = localization('en', 'USD');
+    const vm = settlementViewModel(
+      computeSettlement([expense({}), expense({ id: 'y', confirmed: false })], 40, { includePending: true }),
+      { month: '2026-10', partnerName: 'Bia', categories, includePending: true },
+      english,
+    );
+    expect(vm.monthLabel).toBe('October 2026');
+    expect(vm.mineLabel).toBe('My share (60%)');
+    expect(vm.partnerLabel).toBe('Bia’s share (40%)');
+    expect(vm.items[1]?.meta).toBe('01/10 · Moradia · pending');
+    expect(vm.total).toBe('$1,380.00');
+    expect(vm.register.label).toBe('Register settlement of $552.00');
+    expect(vm.footnote).toBe('Split 60% / 40% · 2 bills · includes pending');
   });
 });

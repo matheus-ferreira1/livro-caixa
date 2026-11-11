@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import request from 'supertest';
 import { buildTestApp, signIn } from '../../test/harness';
+
+const DEFAULT_SETTINGS = { partnerName: 'Companheira', partnerShare: 50, language: 'pt-BR', currency: 'BRL' };
 
 const newCategory = { name: '  Pets ', type: 'despesa', color: '#E87BA4' };
 
@@ -154,21 +157,109 @@ describe('PUT /api/settings', () => {
       .put('/api/settings')
       .send({ partnerName: ' Bia ', partnerShare: 40 })
       .expect(200);
-    expect(body.settings).toEqual({ partnerName: 'Bia', partnerShare: 40 });
+    expect(body.settings).toEqual({ ...DEFAULT_SETTINGS, partnerName: 'Bia', partnerShare: 40 });
     const saved = await agent.get('/api/settings').expect(200);
-    expect(saved.body.settings).toEqual({ partnerName: 'Bia', partnerShare: 40 });
+    expect(saved.body.settings).toEqual({ ...DEFAULT_SETTINGS, partnerName: 'Bia', partnerShare: 40 });
   });
 
-  test.each([[{ partnerShare: 42 }], [{ partnerShare: 105 }], [{ partnerName: 7 }]])(
-    'rejects %p',
-    async (patch) => {
-      const { agent } = await signedIn();
-      await agent
-        .put('/api/settings')
-        .send({ partnerName: 'Bia', partnerShare: 50, ...patch })
-        .expect(400);
-    },
-  );
+  test('saves the language and the currency without touching the partner fields', async () => {
+    const { agent } = await signedIn();
+    await agent.put('/api/settings').send({ partnerName: 'Bia', partnerShare: 40 }).expect(200);
+    const { body } = await agent.put('/api/settings').send({ language: 'en', currency: 'USD' }).expect(200);
+    expect(body.settings).toEqual({ partnerName: 'Bia', partnerShare: 40, language: 'en', currency: 'USD' });
+    const saved = await agent.get('/api/settings').expect(200);
+    expect(saved.body.settings).toEqual(body.settings);
+  });
+
+  test('keeps the language and the currency when only the partner fields are saved', async () => {
+    const { agent } = await signedIn();
+    await agent.put('/api/settings').send({ language: 'en', currency: 'EUR' }).expect(200);
+    const { body } = await agent
+      .put('/api/settings')
+      .send({ partnerName: 'Bia', partnerShare: 30 })
+      .expect(200);
+    expect(body.settings).toEqual({ partnerName: 'Bia', partnerShare: 30, language: 'en', currency: 'EUR' });
+  });
+
+  test.each([
+    [{ partnerShare: 42 }],
+    [{ partnerShare: 105 }],
+    [{ partnerName: 7 }],
+    [{ language: 'fr' }],
+    [{ currency: 'JPY' }],
+  ])('rejects %p', async (patch) => {
+    const { agent } = await signedIn();
+    await agent
+      .put('/api/settings')
+      .send({ partnerName: 'Bia', partnerShare: 50, ...patch })
+      .expect(400);
+  });
+});
+
+describe('GET /api/preferences', () => {
+  test('answers without a session with the language and the currency only', async () => {
+    const { agent } = await buildTestApp();
+    const { body } = await agent.get('/api/preferences').expect(200);
+    expect(body).toEqual({ language: 'pt-BR', currency: 'BRL' });
+  });
+
+  test('follows what the settings say', async () => {
+    const { agent, app } = await signedIn();
+    await agent.put('/api/settings').send({ language: 'en', currency: 'GBP' }).expect(200);
+    const { body } = await request(app).get('/api/preferences').expect(200);
+    expect(body).toEqual({ language: 'en', currency: 'GBP' });
+  });
+});
+
+describe('error messages follow the instance language', () => {
+  test('are in pt-BR by default and in English once the language changes', async () => {
+    const { agent, app } = await signedIn();
+    const invalid = { ...expense, description: ' ' };
+    const before = await agent.post('/api/transactions').send(invalid).expect(400);
+    expect(before.body.error.message).toBe('Informe a descrição.');
+
+    await agent.put('/api/settings').send({ language: 'en' }).expect(200);
+
+    const after = await agent.post('/api/transactions').send(invalid).expect(400);
+    expect(after.body.error.message).toBe('Enter the description.');
+    const notFound = await agent.get('/api/nope').expect(404);
+    expect(notFound.body.error.message).toBe('Route not found.');
+    const malformed = await agent.post('/api/categories').send({}).expect(400);
+    expect(malformed.body.error.message).toBe('Invalid data.');
+    const signedOut = await request(app).get('/api/categories').expect(401);
+    expect(signedOut.body.error.message).toBe('Session expired. Sign in again.');
+  });
+
+  test('reach the login attempt of a signed-out client', async () => {
+    const { agent, app } = await signedIn();
+    await agent.put('/api/settings').send({ language: 'en' }).expect(200);
+    const wrong = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'ana@casa.dev', password: 'wrong-password' })
+      .expect(401);
+    expect(wrong.body.error.message).toBe('Wrong email or password.');
+  });
+});
+
+describe('when the settings cannot be read', () => {
+  test.each([
+    ['an unknown route', 404, 'Rota não encontrada.'],
+    ['a malformed body', 400, 'Dados inválidos.'],
+    ['a missing session', 401, 'Sessão expirada. Entre novamente.'],
+  ])('still answers %s with the error shape, in pt-BR', async (name, status, message) => {
+    const { agent, app, container } = await signedIn();
+    container.settings.get = () => {
+      throw new Error('database is locked');
+    };
+    const response =
+      name === 'an unknown route'
+        ? await agent.get('/api/nope')
+        : name === 'a malformed body'
+          ? await agent.post('/api/categories').send({})
+          : await request(app).get('/api/categories');
+    expect(response.status).toBe(status);
+    expect(response.body.error).toEqual(expect.objectContaining({ message }));
+  });
 });
 
 describe('authorization', () => {

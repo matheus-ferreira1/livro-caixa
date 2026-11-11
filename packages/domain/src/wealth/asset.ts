@@ -1,22 +1,22 @@
+import type { Translate } from '../i18n/translate';
 import type { IsoDate, MonthKey } from '../dates/dates';
 import type { Cents } from '../money/money';
 import { QUANTITY_SCALE } from './quantity';
 
 export const ASSET_CLASSES = [
-  { key: 'reserva', label: 'Reserva', color: '#2A78D6' },
-  { key: 'tesouro', label: 'Tesouro Direto', color: '#EB6834' },
-  { key: 'garantia', label: 'Garantias', color: '#1BAF7A' },
-  { key: 'etf', label: 'ETFs', color: '#EDA100' },
-  { key: 'fii', label: 'Fundos imobiliários', color: '#E87BA4' },
-  { key: 'cripto', label: 'Cripto', color: '#008300' },
-  { key: 'cambio', label: 'Câmbio', color: '#6250D6' },
-  { key: 'conta', label: 'Conta e poupança', color: '#9AA29D' },
+  { key: 'reserva', color: '#2A78D6' },
+  { key: 'tesouro', color: '#EB6834' },
+  { key: 'garantia', color: '#1BAF7A' },
+  { key: 'etf', color: '#EDA100' },
+  { key: 'fii', color: '#E87BA4' },
+  { key: 'cripto', color: '#008300' },
+  { key: 'cambio', color: '#6250D6' },
+  { key: 'conta', color: '#9AA29D' },
 ] as const;
 
 export type AssetClass = (typeof ASSET_CLASSES)[number]['key'];
 
-export const assetClassLabel = (key: AssetClass): string =>
-  ASSET_CLASSES.find((c) => c.key === key)?.label ?? key;
+export const assetClassLabel = (key: AssetClass, t: Translate): string => t(`asset.class.${key}`);
 
 export const ASSET_CLASS_KEYS = ASSET_CLASSES.map((c) => c.key) as [AssetClass, ...AssetClass[]];
 

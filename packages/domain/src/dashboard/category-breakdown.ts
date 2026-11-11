@@ -1,4 +1,5 @@
 import type { MonthKey } from '../dates/dates';
+import type { Translate } from '../i18n/translate';
 import { sumCents, type Cents } from '../money/money';
 import type { Category, Transaction } from '../transactions/transaction';
 import type { SummaryMode } from '../transactions/year-summary';
@@ -9,7 +10,6 @@ export const OTHERS_COLOR = '#9AA29D';
 
 const MAX_SLICES = 6;
 const NO_CATEGORY_KEY = 'none';
-const NO_CATEGORY_NAME = 'Sem categoria';
 
 export interface CategorySlice {
   id: string;
@@ -44,11 +44,13 @@ export function categoryBreakdown({
   history,
   categories,
   mode,
+  t,
 }: {
   current: Transaction[];
   history: ReadonlyMap<MonthKey, Transaction[]>;
   categories: Category[];
   mode: SummaryMode;
+  t: Translate;
 }): CategoryBreakdown {
   const counted = (list: Transaction[]) =>
     list.filter((t) => t.type === 'despesa' && (mode === 'proj' || t.confirmed));
@@ -87,7 +89,7 @@ export function categoryBreakdown({
 
   const slices = ranked.slice(0, MAX_SLICES).map(([key, valueCents]) => {
     const category = namedById.get(key);
-    return toSlice(key, category?.name ?? NO_CATEGORY_NAME, category?.color ?? OTHERS_COLOR, valueCents, [
+    return toSlice(key, category?.name ?? t('category.none'), category?.color ?? OTHERS_COLOR, valueCents, [
       key,
     ]);
   });
@@ -97,7 +99,7 @@ export function categoryBreakdown({
     slices.push(
       toSlice(
         OTHERS_SLICE_ID,
-        `Outras (${rest.length})`,
+        t('category.others', rest.length),
         OTHERS_COLOR,
         sumCents(rest.map(([, cents]) => cents)),
         rest.map(([key]) => key),

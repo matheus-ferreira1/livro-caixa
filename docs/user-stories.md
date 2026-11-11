@@ -4,7 +4,7 @@ Each story's heading shows its status and phase, as tracked in [Project status &
 
 Shared rules:
 - `partnerName` is `settings.partnerName.trim() || "Companheira"`. `partnerShare` is an integer from 0 to 100 (default 50).
-- Money is shown as `Intl` pt-BR BRL (`R$ 1.234,56`). Signed values are shown as `+ R$ x` / `− R$ x`.
+- Money is shown with `Intl` in the instance currency; the default is pt-BR BRL (`R$ 1.234,56`), and US-12 adds USD (`$1,234.56`), EUR (`1.234,56 €`) and GBP (`£1,234.56`). Signed values are shown as `+ R$ x` / `− R$ x`.
 - Type meta:
   - receita: "Receita", sign `+`, `#136B4A` on `#E3F1EA`
   - despesa: "Despesa", sign `−`, `#A8401A` on `#FBE9E0`
@@ -318,3 +318,25 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - adds the flow to `invested`; a null `invested` stays null
   - appends a snapshot
   - toast: "Fechamento de {Mês} registrado"
+
+## Phase 7 — done
+
+### US-12 Language and currency — ✅ Done (Phase 7)
+As the instance owner, I want to choose the language and the currency, so the app reads the way I do.
+
+- Configurações gets a section "Idioma e moeda" after "Divisão de contas". It is a card like the split section, with two labelled native `<select>`s at least 44px tall. Choices save on their own and reach the whole app at once.
+- The choice is instance-wide (the `settings` row), not per user or per browser. Defaults are `pt-BR` and `BRL`, so an existing instance looks as before.
+- Language changes only the UI copy: every string, month names, weekday abbreviations, relative labels, asset-class labels, aria labels, toasts, API error messages, the share text of the acerto, `<html lang>` and the word in compact chart labels ("1,2 mil" / "1.2K"). It does not change persisted enum values, routes, category names, entry descriptions, the `dd/mm` date order, the minus sign `−`, or the description stored on an acerto that was already registered.
+- Currency changes only how amounts are formatted and typed. No amount is converted. Each currency fixes its number locale: BRL pt-BR (`R$ 1.234,56`), USD en-US (`$1,234.56`), EUR de-DE (`1.234,56 €`), GBP en-GB (`£1,234.56`). Percentages, quantities, the decimal mark in editable fields and the symbol in field labels ("Valor (R$)" becomes "Valor ($)") follow it. Typed amounts are read with the currency's marks: `1.234` is 1234 in BRL and EUR, and is refused in USD and GBP, where `1,234` is 1234.
+- Typed quantities follow the same marks. In USD, GBP and EUR a group mark before exactly three digits is thousands (`1,000` is 1000 in USD and GBP, `1.000` is 1000 in EUR, as in a money field), and the other mark is the decimal point (`0,5` is 0.5 in USD). BRL keeps its older rule: `1.000` is 1, because quantities with many decimals are common there and thousands of units are not.
+- A foreign-currency holding (class Câmbio) shows ` USD` after its quantity, except in a USD instance, where the currency it holds is not recorded and none is named.
+- The sign-in page speaks the instance language, read from the public `GET /api/preferences`.
+- Copy, pt-BR:
+  - section title "Idioma e moeda"
+  - text "Define o idioma da interface e como os valores são exibidos. Os valores não são convertidos."
+  - labels "Idioma" (options "Português (Brasil)", "English") and "Moeda" (options "Real brasileiro (R$)", "Dólar americano ($)", "Euro (€)", "Libra esterlina (£)")
+- Copy, en:
+  - "Language and currency"
+  - "Sets the interface language and how amounts are shown. Amounts are not converted."
+  - labels "Language" (options "Português (Brasil)", "English") and "Currency" (options "Brazilian real (R$)", "US dollar ($)", "Euro (€)", "Pound sterling (£)")
+- English names of the screens: Overview, Entries, Net worth, Monthly summary, Settings. Also Settlement, Recurring, Confirmed / Pending, Income / Expense / Settlement, Split.

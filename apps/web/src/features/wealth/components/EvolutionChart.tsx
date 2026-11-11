@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import type { EvolutionBar, EvolutionTick } from '../view-model';
 
@@ -13,11 +14,12 @@ const TOOLTIP_ALIGN: Record<EvolutionBar['tooltipAlign'], string> = {
 };
 
 const LEGEND = [
-  { label: 'Fechado', background: 'bg-chart-income' },
-  { label: 'Mês em aberto', background: 'bg-chart-open-month' },
-];
+  { label: 'wealth.legendClosed', background: 'bg-chart-income' },
+  { label: 'wealth.legendOpen', background: 'bg-chart-open-month' },
+] as const;
 
 export function EvolutionChart({ ticks, bars }: { ticks: EvolutionTick[]; bars: EvolutionBar[] }) {
+  const { t } = usePreferences();
   const [hovered, setHovered] = useState<string | null>(null);
 
   return (
@@ -28,17 +30,15 @@ export function EvolutionChart({ ticks, bars }: { ticks: EvolutionTick[]; bars: 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <h2 id="wealth-chart-title" className="m-0 text-base font-bold">
-            Evolução mês a mês
+            {t('wealth.evolutionTitle')}
           </h2>
-          <span className="text-[13px] text-muted-foreground">
-            Valor em cada fechamento. Passe o mouse para ver aportes e rendimento.
-          </span>
+          <span className="text-[13px] text-muted-foreground">{t('wealth.evolutionHelp')}</span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[13px] text-icon">
           {LEGEND.map(({ label, background }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={cn('size-3 rounded-[3px]', background)} />
-              {label}
+              {t(label)}
             </span>
           ))}
         </div>
@@ -110,6 +110,7 @@ function MonthBar({
   onEnter: () => void;
   onLeave: () => void;
 }) {
+  const { t } = usePreferences();
   return (
     <div
       role="img"
@@ -139,10 +140,10 @@ function MonthBar({
           )}
         >
           <span className="font-bold">{bar.title}</span>
-          <TooltipRow label="Patrimônio" value={bar.total} />
-          <TooltipRow label="Variação" value={bar.change} />
-          <TooltipRow label="Aportes" value={bar.contributions} />
-          <TooltipRow label="Rendimento" value={bar.yieldLabel} />
+          <TooltipRow label={t('wealth.tipWealth')} value={bar.total} />
+          <TooltipRow label={t('wealth.tipChange')} value={bar.change} />
+          <TooltipRow label={t('wealth.tipContributions')} value={bar.contributions} />
+          <TooltipRow label={t('wealth.tipYield')} value={bar.yieldLabel} />
         </div>
       )}
     </div>

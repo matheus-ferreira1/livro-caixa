@@ -1,26 +1,36 @@
+import type { MessageKey, Translate } from '../i18n/translate';
+
 /** Calendar dates are "YYYY-MM-DD" strings and months are "YYYY-MM"; no time zones involved. */
 export type IsoDate = string;
 export type MonthKey = string;
 
-const MONTH_NAMES = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-];
+const MONTH_KEYS = [
+  'month.1',
+  'month.2',
+  'month.3',
+  'month.4',
+  'month.5',
+  'month.6',
+  'month.7',
+  'month.8',
+  'month.9',
+  'month.10',
+  'month.11',
+  'month.12',
+] as const satisfies readonly MessageKey[];
+const WEEKDAY_KEYS = [
+  'weekday.0',
+  'weekday.1',
+  'weekday.2',
+  'weekday.3',
+  'weekday.4',
+  'weekday.5',
+  'weekday.6',
+] as const satisfies readonly MessageKey[];
 const MONTH_SHORT_NAME_LENGTH = 3;
 const MS_PER_MINUTE = 60_000;
 const MS_PER_HOUR = 3_600_000;
 const MS_PER_DAY = 86_400_000;
-const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
 export const pad2 = (n: number): string => String(n).padStart(2, '0');
 
@@ -31,14 +41,17 @@ function splitMonth(key: MonthKey): [number, number] {
 
 export const monthOf = (date: IsoDate): MonthKey => date.slice(0, 7);
 
-export function monthName(key: MonthKey): string {
+export function monthName(key: MonthKey, t: Translate): string {
   const [, m] = splitMonth(key);
-  return MONTH_NAMES[m - 1] ?? '';
+  const messageKey = MONTH_KEYS[m - 1];
+  return messageKey ? t(messageKey) : '';
 }
 
-export const monthShortName = (key: MonthKey): string => monthName(key).slice(0, MONTH_SHORT_NAME_LENGTH);
+export const monthShortName = (key: MonthKey, t: Translate): string =>
+  monthName(key, t).slice(0, MONTH_SHORT_NAME_LENGTH);
 
-export const monthLabel = (key: MonthKey): string => `${monthName(key)} ${splitMonth(key)[0]}`;
+export const monthLabel = (key: MonthKey, t: Translate): string =>
+  `${monthName(key, t)} ${splitMonth(key)[0]}`;
 
 export function shiftMonth(key: MonthKey, delta: number): MonthKey {
   const [y, m] = splitMonth(key);
@@ -51,13 +64,13 @@ export function lastDayOfMonth(key: MonthKey): number {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
 }
 
-export function dateParts(date: IsoDate) {
+export function dateParts(date: IsoDate, t: Translate) {
   const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
   return {
     dd: pad2(d),
     mm: pad2(m),
     yy: String(y).slice(2),
-    weekday: WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? '',
+    weekday: t(WEEKDAY_KEYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? 'weekday.0'),
   };
 }
 
@@ -91,11 +104,10 @@ export function isIsoDate(value: string): boolean {
 export const isMonthKey = (value: string): boolean => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 
 /** How long ago an instant was, in epoch ms. `now` comes from the client, like every "today". */
-export function elapsedLabel(from: number, now: number): string {
+export function elapsedLabel(from: number, now: number, t: Translate): string {
   const elapsed = now - from;
-  if (elapsed < MS_PER_MINUTE) return 'agora';
-  if (elapsed < MS_PER_HOUR) return `há ${Math.floor(elapsed / MS_PER_MINUTE)} min`;
-  if (elapsed < MS_PER_DAY) return `há ${Math.floor(elapsed / MS_PER_HOUR)} h`;
-  const days = Math.floor(elapsed / MS_PER_DAY);
-  return `há ${days} ${days === 1 ? 'dia' : 'dias'}`;
+  if (elapsed < MS_PER_MINUTE) return t('elapsed.now');
+  if (elapsed < MS_PER_HOUR) return t('elapsed.minutes', Math.floor(elapsed / MS_PER_MINUTE));
+  if (elapsed < MS_PER_DAY) return t('elapsed.hours', Math.floor(elapsed / MS_PER_HOUR));
+  return t('elapsed.days', Math.floor(elapsed / MS_PER_DAY));
 }

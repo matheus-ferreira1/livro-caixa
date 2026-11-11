@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '@livro-caixa/domain';
 import { openDatabase } from '../../infrastructure/db/database';
 import { SqliteSessionRepository } from '../../infrastructure/repositories/SqliteSessionRepository';
 import { SqliteUserRepository } from '../../infrastructure/repositories/SqliteUserRepository';
@@ -25,6 +26,7 @@ function buildLogin() {
     new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY),
     new LoginThrottle(clock, IP_THROTTLE_POLICY),
     clock,
+    () => translator('pt-BR'),
   );
   const attempt = (password: string, ip = CLIENT_IP) =>
     login.execute({ email: EMAIL, password, remember: true }, ip);

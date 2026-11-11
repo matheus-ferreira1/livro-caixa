@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { localization } from '../i18n/localization';
 import { aTransaction } from '../test/builders';
 import { computeSettlement } from './month-summary';
 import { buildShareText, settlementEntry } from './settlement-share';
@@ -6,6 +7,7 @@ import { buildShareText, settlementEntry } from './settlement-share';
 // Intl puts a no-break space after the currency symbol.
 const money = (text: string) => text.replaceAll('R$ ', 'R$\u00a0');
 
+const l10n = localization('pt-BR', 'BRL');
 const context = { month: '2026-10', partnerName: 'Ana' };
 
 const splitMonth = [
@@ -17,7 +19,7 @@ const settle = (transactions = splitMonth) => computeSettlement(transactions, 50
 
 describe('buildShareText', () => {
   test('lists each split bill with the partner part, then the total and the balance', () => {
-    expect(buildShareText(settle(), context)).toBe(
+    expect(buildShareText(settle(), context, l10n)).toBe(
       money(
         [
           '*Acerto de contas — Outubro 2026*',
@@ -43,19 +45,20 @@ describe('buildShareText', () => {
         aTransaction({ type: 'acerto', categoryId: null, valueCents: 10_000, confirmed: false }),
       ]),
       context,
+      l10n,
     );
     expect(text).toContain(money('Já recebido: − R$ 500,00\nJá combinado: − R$ 100,00'));
     expect(text).toContain(money('*Valor a acertar: R$ 393,20*'));
   });
 
   test('says when the month has no split bills', () => {
-    expect(buildShareText(settle([]), context)).toContain('• Nenhuma conta dividida neste mês');
+    expect(buildShareText(settle([]), context, l10n)).toContain('• Nenhuma conta dividida neste mês');
   });
 });
 
 describe('settlementEntry', () => {
   test('is a pending acerto for the balance on the last day of the month', () => {
-    expect(settlementEntry(settle(), context)).toEqual({
+    expect(settlementEntry(settle(), context, l10n)).toEqual({
       date: '2026-10-31',
       description: 'Acerto das contas divididas',
       note: 'Ana · 2 contas de Outubro 2026',

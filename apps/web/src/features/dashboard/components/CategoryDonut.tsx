@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { DeltaArrow, deltaTextClass } from '@/shared/SummaryTiles';
 import { DONUT_RADIUS, type DonutLegendItem, type DonutViewModel } from '../view-model';
@@ -9,22 +10,19 @@ const STROKE_WIDTH_HOVERED = 30;
 const DIMMED_OPACITY = 0.35;
 
 export function CategoryDonut({ donut, monthLabel }: { donut: DonutViewModel | null; monthLabel: string }) {
+  const { t } = usePreferences();
   return (
     <section aria-labelledby="donut-title" className="flex flex-col gap-4 rounded-[14px] border bg-card p-5">
       <div className="flex flex-col gap-0.5">
         <h2 id="donut-title" className="m-0 text-base font-bold">
-          Despesas por categoria
+          {t('dashboard.donutTitle')}
         </h2>
-        <span className="text-[13px] text-muted-foreground">
-          {monthLabel} · comparado à média dos 12 meses anteriores
-        </span>
+        <span className="text-[13px] text-muted-foreground">{t('dashboard.donutSubtitle', monthLabel)}</span>
       </div>
       {donut ? (
         <DonutWithLegend donut={donut} />
       ) : (
-        <p className="m-0 py-10 text-center text-muted-foreground">
-          Nenhuma despesa em {monthLabel} com o filtro atual.
-        </p>
+        <p className="m-0 py-10 text-center text-muted-foreground">{t('dashboard.donutEmpty', monthLabel)}</p>
       )}
     </section>
   );

@@ -1,7 +1,8 @@
-import { initialsOf, LOGIN_MESSAGES, type PublicUser } from '@livro-caixa/domain';
+import { initialsOf, type PublicUser } from '@livro-caixa/domain';
 import { ChevronDown, LogOut, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useLogout } from '@/features/auth/api';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,19 +12,20 @@ import {
 } from '@/shared/ui/dropdown-menu';
 
 export function UserMenu({ user }: { user: PublicUser }) {
+  const { t } = usePreferences();
   const logout = useLogout();
   const navigate = useNavigate();
   const initials = initialsOf(user.name);
 
   const signOut = () =>
     logout.mutate(undefined, {
-      onSettled: () => navigate('/entrar', { replace: true, state: { notice: LOGIN_MESSAGES.loggedOut } }),
+      onSettled: () => navigate('/entrar', { replace: true, state: { notice: t('login.loggedOut') } }),
     });
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={`Conta de ${user.name}`}
+        aria-label={t('shell.account', user.name)}
         className="flex min-h-11 items-center gap-2 rounded-full border-0 bg-transparent py-0 pr-2.5 pl-[5px] text-background outline-none hover:bg-header-active focus-visible:ring-2 focus-visible:ring-mint data-[state=open]:bg-header-active"
       >
         <span
@@ -56,14 +58,14 @@ export function UserMenu({ user }: { user: PublicUser }) {
           className="min-h-11 gap-2.5 rounded-none px-4 text-sm font-semibold text-ink focus:bg-background"
         >
           <SlidersHorizontal className="size-[17px] text-ink" aria-hidden="true" />
-          Configurações
+          {t('nav.settings')}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={signOut}
           className="min-h-11 gap-2.5 rounded-none px-4 text-sm font-semibold text-expense focus:bg-expense-row focus:text-expense"
         >
           <LogOut className="size-[17px] text-expense" aria-hidden="true" />
-          Sair
+          {t('shell.signOut')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

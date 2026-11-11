@@ -1,3 +1,5 @@
+import type { MessageKey } from '@livro-caixa/domain';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import type { BarTone, SummaryMonthRow } from '../view-model';
 
@@ -9,10 +11,10 @@ const BAR_BACKGROUND: Record<BarTone, string> = {
 };
 
 const LEGEND = [
-  { label: 'Sobrou', background: 'bg-income' },
-  { label: 'Faltou', background: 'bg-deficit' },
-  { label: 'Mês com previstos', background: 'bg-income-soft' },
-];
+  { label: 'summary.legendSurplus', background: 'bg-income' },
+  { label: 'summary.legendDeficit', background: 'bg-deficit' },
+  { label: 'summary.legendPending', background: 'bg-income-soft' },
+] as const satisfies readonly { label: MessageKey; background: string }[];
 
 // Below 640px the chart shrinks to the screen instead of scrolling, so its columns are narrow.
 const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-0.5 sm:gap-2';
@@ -20,6 +22,7 @@ const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-0.5 sm:gap-2';
 const PLOT_AREA = 'absolute inset-x-0 top-7 bottom-7';
 
 export function BalanceChart({ months, zeroLineTop }: { months: SummaryMonthRow[]; zeroLineTop: string }) {
+  const { t } = usePreferences();
   return (
     <section
       aria-labelledby="balance-chart-title"
@@ -27,13 +30,13 @@ export function BalanceChart({ months, zeroLineTop }: { months: SummaryMonthRow[
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="balance-chart-title" className="m-0 text-base font-bold">
-          Balanço por mês
+          {t('summary.chartTitle')}
         </h2>
         <div className="flex flex-wrap gap-4 text-[13px] text-icon">
           {LEGEND.map(({ label, background }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={cn('size-3 rounded-[3px]', background)} />
-              {label}
+              {t(label)}
             </span>
           ))}
         </div>

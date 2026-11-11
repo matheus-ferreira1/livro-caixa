@@ -1,17 +1,21 @@
 import {
   buildWealth,
+  DEFAULT_LOCALIZATION,
   monthLabel,
   monthOf,
   monthName,
   shiftMonth,
   todayIso,
   type Asset,
+  type Preferences,
   type Snapshot,
 } from '@livro-caixa/domain';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
 import { WealthPage } from './WealthPage';
+
+const { t } = DEFAULT_LOCALIZATION;
 
 const manual = (overrides: Partial<Extract<Asset, { pricing: 'manual' }>> = {}): Asset => ({
   id: 'a-tesouro',
@@ -51,7 +55,11 @@ const SNAPSHOTS: Snapshot[] = [
   { month: '2026-09', totalCents: 150_000, contributionsCents: 1000 },
 ];
 
-function setup({ assets = [], snapshots: closings = [] }: { assets?: Asset[]; snapshots?: Snapshot[] } = {}) {
+function setup({
+  assets = [],
+  snapshots: closings = [],
+  preferences,
+}: { assets?: Asset[]; snapshots?: Snapshot[]; preferences?: Preferences } = {}) {
   const stored = [...assets];
   const snapshots = [...closings];
   const writes: { method: string; url: string; body: unknown }[] = [];
@@ -95,7 +103,10 @@ function setup({ assets = [], snapshots: closings = [] }: { assets?: Asset[]; sn
     }
     return undefined;
   });
-  return { writes, ...renderRoutes([{ path: '/patrimonio', element: <WealthPage /> }], '/patrimonio') };
+  return {
+    writes,
+    ...renderRoutes([{ path: '/patrimonio', element: <WealthPage /> }], '/patrimonio', { preferences }),
+  };
 }
 
 const tile = (label: string) => screen.findByRole('region', { name: label });
@@ -294,7 +305,7 @@ describe('WealthPage', () => {
       setup({ assets: [manual()], snapshots: overdue });
       const banner = await screen.findByRole('status');
       expect(
-        within(banner).getByText(`O fechamento de ${monthLabel(previousMonth)} está disponível.`),
+        within(banner).getByText(`O fechamento de ${monthLabel(previousMonth, t)} está disponível.`),
       ).toBeTruthy();
       expect(within(banner).getByRole('button', { name: 'Fazer fechamento' })).toBeTruthy();
     });
@@ -322,7 +333,7 @@ describe('WealthPage', () => {
       await user.click(
         within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
       );
-      return screen.findByRole('dialog', { name: `Fechamento de ${monthLabel(previousMonth)}` });
+      return screen.findByRole('dialog', { name: `Fechamento de ${monthLabel(previousMonth, t)}` });
     };
 
     test('shows each quote status in the dialog, with nothing to do when all are current', async () => {
@@ -350,7 +361,7 @@ describe('WealthPage', () => {
       const next = shiftMonth(currentMonth, 1);
       expect(
         await screen.findByText(
-          `Fechamento de ${monthLabel(currentMonth)} registrado. O de ${monthName(next)} abre em 25/${next.slice(5)} e até lá não há nada para atualizar.`,
+          `Fechamento de ${monthLabel(currentMonth, t)} registrado. O de ${monthName(next, t)} abre em 25/${next.slice(5)} e até lá não há nada para atualizar.`,
         ),
       ).toBeTruthy();
       const button = screen.getByRole('button', { name: 'Fechamento em dia' }) as HTMLButtonElement;
@@ -372,7 +383,7 @@ describe('WealthPage', () => {
         within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
       );
       const dialog = await screen.findByRole('dialog', {
-        name: `Fechamento de ${monthLabel(previousMonth)}`,
+        name: `Fechamento de ${monthLabel(previousMonth, t)}`,
       });
       expect(within(dialog).getByText('Primeiro fechamento')).toBeTruthy();
       expect(within(dialog).queryByText(/Comparado ao fechamento/)).toBeNull();
@@ -385,7 +396,7 @@ describe('WealthPage', () => {
         within(await screen.findByRole('status')).getByRole('button', { name: 'Fazer fechamento' }),
       );
       const dialog = await screen.findByRole('dialog', {
-        name: `Fechamento de ${monthLabel(previousMonth)}`,
+        name: `Fechamento de ${monthLabel(previousMonth, t)}`,
       });
       expect(within(dialog).getByText(/Comparado ao fechamento de .* \(R\$\s1\.500,00\)/)).toBeTruthy();
       expect(within(dialog).getByText('MXRF11')).toBeTruthy();
@@ -404,7 +415,9 @@ describe('WealthPage', () => {
       expect(within(dialog).getByText('Rendimento').parentElement?.textContent).toMatch(/\+ R\$\s276,82/);
 
       await user.click(
-        within(dialog).getByRole('button', { name: `Registrar fechamento de ${monthName(previousMonth)}` }),
+        within(dialog).getByRole('button', {
+          name: `Registrar fechamento de ${monthName(previousMonth, t)}`,
+        }),
       );
 
       await waitFor(() => expect(writes).toHaveLength(1));
@@ -415,7 +428,9 @@ describe('WealthPage', () => {
           items: [{ assetId: 'a-tesouro', flowCents: -5000, currentCents: 170_000 }],
         },
       });
-      expect(await screen.findByText(`Fechamento de ${monthLabel(previousMonth)} registrado`)).toBeTruthy();
+      expect(
+        await screen.findByText(`Fechamento de ${monthLabel(previousMonth, t)} registrado`),
+      ).toBeTruthy();
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     });
 
@@ -471,5 +486,53 @@ describe('WealthPage', () => {
     expect(await screen.findByRole('img', { name: /Setembro 2026: R\$\s1\.500,00$/ })).toBeTruthy();
     expect(screen.getByRole('img', { name: /Outubro 2026: R\$\s1\.600,00, mês em aberto/ })).toBeTruthy();
     expect(screen.getByRole('img', { name: /Distribuição: Tesouro Direto 100%/ })).toBeTruthy();
+  });
+});
+
+describe('WealthPage in other languages and currencies', () => {
+  test('speaks English and writes amounts with the dollar format', async () => {
+    setup({
+      assets: [manual(), auto()],
+      snapshots: SNAPSHOTS,
+      preferences: { language: 'en', currency: 'USD' },
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: '$1,626.82' })).toBeTruthy();
+    expect(screen.getByText('Net worth')).toBeTruthy();
+    expect(screen.getByText('2 assets in 2 institutions')).toBeTruthy();
+    expect(within(await tile('Portfolio result')).getByText('+57.8% return')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Calm mode Daily changes hidden' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /September 2026: \$1,500\.00$/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Allocation: Treasury bonds 98.4%/ })).toBeTruthy();
+  });
+
+  test('reads typed dollar amounts in the asset form and labels them with the symbol', async () => {
+    const { user, writes } = setup({ preferences: { language: 'en', currency: 'USD' } });
+    await user.click((await screen.findAllByRole('button', { name: 'New asset' }))[0] as HTMLElement);
+    const dialog = await screen.findByRole('dialog', { name: 'New asset' });
+    await user.type(within(dialog).getByLabelText('Bank or broker'), 'Wise');
+    await user.type(within(dialog).getByLabelText('Asset'), 'Savings');
+    await user.type(within(dialog).getByLabelText('Invested amount ($)'), '1,000.00');
+    await user.type(within(dialog).getByLabelText('Current value ($)'), '1,234.56');
+    await user.click(within(dialog).getByRole('button', { name: 'Add asset' }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]?.body).toMatchObject({ investedCents: 100_000, currentCents: 123_456 });
+  });
+
+  test('keeps the real format with English words', async () => {
+    const { user, writes } = setup({ preferences: { language: 'en', currency: 'BRL' } });
+    await user.click((await screen.findAllByRole('button', { name: 'New asset' }))[0] as HTMLElement);
+    const dialog = await screen.findByRole('dialog', { name: 'New asset' });
+    await user.type(within(dialog).getByLabelText('Bank or broker'), 'XP');
+    await user.type(within(dialog).getByLabelText('Asset'), 'Tesouro');
+    await user.type(within(dialog).getByLabelText('Current value (R$)'), '1.234,56');
+    await user.click(within(dialog).getByRole('button', { name: 'Add asset' }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]?.body).toMatchObject({ currentCents: 123_456 });
+  });
+
+  test('keeps Portuguese with dollar amounts', async () => {
+    setup({ assets: [manual()], snapshots: SNAPSHOTS, preferences: { language: 'pt-BR', currency: 'USD' } });
+    expect(await screen.findByRole('heading', { level: 1, name: '$1,600.00' })).toBeTruthy();
+    expect(screen.getByText('1 ativo em 1 instituição')).toBeTruthy();
   });
 });

@@ -1,8 +1,11 @@
 import {
   buildDashboard,
+  DEFAULT_PREFERENCES,
+  translator,
   monthLabel,
   monthOf,
   todayIso,
+  type Preferences,
   type RecurringCandidate,
   type SummaryMode,
   type Transaction,
@@ -32,8 +35,13 @@ const entry = (overrides: Partial<Transaction>): Transaction => ({
 
 function setup(
   path: string,
-  { entries = [], candidates = [] }: { entries?: Transaction[]; candidates?: RecurringCandidate[] } = {},
+  {
+    entries = [],
+    candidates = [],
+    preferences = DEFAULT_PREFERENCES,
+  }: { entries?: Transaction[]; candidates?: RecurringCandidate[]; preferences?: Preferences } = {},
 ) {
+  const { language } = preferences;
   const ledger = [...entries];
   const dashboardRequests: string[] = [];
   const patches: { url: string; body: unknown }[] = [];
@@ -55,6 +63,7 @@ function setup(
           settings: SETTINGS,
           month: searchParams.get('month') ?? '',
           mode: (searchParams.get('mode') ?? 'real') as SummaryMode,
+          t: translator(language),
         }),
       };
     }
@@ -89,6 +98,7 @@ function setup(
         { path: '/resumo', element: <h1>Resumo</h1> },
       ],
       path,
+      { preferences },
     ),
   };
 }
@@ -99,7 +109,9 @@ describe('DashboardPage', () => {
   test('opens on the current month in "Realizado" by default', async () => {
     const month = monthOf(todayIso());
     const { dashboardRequests } = setup('/visao-geral');
-    expect(await screen.findByRole('heading', { level: 1, name: monthLabel(month) })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: monthLabel(month, translator('pt-BR')) }),
+    ).toBeInTheDocument();
     await waitFor(() => expect(dashboardRequests).toEqual([`/api/dashboard?month=${month}&mode=real`]));
     expect(screen.getByRole('radio', { name: 'Realizado' })).toBeChecked();
     expect(screen.getByText('Só lançamentos confirmados.')).toBeInTheDocument();
@@ -258,5 +270,17 @@ describe('DashboardPage', () => {
     await user.click(card.getByRole('button', { name: 'Abrir acerto' }));
     expect(await screen.findByRole('dialog', { name: 'Acerto de contas' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/visao-geral');
+  });
+
+  test('speaks English and shows dollars when the instance is set to en and USD', async () => {
+    setup('/visao-geral?mes=2026-03', {
+      entries: [entry({ type: 'receita', valueCents: 123_456 })],
+      preferences: { language: 'en', currency: 'USD' },
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: 'March 2026' })).toBeInTheDocument();
+    expect(await tile('Month balance')).toHaveTextContent('$1,234.56');
+    expect(screen.getByRole('heading', { name: 'Expenses by category' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'With pending' })).toBeInTheDocument();
+    expect(screen.getByText('Nothing pending in March 2026.')).toBeInTheDocument();
   });
 });

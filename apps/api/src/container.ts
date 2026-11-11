@@ -10,6 +10,8 @@ import { ListCategories } from './application/categories/queries';
 import { GetDashboard } from './application/dashboard/queries';
 import type { Clock, PasswordHasher, QuoteProvider } from './application/ports';
 import { GenerateRecurring, ListRecurringCandidates } from './application/recurring/recurring';
+import { CachedSettingsRepository } from './application/settings/CachedSettingsRepository';
+import { createTranslateProvider } from './application/settings/translate-provider';
 import { UpdateSettings } from './application/settings/UpdateSettings';
 import { GetYearSummary } from './application/summary/queries';
 import {
@@ -57,14 +59,15 @@ export function createContainer({
   const ipThrottle = new LoginThrottle(clock, IP_THROTTLE_POLICY);
   const transactions = new SqliteTransactionRepository(db);
   const categories = new SqliteCategoryRepository(db);
-  const settings = new SqliteSettingsRepository(db);
+  const settings = new CachedSettingsRepository(new SqliteSettingsRepository(db));
+  const translate = createTranslateProvider(settings);
   const assets = new SqliteAssetRepository(db);
   const snapshots = new SqliteSnapshotRepository(db, assets);
 
   return {
     secureCookies,
     users,
-    login: new Login(users, sessions, hasher, accountThrottle, ipThrottle, clock),
+    login: new Login(users, sessions, hasher, accountThrottle, ipThrottle, clock, translate),
     logout: new Logout(sessions),
     authenticate: new Authenticate(users, sessions, clock),
     purgeExpiredSessions: new PurgeExpiredSessions(sessions, clock),
@@ -73,28 +76,29 @@ export function createContainer({
     transactions,
     categories,
     settings,
+    translate,
     listCategories: new ListCategories(categories, transactions),
-    createCategory: new CreateCategory(categories),
-    updateCategory: new UpdateCategory(categories),
-    deleteCategory: new DeleteCategory(categories, transactions),
+    createCategory: new CreateCategory(categories, translate),
+    updateCategory: new UpdateCategory(categories, translate),
+    deleteCategory: new DeleteCategory(categories, transactions, translate),
     updateSettings: new UpdateSettings(settings),
     listMonthTransactions: new ListMonthTransactions(transactions),
     searchTransactions: new SearchTransactions(transactions),
-    toggleTransactionFlags: new ToggleTransactionFlags(transactions),
-    deleteTransaction: new DeleteTransaction(transactions),
-    saveTransaction: new SaveTransaction(transactions, categories),
+    toggleTransactionFlags: new ToggleTransactionFlags(transactions, translate),
+    deleteTransaction: new DeleteTransaction(transactions, translate),
+    saveTransaction: new SaveTransaction(transactions, categories, translate),
     listRecurringCandidates: new ListRecurringCandidates(transactions),
-    generateRecurring: new GenerateRecurring(transactions),
+    generateRecurring: new GenerateRecurring(transactions, translate),
     getYearSummary: new GetYearSummary(transactions, settings),
     getDashboard: new GetDashboard(transactions, categories, settings),
     assets,
     snapshots,
     getWealth: new GetWealth(assets, snapshots),
     refreshQuotes: new RefreshQuotes(assets, quoteProvider, clock),
-    createAsset: new CreateAsset(assets),
-    updateAsset: new UpdateAsset(assets),
-    deleteAsset: new DeleteAsset(assets),
-    registerClosing: new RegisterClosing(assets, snapshots),
+    createAsset: new CreateAsset(assets, translate),
+    updateAsset: new UpdateAsset(assets, translate),
+    deleteAsset: new DeleteAsset(assets, translate),
+    registerClosing: new RegisterClosing(assets, snapshots, translate),
   };
 }
 

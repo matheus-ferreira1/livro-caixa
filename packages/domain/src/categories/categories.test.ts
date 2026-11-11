@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '../i18n/translate';
 import { aTransaction } from '../test/builders';
 import {
-  CATEGORY_MESSAGES,
   CATEGORY_PALETTE,
   categoriesOfType,
   categoryInputSchema,
@@ -11,6 +11,8 @@ import {
   validateCategoryName,
 } from './categories';
 
+const t = translator('pt-BR');
+
 const categories = [
   { id: 'c-salario', name: 'Salário', type: 'receita' as const, color: '#2A78D6' },
   { id: 'c-mercado', name: 'Mercado', type: 'despesa' as const, color: '#1BAF7A' },
@@ -19,19 +21,19 @@ const categories = [
 
 describe('validateCategoryName', () => {
   test('requires a name', () => {
-    expect(validateCategoryName('   ', 'despesa', categories)).toBe(CATEGORY_MESSAGES.nameRequired);
+    expect(validateCategoryName('   ', 'despesa', categories, t)).toBe(t('category.nameRequired'));
   });
 
   test('rejects a case-insensitive duplicate within the type', () => {
-    expect(validateCategoryName(' mercado ', 'despesa', categories)).toBe(CATEGORY_MESSAGES.duplicate);
+    expect(validateCategoryName(' mercado ', 'despesa', categories, t)).toBe(t('category.duplicate'));
   });
 
   test('allows the same name in the other type', () => {
-    expect(validateCategoryName('Mercado', 'receita', categories)).toBeNull();
+    expect(validateCategoryName('Mercado', 'receita', categories, t)).toBeNull();
   });
 
   test('ignores the category being renamed', () => {
-    expect(validateCategoryName('MERCADO', 'despesa', categories, 'c-mercado')).toBeNull();
+    expect(validateCategoryName('MERCADO', 'despesa', categories, t, 'c-mercado')).toBeNull();
   });
 });
 

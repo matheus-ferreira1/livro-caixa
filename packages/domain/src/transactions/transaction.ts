@@ -1,5 +1,7 @@
-import type { Cents } from '../money/money';
+import type { Translate } from '../i18n/translate';
 import type { IsoDate } from '../dates/dates';
+import type { Cents } from '../money/money';
+import type { Currency, Language } from '../settings/preferences';
 
 export const TRANSACTION_TYPES = ['receita', 'despesa', 'acerto'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -28,16 +30,19 @@ export interface Category {
   color: string;
 }
 
-export interface Settings {
+export interface PartnerSettings {
   partnerName: string;
   /** Partner's share of split bills, 0–100. */
   partnerShare: number;
 }
 
-export const DEFAULT_PARTNER_NAME = 'Companheira';
+export interface Settings extends PartnerSettings {
+  language: Language;
+  currency: Currency;
+}
 
-export const displayPartnerName = (settings: Settings): string =>
-  settings.partnerName.trim() || DEFAULT_PARTNER_NAME;
+export const displayPartnerName = (settings: PartnerSettings, t: Translate): string =>
+  settings.partnerName.trim() || t('partner.default');
 
 /** Income-side entries count positive in balances; expenses count negative. */
 export const signedCents = (t: Pick<Transaction, 'type' | 'valueCents'>): Cents =>

@@ -1,4 +1,10 @@
-import { yearSummary, type Transaction } from '@livro-caixa/domain';
+import {
+  DEFAULT_LOCALIZATION,
+  localization,
+  yearSummary,
+  type Localization,
+  type Transaction,
+} from '@livro-caixa/domain';
 import { describe, expect, test } from 'vitest';
 import { summaryViewModel } from './view-model';
 
@@ -24,8 +30,11 @@ const entry = (
   seriesId: null,
 });
 
-const viewModel = (entries: Transaction[], mode: 'real' | 'proj' = 'real') =>
-  summaryViewModel(yearSummary(entries, 2026, mode, SHARE), CURRENT_MONTH);
+const viewModel = (
+  entries: Transaction[],
+  mode: 'real' | 'proj' = 'real',
+  l10n: Localization = DEFAULT_LOCALIZATION,
+) => summaryViewModel(yearSummary(entries, 2026, mode, SHARE), CURRENT_MONTH, l10n);
 
 const row = (vm: ReturnType<typeof viewModel>, month: string) => {
   const found = vm.months.find((m) => m.month === month);
@@ -179,5 +188,36 @@ describe('summaryViewModel totals', () => {
       balance: 'R$ 10,00',
     });
     expect(viewModel([entry('2026-01-05', 'despesa', 1_000)]).totals.balanceTone).toBe('expense');
+  });
+});
+
+describe('summaryViewModel in other languages and currencies', () => {
+  const entries = [entry('2026-02-05', 'receita', 123_456), entry('2026-03-10', 'despesa', 10_000)];
+
+  test('words the tiles, months and bars in English with dollar amounts', () => {
+    const vm = viewModel(entries, 'real', localization('en', 'USD'));
+    expect(vm.tiles[0]).toMatchObject({ label: 'Income this year', value: '$1,234.56' });
+    expect(vm.tiles[2]?.sub).toBe('Over 2 months with entries');
+    expect(vm.tiles[3]?.sub).toBe('Best month: February ($1,234.56)');
+    expect(row(vm, '2026-02')).toMatchObject({
+      name: 'February',
+      shortName: 'Feb',
+      statusLabel: 'Closed',
+      openLabel: 'View entries for February',
+    });
+    expect(row(vm, '2026-02').bar?.compactLabel).toBe('1.2K');
+    expect(row(vm, '2026-02').bar?.ariaLabel).toBe('February: balance of $1,234.56');
+  });
+
+  test('keeps Portuguese copy with dollar amounts', () => {
+    const vm = viewModel(entries, 'real', localization('pt-BR', 'USD'));
+    expect(vm.tiles[0]).toMatchObject({ label: 'Receitas no ano', value: '$1,234.56' });
+    expect(row(vm, '2026-02').bar?.compactLabel).toBe('1,2\u00a0mil');
+  });
+
+  test('keeps English copy with real amounts', () => {
+    const vm = viewModel(entries, 'real', localization('en', 'BRL'));
+    expect(vm.tiles[0]?.label).toBe('Income this year');
+    expect(vm.tiles[0]?.value).toBe('R$\u00a01.234,56');
   });
 });

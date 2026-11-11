@@ -1,11 +1,11 @@
 import {
   buildShareText,
   dateParts,
-  formatMoney,
   MINUS,
   monthLabel,
   percentOf,
   type Category,
+  type Localization,
   type MonthKey,
   type Settlement,
 } from '@livro-caixa/domain';
@@ -35,47 +35,48 @@ export interface SettlementViewModel {
   register: { label: string; disabled: boolean };
 }
 
-const deduction = (label: string, cents: number) =>
-  cents > 0 ? [{ label, value: `${MINUS} ${formatMoney(cents)}` }] : [];
-
 /** Display data for the Acerto de contas dialog, labeled as in the design. */
 export function settlementViewModel(
   s: Settlement,
   { month, partnerName, categories, includePending }: SettlementViewContext,
+  l10n: Pick<Localization, 't' | 'money'>,
 ): SettlementViewModel {
+  const { t, money } = l10n;
   const myShare = 100 - s.sharePercent;
-  const shareText = buildShareText(s, { month, partnerName });
+  const shareText = buildShareText(s, { month, partnerName }, l10n);
+  const deduction = (label: string, cents: number) =>
+    cents > 0 ? [{ label, value: `${MINUS} ${money.format(cents)}` }] : [];
   return {
-    monthLabel: monthLabel(month),
-    balance: formatMoney(s.balanceCents),
-    items: s.items.map((t) => {
-      const { dd, mm } = dateParts(t.date);
-      const category = t.categoryId ? categories.get(t.categoryId) : undefined;
+    monthLabel: monthLabel(month, t),
+    balance: money.format(s.balanceCents),
+    items: s.items.map((item) => {
+      const { dd, mm } = dateParts(item.date, t);
+      const category = item.categoryId ? categories.get(item.categoryId) : undefined;
       return {
-        id: t.id,
-        description: t.description,
-        meta: [`${dd}/${mm}`, category?.name, t.confirmed ? null : 'previsto'].filter(Boolean).join(' · '),
-        total: formatMoney(t.valueCents),
-        partner: formatMoney(percentOf(t.valueCents, s.sharePercent)),
+        id: item.id,
+        description: item.description,
+        meta: [`${dd}/${mm}`, category?.name, item.confirmed ? null : t('settlement.pendingTag')]
+          .filter(Boolean)
+          .join(' · '),
+        total: money.format(item.valueCents),
+        partner: money.format(percentOf(item.valueCents, s.sharePercent)),
       };
     }),
-    total: formatMoney(s.totalCents),
-    mineLabel: `Minha parte (${myShare}%)`,
-    mine: formatMoney(s.mineCents),
-    partnerLabel: `Parte de ${partnerName} (${s.sharePercent}%)`,
-    partner: formatMoney(s.partnerCents),
+    total: money.format(s.totalCents),
+    mineLabel: t('settlement.mineShare', myShare),
+    mine: money.format(s.mineCents),
+    partnerLabel: t('settlement.partnerShare', partnerName, s.sharePercent),
+    partner: money.format(s.partnerCents),
     deductions: [
-      ...deduction('Já recebido', s.receivedCents),
-      ...deduction('Já registrado como previsto', s.scheduledCents),
+      ...deduction(t('settlement.alreadyReceived'), s.receivedCents),
+      ...deduction(t('settlement.alreadyScheduled'), s.scheduledCents),
     ],
-    footnote: `Divisão ${myShare}% / ${s.sharePercent}% · ${s.items.length} contas · ${
-      includePending ? 'inclui previstas' : 'só confirmadas'
-    }`,
+    footnote: t('settlement.footnote', myShare, s.sharePercent, s.items.length, includePending),
     shareText,
     whatsappUrl: WHATSAPP_SHARE_URL + encodeURIComponent(shareText),
     register:
       s.balanceCents > 0
-        ? { label: `Registrar acerto de ${formatMoney(s.balanceCents)}`, disabled: false }
-        : { label: 'Acerto do mês já registrado', disabled: true },
+        ? { label: t('settlement.registerAmount', money.format(s.balanceCents)), disabled: false }
+        : { label: t('settlement.alreadyRegistered'), disabled: true },
   };
 }

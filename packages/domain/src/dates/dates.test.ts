@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { translator } from '../i18n/translate';
 import {
   dateParts,
   daysBetween,
@@ -12,16 +13,18 @@ import {
   shiftMonth,
 } from './dates';
 
+const t = translator('pt-BR');
+
 describe('month helpers', () => {
   test('names a month with or without abbreviating it', () => {
-    expect(monthName('2026-03')).toBe('Março');
-    expect(monthShortName('2026-03')).toBe('Mar');
-    expect(monthShortName('2026-12')).toBe('Dez');
+    expect(monthName('2026-03', t)).toBe('Março');
+    expect(monthShortName('2026-03', t)).toBe('Mar');
+    expect(monthShortName('2026-12', t)).toBe('Dez');
   });
 
   test('labels months in pt-BR', () => {
-    expect(monthLabel('2026-10')).toBe('Outubro 2026');
-    expect(monthLabel('2026-03')).toBe('Março 2026');
+    expect(monthLabel('2026-10', t)).toBe('Outubro 2026');
+    expect(monthLabel('2026-03', t)).toBe('Março 2026');
   });
 
   test('shifts across year boundaries', () => {
@@ -38,8 +41,8 @@ describe('month helpers', () => {
 
 describe('dateParts', () => {
   test('splits a calendar date without timezone drift', () => {
-    expect(dateParts('2026-10-01')).toEqual({ dd: '01', mm: '10', yy: '26', weekday: 'qui' });
-    expect(dateParts('2026-11-01').weekday).toBe('dom');
+    expect(dateParts('2026-10-01', t)).toEqual({ dd: '01', mm: '10', yy: '26', weekday: 'qui' });
+    expect(dateParts('2026-11-01', t).weekday).toBe('dom');
   });
 });
 
@@ -80,11 +83,11 @@ describe('elapsedLabel', () => {
     [DAY, 'há 1 dia'],
     [3 * DAY, 'há 3 dias'],
   ])('reads %d ms ago as %s', (elapsed, label) => {
-    expect(elapsedLabel(NOW - elapsed, NOW)).toBe(label);
+    expect(elapsedLabel(NOW - elapsed, NOW, t)).toBe(label);
   });
 
   test('reads a time ahead of a slow clock as now', () => {
-    expect(elapsedLabel(NOW + HOUR, NOW)).toBe('agora');
+    expect(elapsedLabel(NOW + HOUR, NOW, t)).toBe('agora');
   });
 });
 
@@ -105,5 +108,23 @@ describe('isIsoDate', () => {
 
   test.each(['1899-12-31', '0001-01-01', '0000-02-29'])('rejects %p, older than any ledger', (date) => {
     expect(isIsoDate(date)).toBe(false);
+  });
+});
+
+describe('dates in English', () => {
+  const english = translator('en');
+
+  test('name months and weekdays', () => {
+    expect(monthName('2026-03', english)).toBe('March');
+    expect(monthShortName('2026-12', english)).toBe('Dec');
+    expect(monthLabel('2026-10', english)).toBe('October 2026');
+    expect(dateParts('2026-10-01', english).weekday).toBe('thu');
+  });
+
+  test('say how long ago an instant was', () => {
+    const now = 1_790_000_000_000;
+    const hour = 3_600_000;
+    expect(elapsedLabel(now - 3 * hour, now, english)).toBe('3 h ago');
+    expect(elapsedLabel(now - 24 * hour, now, english)).toBe('1 day ago');
   });
 });
