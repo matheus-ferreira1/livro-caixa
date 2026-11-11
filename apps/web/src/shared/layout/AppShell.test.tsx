@@ -1,4 +1,4 @@
-import { buildDashboard, yearSummary } from '@livro-caixa/domain';
+import { buildDashboard, translator, yearSummary } from '@livro-caixa/domain';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { routes } from '@/routes';
@@ -25,6 +25,7 @@ describe('AppShell', () => {
             settings: { partnerName: '', partnerShare: 50 },
             month: '2026-03',
             mode: 'real',
+            t: translator('pt-BR'),
           }),
         };
       }
@@ -91,5 +92,23 @@ describe('AppShell', () => {
     await user.click(await screen.findByRole('button', { name: 'Conta de Maria Silva' }));
     await user.click(screen.getByRole('menuitem', { name: 'Configurações' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/configuracoes'));
+  });
+
+  test('names the sections and the account menu in English', async () => {
+    mockApi((url) => {
+      if (url === '/api/auth/me') return { status: 200, body: { user: USER } };
+      return { status: 200, body: yearSummary([], 2026, 'real', 50) };
+    });
+    const { user } = renderRoutes(routes, '/resumo?ano=2026', {
+      preferences: { language: 'en', currency: 'USD' },
+    });
+    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((item) => item.textContent),
+    ).toEqual(['Overview', 'Entries', 'Net worth', 'Monthly summary', 'Settings']);
+    await user.click(screen.getByRole('button', { name: 'Maria Silva’s account' }));
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
   });
 });

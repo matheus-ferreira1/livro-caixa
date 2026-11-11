@@ -1,4 +1,5 @@
 import { CATEGORY_PALETTE, type CategoryColor } from '@livro-caixa/domain';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 
 interface ColorSwatchesProps {
@@ -9,13 +10,14 @@ interface ColorSwatchesProps {
 }
 
 export function ColorSwatches({ label, value, onChange, size = 'md' }: ColorSwatchesProps) {
+  const { t } = usePreferences();
   return (
     <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
       {CATEGORY_PALETTE.map((color, index) => (
         <button
           key={color}
           type="button"
-          aria-label={`Cor ${index + 1}`}
+          aria-label={t('settings.colorSwatch', index + 1)}
           aria-pressed={color === value}
           onClick={() => onChange(color)}
           style={{ backgroundColor: color }}

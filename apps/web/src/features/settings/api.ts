@@ -1,8 +1,19 @@
-import type { Category, CategoryInput, CategoryPatch, CategoryUsage, Settings } from '@livro-caixa/domain';
+import {
+  DEFAULT_PREFERENCES,
+  type Category,
+  type CategoryInput,
+  type CategoryPatch,
+  type CategoryUsage,
+  type Preferences,
+  type Settings,
+  type SettingsInput,
+} from '@livro-caixa/domain';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch, jsonBody } from '@/shared/api/client';
 import { isUnauthorized } from '@/shared/api/query-client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 
 const CATEGORIES_KEY = ['categories'] as const;
 const SETTINGS_KEY = ['settings'] as const;
@@ -48,49 +59,63 @@ function useInvalidateCategories() {
 
 /** Errors are shown inline by the form, so no toast here. */
 export function useCreateCategory() {
+  const { t } = usePreferences();
   const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: (input: CategoryInput) =>
       apiFetch<{ category: Category }>('/api/categories', { method: 'POST', ...jsonBody(input) }),
     onSuccess: ({ category }) => {
-      toast(`Categoria “${category.name}” criada`);
+      toast(t('settings.categoryCreated', category.name));
       return invalidate();
     },
   });
 }
 
 export function useUpdateCategory() {
+  const { t } = usePreferences();
   const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: CategoryPatch }) =>
       apiFetch<{ category: Category }>(`/api/categories/${id}`, { method: 'PATCH', ...jsonBody(patch) }),
     onSuccess: () => {
-      toast('Categoria atualizada');
+      toast(t('settings.categoryUpdated'));
       return invalidate();
     },
   });
 }
 
 export function useDeleteCategory() {
+  const { t } = usePreferences();
   const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: (category: Category) =>
       apiFetch<null>(`/api/categories/${category.id}`, { method: 'DELETE' }),
     onSuccess: (_, category) => {
-      toast(`Categoria “${category.name}” excluída`);
+      toast(t('settings.categoryDeleted', category.name));
       return invalidate();
     },
     onError: showError,
   });
 }
 
+/**
+ * Each section of Configurações sends only its own fields, so saving one never overwrites what
+ * another holds in a stale draft. A language or currency change reaches the whole app at once
+ * through the preferences it updates.
+ */
 export function useSaveSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (settings: Settings) =>
-      (await apiFetch<{ settings: Settings }>('/api/settings', { method: 'PUT', ...jsonBody(settings) }))
+    mutationFn: async (changes: SettingsInput) =>
+      (await apiFetch<{ settings: Settings }>('/api/settings', { method: 'PUT', ...jsonBody(changes) }))
         .settings,
-    onSuccess: (settings) => queryClient.setQueryData(SETTINGS_KEY, settings),
+    onSuccess: (settings, changes) => {
+      queryClient.setQueryData(SETTINGS_KEY, settings);
+      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, (current = DEFAULT_PREFERENCES) => ({
+        language: changes.language ?? current.language,
+        currency: changes.currency ?? current.currency,
+      }));
+    },
     onError: showError,
   });
 }

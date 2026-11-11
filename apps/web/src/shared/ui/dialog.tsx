@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
@@ -80,6 +81,7 @@ function DialogDescription({
 
 /** The design's modal title bar: title, sub-line and the "Fechar" button. */
 function DialogTitleBar({ title, description }: { title: React.ReactNode; description: React.ReactNode }) {
+  const { t } = usePreferences();
   return (
     <div className="flex items-center justify-between gap-3 border-b bg-card px-6 py-5">
       <div className="flex flex-col">
@@ -87,7 +89,7 @@ function DialogTitleBar({ title, description }: { title: React.ReactNode; descri
         <DialogDescription>{description}</DialogDescription>
       </div>
       <DialogClose
-        aria-label="Fechar"
+        aria-label={t('common.close')}
         className="flex size-11 flex-none items-center justify-center rounded-[10px] bg-background text-ink hover:bg-track"
       >
         <X className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />

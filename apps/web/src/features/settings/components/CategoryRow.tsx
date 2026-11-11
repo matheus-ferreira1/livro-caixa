@@ -1,7 +1,8 @@
-import { CATEGORY_MESSAGES, toPaletteColor, validateCategoryName, type Category } from '@livro-caixa/domain';
+import { toPaletteColor, validateCategoryName, type Category } from '@livro-caixa/domain';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useId, useState, type FormEvent } from 'react';
 import { isUnauthorized } from '@/shared/api/query-client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { useDeleteCategory, useUpdateCategory } from '../api';
 import { usageLabel } from '../view-model';
@@ -44,9 +45,11 @@ function CategoryView({
   usage: number;
   onEdit: () => void;
 }) {
+  const l10n = usePreferences();
+  const { t } = l10n;
   const remove = useDeleteCategory();
   const inUse = usage > 0;
-  const deleteLabel = inUse ? CATEGORY_MESSAGES.inUse(category.name) : `Excluir ${category.name}`;
+  const deleteLabel = inUse ? t('category.inUse', category.name) : t('settings.delete', category.name);
 
   return (
     <div className="flex items-center gap-3">
@@ -57,11 +60,11 @@ function CategoryView({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{category.name}</span>
-        <span className="text-[13px] text-muted-foreground">{usageLabel(usage)}</span>
+        <span className="text-[13px] text-muted-foreground">{usageLabel(usage, l10n)}</span>
       </div>
       <button
         type="button"
-        aria-label={`Editar ${category.name}`}
+        aria-label={t('settings.edit', category.name)}
         onClick={onEdit}
         className="flex size-10 items-center justify-center rounded-lg text-icon hover:bg-background"
       >
@@ -91,6 +94,7 @@ interface CategoryEditorProps {
 }
 
 function CategoryEditor({ category, categories, onDone }: CategoryEditorProps) {
+  const { t } = usePreferences();
   const nameId = useId();
   const [name, setName] = useState(category.name);
   const [color, setColor] = useState(toPaletteColor(category.color));
@@ -99,7 +103,7 @@ function CategoryEditor({ category, categories, onDone }: CategoryEditorProps) {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const invalid = validateCategoryName(name, category.type, categories, category.id);
+    const invalid = validateCategoryName(name, category.type, categories, t, category.id);
     if (invalid) {
       setError(invalid);
       return;
@@ -119,7 +123,7 @@ function CategoryEditor({ category, categories, onDone }: CategoryEditorProps) {
     <form onSubmit={submit} noValidate className="flex flex-wrap items-center gap-2.5 py-1">
       <div className="flex flex-[1_1_180px] flex-col gap-1">
         <label htmlFor={nameId} className="text-[13px] font-semibold text-muted-foreground">
-          Nome
+          {t('settings.name')}
         </label>
         <input
           id={nameId}
@@ -132,21 +136,21 @@ function CategoryEditor({ category, categories, onDone }: CategoryEditorProps) {
           className="h-10 rounded-lg border border-input bg-card px-2.5 font-medium text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </div>
-      <ColorSwatches label="Cor da categoria" value={color} onChange={setColor} size="sm" />
+      <ColorSwatches label={t('settings.categoryColor')} value={color} onChange={setColor} size="sm" />
       <div className="ml-auto flex gap-1.5">
         <button
           type="button"
           onClick={onDone}
           className="min-h-10 rounded-lg border bg-card px-3 text-sm font-semibold text-ink"
         >
-          Cancelar
+          {t('settings.cancel')}
         </button>
         <button
           type="submit"
           disabled={update.isPending}
           className="min-h-10 rounded-lg bg-ink px-3 text-sm font-semibold text-white disabled:bg-icon"
         >
-          Salvar
+          {t('settings.save')}
         </button>
       </div>
       {error && (

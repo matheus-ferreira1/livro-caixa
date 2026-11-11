@@ -100,4 +100,25 @@ describe('LoginPage', () => {
       expect(screen.getByRole('heading', { name: 'Visão geral page' })).toBeInTheDocument(),
     );
   });
+
+  test('speaks the language the instance is set to, read before anyone signs in', async () => {
+    const fetch = mockApi((url) =>
+      url === '/api/preferences'
+        ? { status: 200, body: { language: 'en', currency: 'USD' } }
+        : { status: 401 },
+    );
+    const { user } = renderRoutes([{ path: '/entrar', element: <LoginPage /> }], '/entrar', {
+      preferences: null,
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Your finances, on your server.' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('en');
+    expect(fetch).toHaveBeenCalledWith('/api/preferences', expect.anything());
+
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter your email and password.');
+  });
 });

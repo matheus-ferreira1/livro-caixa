@@ -1,8 +1,9 @@
-import { LOGIN_MESSAGES, validateLoginInput } from '@livro-caixa/domain';
+import { validateLoginInput } from '@livro-caixa/domain';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { useId, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { ApiError } from '@/shared/api/client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Checkbox } from '@/shared/ui/checkbox';
@@ -22,6 +23,7 @@ interface LocationState {
 export function LoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = usePreferences();
   const state = (location.state ?? {}) as LocationState;
   const { data: currentUser } = useCurrentUser();
   const login = useLogin();
@@ -45,7 +47,7 @@ export function LoginPage() {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (login.isPending) return;
-    const validationError = validateLoginInput({ email, password });
+    const validationError = validateLoginInput({ email, password }, t);
     if (validationError) {
       setError(validationError);
       return;
@@ -56,7 +58,7 @@ export function LoginPage() {
       {
         onSuccess: () => navigate(state.from ?? HOME_PATH, { replace: true }),
         onError: (err) => {
-          setError(err instanceof ApiError ? err.message : LOGIN_MESSAGES.invalidCredentials);
+          setError(err instanceof ApiError ? err.message : t('login.invalidCredentials'));
           setPassword('');
         },
       },
@@ -77,9 +79,9 @@ export function LoginPage() {
         >
           <div className="flex flex-col gap-1.5">
             <h2 id="login-title" className="m-0 text-[28px] font-bold tracking-[-0.02em]">
-              Entrar
+              {t('auth.title')}
             </h2>
-            <p className="m-0 text-muted-foreground">Use a conta criada na sua instância.</p>
+            <p className="m-0 text-muted-foreground">{t('auth.subtitle')}</p>
           </div>
 
           {notice && <NoticeBanner>{notice}</NoticeBanner>}
@@ -87,14 +89,14 @@ export function LoginPage() {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={ids.email} className="text-sm font-semibold">
-              E-mail
+              {t('auth.email')}
             </Label>
             <Input
               id={ids.email}
               type="text"
               inputMode="email"
               autoComplete="username"
-              placeholder="voce@exemplo.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -106,7 +108,7 @@ export function LoginPage() {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={ids.password} className="text-sm font-semibold">
-              Senha
+              {t('auth.password')}
             </Label>
             <div
               className={cn(
@@ -128,7 +130,7 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 aria-pressed={showPassword}
                 className="flex size-10 items-center justify-center rounded-lg text-icon hover:bg-accent"
               >
@@ -150,7 +152,7 @@ export function LoginPage() {
                 className="size-[18px] border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink"
               />
               <Label htmlFor={ids.remember} className="cursor-pointer text-sm font-normal">
-                Manter conectado neste dispositivo
+                {t('auth.remember')}
               </Label>
             </div>
             <button
@@ -159,28 +161,23 @@ export function LoginPage() {
               aria-expanded={showForgot}
               className="min-h-11 border-0 bg-transparent p-0 text-sm font-semibold text-settlement"
             >
-              Esqueceu a senha?
+              {t('auth.forgot')}
             </button>
           </div>
 
-          {showForgot && (
-            <InfoBox>
-              Como cada instância é hospedada por você, a senha é redefinida pelo administrador do servidor,
-              com o comando de redefinição do container.
-            </InfoBox>
-          )}
+          {showForgot && <InfoBox>{t('auth.forgotHelp')}</InfoBox>}
 
           <Button
             type="submit"
             disabled={login.isPending}
             className="h-12 rounded-[10px] text-base font-semibold disabled:bg-icon disabled:opacity-100"
           >
-            {login.isPending ? 'Entrando…' : 'Entrar'}
+            {login.isPending ? t('auth.submitting') : t('auth.submit')}
           </Button>
 
           <p className="m-0 flex items-start gap-2 text-[13px] text-muted-foreground">
             <Lock className="mt-0.5 size-4 flex-none" aria-hidden="true" />
-            Ainda sem conta? O primeiro acesso é criado pelo administrador ao configurar a instância.
+            {t('auth.noAccount')}
           </p>
         </form>
       </div>

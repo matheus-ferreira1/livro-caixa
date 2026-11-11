@@ -1,7 +1,9 @@
+import type { MessageKey } from '@livro-caixa/domain';
 import { ChartColumn, Landmark, LayoutDashboard, ReceiptText, SlidersHorizontal } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 import { useCurrentUser } from '@/features/auth/api';
 import { LedgerIcon } from '@/shared/brand/LedgerIcon';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { UserMenu } from './UserMenu';
 
@@ -10,15 +12,16 @@ import { UserMenu } from './UserMenu';
  * has room for four items: Configurações stays in the account menu there.
  */
 const NAV_ITEMS = [
-  { to: '/visao-geral', label: 'Visão geral', icon: LayoutDashboard, onPhoneBar: true },
-  { to: '/lancamentos', label: 'Lançamentos', icon: ReceiptText, onPhoneBar: true },
-  { to: '/patrimonio', label: 'Patrimônio', icon: Landmark, onPhoneBar: true },
-  { to: '/resumo', label: 'Resumo mensal', icon: ChartColumn, onPhoneBar: true },
-  { to: '/configuracoes', label: 'Configurações', icon: SlidersHorizontal, onPhoneBar: false },
-];
+  { to: '/visao-geral', label: 'nav.overview', icon: LayoutDashboard, onPhoneBar: true },
+  { to: '/lancamentos', label: 'nav.entries', icon: ReceiptText, onPhoneBar: true },
+  { to: '/patrimonio', label: 'nav.wealth', icon: Landmark, onPhoneBar: true },
+  { to: '/resumo', label: 'nav.summary', icon: ChartColumn, onPhoneBar: true },
+  { to: '/configuracoes', label: 'nav.settings', icon: SlidersHorizontal, onPhoneBar: false },
+] as const satisfies readonly { to: string; label: MessageKey; icon: unknown; onPhoneBar: boolean }[];
 
 export function AppShell() {
   const { data: user } = useCurrentUser();
+  const { t } = usePreferences();
   if (!user) return null;
 
   return (
@@ -31,7 +34,7 @@ export function AppShell() {
           </div>
           {/* A bar along the bottom on phones, its own header row on tablets, inline from 1024px. The header sticks to the top from 768px on tall screens, so the nav is always in reach; on phones, upright or sideways, it scrolls away. */}
           <nav
-            aria-label="Principal"
+            aria-label={t('nav.main')}
             className="fixed inset-x-0 bottom-0 z-40 flex border-t border-header-active bg-ink pb-[env(safe-area-inset-bottom)] md:static md:z-auto md:order-last md:basis-full md:gap-1 md:border-0 md:pb-0 lg:order-none lg:basis-auto"
           >
             {NAV_ITEMS.map(({ to, label, icon: Icon, onPhoneBar }) => (
@@ -52,7 +55,7 @@ export function AppShell() {
                   strokeWidth={2}
                   aria-hidden="true"
                 />
-                {label}
+                {t(label)}
               </NavLink>
             ))}
           </nav>

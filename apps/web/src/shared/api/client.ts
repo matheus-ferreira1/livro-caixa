@@ -1,3 +1,6 @@
+import { translator } from '@livro-caixa/domain';
+import { documentLanguage } from '@/shared/i18n/document-language';
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -13,7 +16,8 @@ interface ErrorBody {
   error?: { code?: string; message?: string };
 }
 
-const FALLBACK_MESSAGE = 'Não foi possível falar com o servidor. Tente novamente.';
+/** The server's own errors arrive translated; this one is raised here, when it cannot be reached. */
+const fallbackMessage = () => translator(documentLanguage())('api.unreachable');
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
@@ -24,13 +28,13 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       headers: { 'content-type': 'application/json', ...init.headers },
     });
   } catch {
-    throw new ApiError(0, 'network_error', FALLBACK_MESSAGE);
+    throw new ApiError(0, 'network_error', fallbackMessage());
   }
   if (response.status === 204) return null as T;
   const body: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
     const { error } = body as ErrorBody;
-    throw new ApiError(response.status, error?.code ?? 'unknown_error', error?.message ?? FALLBACK_MESSAGE);
+    throw new ApiError(response.status, error?.code ?? 'unknown_error', error?.message ?? fallbackMessage());
   }
   return body as T;
 }
