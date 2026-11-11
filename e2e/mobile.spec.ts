@@ -1,15 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { E2E_ADMIN } from '../playwright.config';
+import { signIn } from './helpers';
 
 test.use({ viewport: { width: 375, height: 812 } });
-
-async function signIn(page: Page) {
-  await page.goto('/');
-  await page.getByLabel('E-mail').fill(E2E_ADMIN.email);
-  await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);
-  await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/visao-geral/);
-}
 
 // A year far from today, so this spec never shares ledger data with the others.
 const MONTH = '2031-05';

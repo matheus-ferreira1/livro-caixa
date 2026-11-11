@@ -1,15 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { E2E_ADMIN } from '../playwright.config';
+import { signIn } from './helpers';
 
 // A month far from today, so this spec never shares data with the others.
 const MONTH = '2029-05';
 
 test('lands on the dashboard after sign-in and confirms what is open', async ({ page }) => {
-  await page.goto('/');
-  await page.getByLabel('E-mail').fill(E2E_ADMIN.email);
-  await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);
-  await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/visao-geral/);
+  await signIn(page);
   await expect(page.getByRole('link', { name: 'Visão geral' })).toHaveAttribute('aria-current', 'page');
 
   await page.goto(`/lancamentos?mes=${MONTH}`);

@@ -1,13 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { E2E_ADMIN } from '../playwright.config';
-
-async function signIn(page: Page) {
-  await page.goto('/');
-  await page.getByLabel('E-mail').fill(E2E_ADMIN.email);
-  await page.getByLabel('Senha', { exact: true }).fill(E2E_ADMIN.password);
-  await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/visao-geral/);
-}
+import { expect, test } from '@playwright/test';
+import { signIn } from './helpers';
 
 // Mid-month, so the next closing is not open yet: from the 25th it would open right after the first.
 const MID_MONTH = new Date('2026-06-15T12:00:00');
