@@ -2,6 +2,7 @@ import { pageList, PAGE_SIZES } from '@livro-caixa/domain';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/utils';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { Segmented } from '@/shared/Segmented';
 
 interface PagerProps {
@@ -18,28 +19,35 @@ interface PagerProps {
 const SIZE_OPTIONS = PAGE_SIZES.map((size) => [String(size), String(size)] as const);
 
 export function Pager({ page, totalPages, start, end, total, pageSize, onPage, onPageSize }: PagerProps) {
+  const { t } = usePreferences();
   return (
     <nav
-      aria-label="Paginação"
+      aria-label={t('transactions.pager')}
       className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-t bg-muted px-4 py-3 text-sm text-muted-foreground md:px-5"
     >
       <div className="flex flex-wrap items-center gap-3">
-        <span role="status">{total ? `Mostrando ${start}–${end} de ${total}` : 'Nenhum resultado'}</span>
+        <span role="status">
+          {total ? t('transactions.pagerShowing', start, end, total) : t('transactions.pagerNone')}
+        </span>
         {/* Kept together, so "por página" never wraps away from the sizes it describes. */}
         <span className="flex items-center gap-3">
           <Segmented
-            label="Itens por página"
+            label={t('transactions.pageSize')}
             size="sm"
             value={String(pageSize)}
             options={SIZE_OPTIONS}
             onChange={(v) => onPageSize(Number(v))}
             className="rounded-[10px]"
           />
-          <span className="text-[13px]">por página</span>
+          <span className="text-[13px]">{t('transactions.perPage')}</span>
         </span>
       </div>
       <div className="flex items-center gap-1">
-        <PagerArrow label="Página anterior" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+        <PagerArrow
+          label={t('transactions.previousPage')}
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+        >
           <ChevronLeft className="size-4" strokeWidth={2.2} aria-hidden="true" />
         </PagerArrow>
         {pageList(page, totalPages).map((p, i) =>
@@ -52,7 +60,7 @@ export function Pager({ page, totalPages, start, end, total, pageSize, onPage, o
               key={p}
               type="button"
               onClick={() => onPage(p)}
-              aria-label={`Página ${p}`}
+              aria-label={t('transactions.page', p)}
               aria-current={p === page ? 'page' : undefined}
               className={cn(
                 'h-11 min-w-11 rounded-lg border px-2 font-mono text-sm font-semibold md:h-10 md:min-w-10',
@@ -63,7 +71,11 @@ export function Pager({ page, totalPages, start, end, total, pageSize, onPage, o
             </button>
           ),
         )}
-        <PagerArrow label="Próxima página" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+        <PagerArrow
+          label={t('transactions.nextPage')}
+          disabled={page >= totalPages}
+          onClick={() => onPage(page + 1)}
+        >
           <ChevronRight className="size-4" strokeWidth={2.2} aria-hidden="true" />
         </PagerArrow>
       </div>

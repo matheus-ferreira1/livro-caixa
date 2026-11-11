@@ -1,8 +1,6 @@
 import {
   displayPartnerName,
   filterTransactions,
-  formatMoney,
-  formatSignedMoney,
   monthLabel,
   monthTiles,
   periodRange,
@@ -15,11 +13,15 @@ import {
   totalsOf,
   type Category,
   type ListMode,
+  type Localization,
+  type MessageKey,
+  type Period,
   type Transaction,
 } from '@livro-caixa/domain';
 import { ChevronLeft, ChevronRight, Plus, Repeat, Users } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
-import { cn, pluralize } from '@/shared/lib/utils';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { cn } from '@/shared/lib/utils';
 import { ArrowButton } from '@/shared/ArrowButton';
 import { Segmented } from '@/shared/Segmented';
 import { SummaryTiles, type TileSpec } from '@/shared/SummaryTiles';
@@ -37,18 +39,22 @@ import { useListState } from './useListState';
 import { rowViewModel } from './view-model';
 
 const MODE_OPTIONS = [
-  ['month', 'Por mês'],
-  ['all', 'Todos'],
+  ['month', 'transactions.modeMonth'],
+  ['all', 'transactions.modeAll'],
 ] as const;
 
 const PERIOD_NAMES = {
-  all: 'Todo o período',
-  year: 'Este ano',
-  '12m': 'Últimos 12 meses',
-  custom: 'Período personalizado',
-} as const;
+  all: 'transactions.periodName.all',
+  year: 'transactions.periodName.year',
+  '12m': 'transactions.periodName.12m',
+  custom: 'transactions.periodName.custom',
+} as const satisfies Record<Period, MessageKey>;
+
+type Words = Pick<Localization, 't' | 'money'>;
 
 export function TransactionsPage() {
+  const l10n = usePreferences();
+  const { t } = l10n;
   const { state, update, today } = useListState();
   const isAll = state.mode === 'all';
   const { data: categories = [] } = useCategories();
@@ -57,7 +63,7 @@ export function TransactionsPage() {
     () => new Map<string, Category>(categories.map((c) => [c.id, c])),
     [categories],
   );
-  const partnerName = settings ? displayPartnerName(settings) : '';
+  const partnerName = settings ? displayPartnerName(settings, t) : '';
   const toggle = useToggleFlags();
   const remove = useDeleteTransaction();
   const [formTarget, setFormTarget] = useState<FormTarget | null>(null);
@@ -93,30 +99,38 @@ export function TransactionsPage() {
     [monthTx, state.type, state.status, state.query, state.sort, state.dir],
   );
 
-  const toRow = (t: Transaction) => rowViewModel(t, categoryMap, { withYear: isAll });
+  const toRow = (transaction: Transaction) =>
+    rowViewModel(transaction, categoryMap, { withYear: isAll }, l10n);
   const groups: RowGroup[] = isAll
-    ? allModeGroups(searchQuery.data, state.sort, toRow, update)
+    ? allModeGroups(searchQuery.data, state.sort, toRow, update, l10n)
     : [{ key: state.month, rows: monthFiltered.map(toRow) }];
 
   const tiles = isAll
-    ? allModeTiles(searchQuery.data?.totals, searchQuery.data?.total ?? 0, PERIOD_NAMES[state.period])
-    : monthModeTiles(monthTx, settings?.partnerShare ?? 0, partnerName);
+    ? allModeTiles(
+        searchQuery.data?.totals,
+        searchQuery.data?.total ?? 0,
+        t(PERIOD_NAMES[state.period]),
+        l10n,
+      )
+    : monthModeTiles(monthTx, settings?.partnerShare ?? 0, partnerName, l10n);
 
-  const visibleById = new Map((isAll ? (searchQuery.data?.items ?? []) : monthTx).map((t) => [t.id, t]));
+  const visibleById = new Map(
+    (isAll ? (searchQuery.data?.items ?? []) : monthTx).map((transaction) => [transaction.id, transaction]),
+  );
   const openNew = () => setFormTarget({ id: null, draft: emptyDraft(state.month, today, categories) });
   const openEdit = (id: string) => {
-    const t = visibleById.get(id);
-    if (t) setFormTarget({ id, draft: draftFromTransaction(t) });
+    const transaction = visibleById.get(id);
+    if (transaction) setFormTarget({ id, draft: draftFromTransaction(transaction, l10n.money) });
   };
 
   const changeMode = (mode: ListMode) =>
     update({ mode, sort: 'date', dir: defaultSortDirection('date', mode) });
 
   const emptyHint = isAll
-    ? 'Nenhum lançamento corresponde aos filtros e ao período escolhidos.'
+    ? t('transactions.emptyAll')
     : monthTx.length
-      ? 'Nenhum lançamento corresponde aos filtros.'
-      : 'Ainda não há lançamentos neste mês.';
+      ? t('transactions.emptyFiltered')
+      : t('transactions.emptyMonth');
 
   const footer: ReactNode = isAll ? (
     searchQuery.data && (
@@ -128,7 +142,7 @@ export function TransactionsPage() {
       />
     )
   ) : (
-    <MonthFooter shown={monthFiltered.length} total={monthTx.length} filtered={monthFiltered} />
+    <MonthFooter shown={monthFiltered.length} total={monthTx.length} filtered={monthFiltered} l10n={l10n} />
   );
 
   return (
@@ -136,29 +150,32 @@ export function TransactionsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <Segmented
-            label="Modo de exibição"
+            label={t('transactions.modeLabel')}
             size="sm"
             value={state.mode}
-            options={MODE_OPTIONS}
+            options={MODE_OPTIONS.map(([value, key]) => [value, t(key)] as const)}
             onChange={changeMode}
             className="self-start"
           />
           {isAll ? (
             <h1 className="m-0 flex min-h-11 items-center text-[32px] font-bold tracking-[-0.02em]">
-              Todos os lançamentos
+              {t('transactions.allTitle')}
             </h1>
           ) : (
             <div className="flex items-center gap-2">
               <ArrowButton
-                label="Mês anterior"
+                label={t('transactions.previousMonth')}
                 onClick={() => update({ month: shiftMonth(state.month, -1) })}
               >
                 <ChevronLeft className="size-[18px]" aria-hidden="true" />
               </ArrowButton>
               <h1 className="m-0 min-w-0 text-center text-[clamp(24px,7vw,32px)] font-bold whitespace-nowrap sm:min-w-[248px] tracking-[-0.02em]">
-                {monthLabel(state.month)}
+                {monthLabel(state.month, t)}
               </h1>
-              <ArrowButton label="Próximo mês" onClick={() => update({ month: shiftMonth(state.month, 1) })}>
+              <ArrowButton
+                label={t('transactions.nextMonth')}
+                onClick={() => update({ month: shiftMonth(state.month, 1) })}
+              >
                 <ChevronRight className="size-[18px]" aria-hidden="true" />
               </ArrowButton>
             </div>
@@ -173,7 +190,7 @@ export function TransactionsPage() {
                 className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-input bg-card px-3 font-semibold text-ink hover:bg-accent max-sm:flex-auto sm:px-[18px]"
               >
                 <Repeat className="size-[18px]" aria-hidden="true" />
-                Gerar recorrentes
+                {t('transactions.generateRecurring')}
               </button>
               <button
                 type="button"
@@ -181,7 +198,7 @@ export function TransactionsPage() {
                 className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-settlement bg-card px-3 font-semibold text-settlement hover:bg-settlement-bg max-sm:flex-auto sm:px-[18px]"
               >
                 <Users className="size-[18px]" aria-hidden="true" />
-                Gerar acerto
+                {t('transactions.generateSettlement')}
               </button>
             </>
           )}
@@ -221,7 +238,7 @@ export function TransactionsPage() {
         onEdit={(row) => openEdit(row.id)}
         empty={
           <div className="flex flex-col items-center gap-3 px-5 py-14 text-center text-muted-foreground">
-            <span className="text-base font-semibold text-ink">Nenhum lançamento encontrado</span>
+            <span className="text-base font-semibold text-ink">{t('transactions.emptyTitle')}</span>
             <span>{emptyHint}</span>
             <NewEntryButton onClick={openNew} withIcon={false} />
           </div>
@@ -256,58 +273,73 @@ function nextSortDirection(
   return defaultSortDirection(key, state.mode);
 }
 
-function monthModeTiles(monthTx: Transaction[], share: number, partnerName: string): TileSpec[] {
-  const t = monthTiles(monthTx, share);
+function monthModeTiles(
+  monthTx: Transaction[],
+  share: number,
+  partnerName: string,
+  { t, money }: Words,
+): TileSpec[] {
+  const tiles = monthTiles(monthTx, share);
   return [
     {
-      label: 'Receitas',
+      label: t('transactions.tileIncome'),
       tone: 'income',
-      value: formatMoney(t.incomeConfirmedCents),
-      sub: `Previsto no mês: ${formatMoney(t.incomeAllCents)}`,
+      value: money.format(tiles.incomeConfirmedCents),
+      sub: t('transactions.tilePlanned', money.format(tiles.incomeAllCents)),
     },
     {
-      label: 'Despesas',
+      label: t('transactions.tileExpense'),
       tone: 'expense',
-      value: formatMoney(t.expenseConfirmedCents),
-      sub: `Previsto no mês: ${formatMoney(t.expenseAllCents)}`,
+      value: money.format(tiles.expenseConfirmedCents),
+      sub: t('transactions.tilePlanned', money.format(tiles.expenseAllCents)),
     },
     {
-      label: 'Acerto a receber',
+      label: t('transactions.tileSettlement'),
       tone: 'settlement',
-      value: formatMoney(t.settlementPendingCents),
-      sub: `Recebido de ${partnerName}: ${formatMoney(t.settlementReceivedCents)}`,
+      value: money.format(tiles.settlementPendingCents),
+      sub: t('transactions.tileReceivedFrom', partnerName, money.format(tiles.settlementReceivedCents)),
     },
     {
-      label: 'Saldo realizado',
+      label: t('transactions.tileBalance'),
       dark: true,
-      negative: t.balanceCents < 0,
-      value: formatMoney(t.balanceCents),
-      sub: `Projetado no fim do mês: ${formatMoney(t.projectedBalanceCents)}`,
+      negative: tiles.balanceCents < 0,
+      value: money.format(tiles.balanceCents),
+      sub: t('transactions.tileProjected', money.format(tiles.projectedBalanceCents)),
     },
   ];
 }
 
-function allModeTiles(totals = totalsOf([]), count: number, periodName: string): TileSpec[] {
+function allModeTiles(
+  totals = totalsOf([]),
+  count: number,
+  periodName: string,
+  { t, money }: Words,
+): TileSpec[] {
   return [
-    { label: 'Receitas filtradas', tone: 'income', value: formatMoney(totals.incomeCents), sub: periodName },
     {
-      label: 'Despesas filtradas',
+      label: t('transactions.tileIncomeFiltered'),
+      tone: 'income',
+      value: money.format(totals.incomeCents),
+      sub: periodName,
+    },
+    {
+      label: t('transactions.tileExpenseFiltered'),
       tone: 'expense',
-      value: formatMoney(totals.expenseCents),
+      value: money.format(totals.expenseCents),
       sub: periodName,
     },
     {
-      label: 'Acertos filtrados',
+      label: t('transactions.tileSettlementFiltered'),
       tone: 'settlement',
-      value: formatMoney(totals.settlementCents),
+      value: money.format(totals.settlementCents),
       sub: periodName,
     },
     {
-      label: 'Saldo dos resultados',
+      label: t('transactions.tileBalanceFiltered'),
       dark: true,
       negative: totals.balanceCents < 0,
-      value: formatMoney(totals.balanceCents),
-      sub: pluralize(count, 'lançamento encontrado', 'lançamentos encontrados'),
+      value: money.format(totals.balanceCents),
+      sub: t('transactions.entriesFound', count),
     },
   ];
 }
@@ -315,43 +347,53 @@ function allModeTiles(totals = totalsOf([]), count: number, periodName: string):
 function allModeGroups(
   data: ReturnType<typeof useSearchTransactions>['data'],
   sort: string,
-  toRow: (t: Transaction) => ReturnType<typeof rowViewModel>,
+  toRow: (transaction: Transaction) => ReturnType<typeof rowViewModel>,
   update: ReturnType<typeof useListState>['update'],
+  { t, money }: Words,
 ): RowGroup[] {
   if (!data) return [];
   // Month headers only make sense while rows are in date order.
   if (sort !== 'date') return [{ key: 'all', rows: data.items.map(toRow) }];
-  const byId = new Map(data.items.map((t) => [t.id, t]));
+  const byId = new Map(data.items.map((transaction) => [transaction.id, transaction]));
   return data.groups.map((g) => ({
     key: g.monthKey,
     header: {
-      label: monthLabel(g.monthKey),
-      countLabel: pluralize(g.count, 'lançamento', 'lançamentos'),
-      netLabel: formatSignedMoney(g.netCents),
+      label: monthLabel(g.monthKey, t),
+      countLabel: t('transactions.entryCount', g.count),
+      netLabel: money.formatSigned(g.netCents),
       negative: g.netCents < 0,
       onOpen: () => update({ mode: 'month', month: g.monthKey, sort: 'date', dir: 'asc' }),
     },
     rows: g.ids.flatMap((id) => {
-      const t = byId.get(id);
-      return t ? [toRow(t)] : [];
+      const transaction = byId.get(id);
+      return transaction ? [toRow(transaction)] : [];
     }),
   }));
 }
 
-function MonthFooter({ shown, total, filtered }: { shown: number; total: number; filtered: Transaction[] }) {
+function MonthFooter({
+  shown,
+  total,
+  filtered,
+  l10n: { t, money },
+}: {
+  shown: number;
+  total: number;
+  filtered: Transaction[];
+  l10n: Words;
+}) {
   const totals = totalsOf(filtered);
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted px-4 py-3.5 text-sm text-muted-foreground md:px-5">
-      <span>
-        {shown} de {total} lançamentos
-      </span>
+      <span>{t('transactions.shownOfTotal', shown, total)}</span>
       <span className="flex flex-wrap gap-5 font-mono">
         <span>
-          Entradas{' '}
-          <strong className="text-income">{formatMoney(totals.incomeCents + totals.settlementCents)}</strong>
+          {t('transactions.inflow')}{' '}
+          <strong className="text-income">{money.format(totals.incomeCents + totals.settlementCents)}</strong>
         </span>
         <span>
-          Saídas <strong className="text-expense">{formatMoney(totals.expenseCents)}</strong>
+          {t('transactions.outflow')}{' '}
+          <strong className="text-expense">{money.format(totals.expenseCents)}</strong>
         </span>
       </span>
     </div>
@@ -367,6 +409,7 @@ function NewEntryButton({
   withIcon?: boolean;
   className?: string;
 }) {
+  const { t } = usePreferences();
   return (
     <button
       type="button"
@@ -377,7 +420,7 @@ function NewEntryButton({
       )}
     >
       {withIcon && <Plus className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />}
-      Novo lançamento
+      {t('transactions.new')}
     </button>
   );
 }

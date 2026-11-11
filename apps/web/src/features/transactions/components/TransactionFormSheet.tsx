@@ -12,6 +12,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { ApiError } from '@/shared/api/client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/shared/ui/sheet';
@@ -56,6 +57,8 @@ function TransactionForm({
   onClose,
   onSaved,
 }: Omit<TransactionFormSheetProps, 'target'> & { target: FormTarget }) {
+  const l10n = usePreferences();
+  const { t, money } = l10n;
   const isEdit = target.id !== null;
   const save = useSaveTransaction();
   const [error, setError] = useState('');
@@ -68,7 +71,7 @@ function TransactionForm({
   const clearError = () => setError('');
 
   const submit = handleSubmit((draft) => {
-    const result = draftToInput(draft);
+    const result = draftToInput(draft, l10n);
     if ('error' in result) {
       setError(result.error);
       return;
@@ -77,10 +80,10 @@ function TransactionForm({
       { id: target.id, input: result.input },
       {
         onSuccess: ({ transaction }) => {
-          toast(isEdit ? 'Lançamento atualizado' : 'Lançamento adicionado');
+          toast(t(isEdit ? 'transactions.formUpdated' : 'transactions.formAdded'));
           onSaved(transaction);
         },
-        onError: (err) => setError(err instanceof ApiError ? err.message : 'Não foi possível salvar.'),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t('transactions.formSaveFailed')),
       },
     );
   });
@@ -100,11 +103,11 @@ function TransactionForm({
     <form onSubmit={submit} onChange={clearError} noValidate className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between gap-3 border-b px-6 py-5">
         <SheetTitle className="m-0 text-xl font-bold">
-          {isEdit ? 'Editar lançamento' : 'Novo lançamento'}
+          {t(isEdit ? 'transactions.formEditTitle' : 'transactions.formNewTitle')}
         </SheetTitle>
-        <SheetDescription className="sr-only">Preencha os dados do lançamento.</SheetDescription>
+        <SheetDescription className="sr-only">{t('transactions.formDescription')}</SheetDescription>
         <SheetClose
-          aria-label="Fechar"
+          aria-label={t('common.close')}
           className="flex size-11 items-center justify-center rounded-[10px] bg-background text-ink hover:bg-track"
         >
           <X className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
@@ -113,56 +116,55 @@ function TransactionForm({
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-semibold">Tipo</span>
-          <div role="group" aria-label="Tipo do lançamento" className="grid grid-cols-3 gap-2">
-            {TRANSACTION_TYPES.map((t) => {
-              const meta = TYPE_META[t];
-              const active = type === t;
+          <span className="text-sm font-semibold">{t('transactions.formType')}</span>
+          <div role="group" aria-label={t('transactions.formTypeGroup')} className="grid grid-cols-3 gap-2">
+            {TRANSACTION_TYPES.map((entryType) => {
+              const meta = TYPE_META[entryType];
+              const active = type === entryType;
               return (
                 <button
-                  key={t}
+                  key={entryType}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => pickType(t)}
+                  onClick={() => pickType(entryType)}
                   className={cn(
                     'min-h-11 rounded-[10px] border-[1.5px] font-semibold',
                     active ? cn(meta.bg, meta.text, meta.border) : 'border-border bg-card text-icon',
                   )}
                 >
-                  {meta.label}
+                  {t(meta.labelKey)}
                 </button>
               );
             })}
           </div>
           {type === 'acerto' && (
             <span className="rounded-lg bg-settlement-bg px-3 py-2.5 text-[13px] text-info-text">
-              Acerto é o valor recebido de {partnerName} referente às contas divididas do mês. Não entra como
-              receita.
+              {t('transactions.formSettlementHint', partnerName)}
             </span>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field id={ids.date} label="Data">
+          <Field id={ids.date} label={t('transactions.formDate')}>
             <input id={ids.date} type="date" {...register('date')} className={inputClass} />
           </Field>
-          <Field id={ids.value} label="Valor (R$)">
+          <Field id={ids.value} label={t('transactions.formValue', money.symbol)}>
             <input
               id={ids.value}
               type="text"
               inputMode="decimal"
-              placeholder="0,00"
+              placeholder={money.toInput(0)}
               {...register('value')}
               className={cn(inputClass, 'text-right font-mono text-[15px] font-medium')}
             />
           </Field>
         </div>
 
-        <Field id={ids.description} label="Descrição">
+        <Field id={ids.description} label={t('transactions.formDescriptionField')}>
           <input
             id={ids.description}
             type="text"
-            placeholder="Ex.: Conta de luz"
+            placeholder={t('transactions.formDescriptionPlaceholder')}
             {...register('description')}
             className={inputClass}
           />
@@ -171,12 +173,12 @@ function TransactionForm({
         {type !== 'acerto' && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold">Categoria</span>
+              <span className="text-sm font-semibold">{t('transactions.formCategory')}</span>
               <Link to="/configuracoes" className="text-[13px] font-semibold text-settlement">
-                Gerenciar categorias
+                {t('transactions.formManageCategories')}
               </Link>
             </div>
-            <div role="group" aria-label="Categoria" className="flex flex-wrap gap-2">
+            <div role="group" aria-label={t('transactions.formCategory')} className="flex flex-wrap gap-2">
               {categories
                 .filter((c) => c.type === type)
                 .map((c) => (
@@ -207,12 +209,13 @@ function TransactionForm({
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor={ids.note} className="text-sm font-semibold">
-            Observação <span className="font-normal text-muted-foreground">Opcional</span>
+            {t('transactions.formNote')}{' '}
+            <span className="font-normal text-muted-foreground">{t('transactions.formOptional')}</span>
           </label>
           <textarea
             id={ids.note}
             rows={3}
-            placeholder="Ex.: leitura de 12/09 a 11/10"
+            placeholder={t('transactions.formNotePlaceholder')}
             {...register('note')}
             className="resize-y rounded-[10px] border border-input bg-card px-3 py-2.5 font-normal text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
@@ -224,23 +227,23 @@ function TransactionForm({
             <Option
               control={control}
               name="split"
-              title="Conta dividida"
-              description={`Entra no cálculo do acerto com ${partnerName} (${partnerShare}% para ${partnerName}).`}
+              title={t('transactions.formSplitTitle')}
+              description={t('transactions.formSplitDescription', partnerName, partnerShare)}
             />
           )}
           {type !== 'acerto' && (
             <Option
               control={control}
               name="recurring"
-              title="Recorrente"
-              description="Acontece todo mês. Será sugerido ao gerar os recorrentes do mês seguinte."
+              title={t('transactions.formRecurringTitle')}
+              description={t('transactions.formRecurringDescription')}
             />
           )}
           <Option
             control={control}
             name="confirmed"
-            title="Confirmado"
-            description="Marque quando o valor já tiver saído ou entrado. Desmarcado, fica como previsto."
+            title={t('transactions.formConfirmedTitle')}
+            description={t('transactions.formConfirmedDescription')}
           />
         </div>
 
@@ -257,14 +260,14 @@ function TransactionForm({
           onClick={onClose}
           className="min-h-11 rounded-[10px] border bg-card px-[18px] font-semibold text-ink"
         >
-          Cancelar
+          {t('transactions.cancel')}
         </button>
         <button
           type="submit"
           disabled={save.isPending}
           className="min-h-11 rounded-[10px] bg-ink px-5 font-semibold text-white disabled:bg-icon"
         >
-          {isEdit ? 'Salvar alterações' : 'Adicionar lançamento'}
+          {t(isEdit ? 'transactions.formSaveEdit' : 'transactions.formSaveNew')}
         </button>
       </div>
     </form>

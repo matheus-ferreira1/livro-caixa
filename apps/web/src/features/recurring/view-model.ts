@@ -1,19 +1,17 @@
 import {
   dateParts,
-  formatMoney,
   monthLabel,
-  parseMoney,
   sumCents,
-  toMoneyInput,
   validateRecurringSelection,
   type Category,
   type IsoDate,
+  type Localization,
+  type MoneyFormat,
   type MonthKey,
   type RecurringCandidate,
   type RecurringGenerateRequest,
   type TransactionType,
 } from '@livro-caixa/domain';
-import { pluralize } from '@/shared/lib/utils';
 import { TYPE_META } from '@/features/transactions/view-model';
 
 /** What the review dialog holds per series: whether it is chosen, and the date and value as typed. */
@@ -25,26 +23,21 @@ export interface RecurringDraft {
 
 export type RecurringDrafts = Record<string, RecurringDraft>;
 
-const defaultDraft = (c: RecurringCandidate): RecurringDraft => ({
+const defaultDraft = (c: RecurringCandidate, money: MoneyFormat): RecurringDraft => ({
   include: true,
   date: c.date,
-  value: toMoneyInput(c.valueCents),
+  value: money.toInput(c.valueCents),
 });
 
-export const defaultDrafts = (candidates: RecurringCandidate[]): RecurringDrafts =>
-  Object.fromEntries(candidates.map((c) => [c.seriesId, defaultDraft(c)]));
+export const defaultDrafts = (candidates: RecurringCandidate[], money: MoneyFormat): RecurringDrafts =>
+  Object.fromEntries(candidates.map((c) => [c.seriesId, defaultDraft(c, money)]));
 
 // A series can show up after the dialog opened (the list refetched); it starts with the defaults.
-const draftOf = (c: RecurringCandidate, drafts: RecurringDrafts): RecurringDraft =>
-  drafts[c.seriesId] ?? defaultDraft(c);
+const draftOf = (c: RecurringCandidate, drafts: RecurringDrafts, money: MoneyFormat): RecurringDraft =>
+  drafts[c.seriesId] ?? defaultDraft(c, money);
 
-export function recurringBannerText(count: number, month: MonthKey): string {
-  const pending =
-    count === 1
-      ? '1 lançamento recorrente ainda não foi gerado'
-      : `${count} lançamentos recorrentes ainda não foram gerados`;
-  return `${pending} para ${monthLabel(month)}.`;
-}
+export const recurringBannerText = (count: number, month: MonthKey, { t }: Pick<Localization, 't'>): string =>
+  t('recurring.banner', count, monthLabel(month, t));
 
 export interface RecurringRow {
   seriesId: string;
@@ -65,50 +58,57 @@ export function recurringRows(
   candidates: RecurringCandidate[],
   drafts: RecurringDrafts,
   categories: Map<string, Category>,
+  { t, money }: Pick<Localization, 't' | 'money'>,
 ): RecurringRow[] {
   return candidates.map((c) => {
     const { description, categoryId, split, type, valueCents, date } = c.source;
     const category = categoryId ? categories.get(categoryId) : undefined;
-    const { dd, mm } = dateParts(date);
-    const draft = draftOf(c, drafts);
+    const { dd, mm } = dateParts(date, t);
+    const draft = draftOf(c, drafts, money);
     return {
       seriesId: c.seriesId,
       description,
-      meta: (category?.name ?? 'Sem categoria') + (split ? ' · dividida' : ''),
+      meta: (category?.name ?? t('category.none')) + (split ? t('recurring.splitSuffix') : ''),
       type,
-      typeLabel: TYPE_META[type].label,
+      typeLabel: t(TYPE_META[type].labelKey),
       include: draft.include,
       date: draft.date,
       value: draft.value,
-      lastLabel: `${formatMoney(valueCents)} · ${dd}/${mm}`,
-      includeLabel: `Incluir ${description}`,
-      dateLabel: `Data de ${description}`,
-      valueLabel: `Valor de ${description}`,
+      lastLabel: `${money.format(valueCents)} · ${dd}/${mm}`,
+      includeLabel: t('recurring.includeRow', description),
+      dateLabel: t('recurring.dateRow', description),
+      valueLabel: t('recurring.valueRow', description),
     };
   });
 }
 
-const chosen = (candidates: RecurringCandidate[], drafts: RecurringDrafts) =>
-  candidates.map((c) => ({ candidate: c, draft: draftOf(c, drafts) })).filter(({ draft }) => draft.include);
+const chosen = (candidates: RecurringCandidate[], drafts: RecurringDrafts, money: MoneyFormat) =>
+  candidates
+    .map((c) => ({ candidate: c, draft: draftOf(c, drafts, money) }))
+    .filter(({ draft }) => draft.include);
 
-export function recurringSummary(candidates: RecurringCandidate[], drafts: RecurringDrafts) {
-  const selected = chosen(candidates, drafts);
+export function recurringSummary(
+  candidates: RecurringCandidate[],
+  drafts: RecurringDrafts,
+  { t, money }: Pick<Localization, 't' | 'money'>,
+) {
+  const selected = chosen(candidates, drafts, money);
   const totalOf = (type: TransactionType) =>
-    formatMoney(
+    money.format(
       sumCents(
         selected
           .filter(({ candidate }) => candidate.source.type === type)
-          .map(({ draft }) => parseMoney(draft.value) ?? 0),
+          .map(({ draft }) => money.parse(draft.value) ?? 0),
       ),
     );
   const count = selected.length;
   return {
-    selectionLabel: `${count} de ${candidates.length} selecionados`,
+    selectionLabel: t('recurring.selected', count, candidates.length),
     income: totalOf('receita'),
     expense: totalOf('despesa'),
     allSelected: candidates.length > 0 && count === candidates.length,
     canGenerate: count > 0,
-    generateLabel: count > 0 ? `Gerar ${pluralize(count, 'lançamento', 'lançamentos')}` : 'Gerar lançamentos',
+    generateLabel: count > 0 ? t('recurring.generate', count) : t('recurring.generateNone'),
   };
 }
 
@@ -116,14 +116,15 @@ export function generateRequest(
   month: MonthKey,
   candidates: RecurringCandidate[],
   drafts: RecurringDrafts,
+  { t, money }: Pick<Localization, 't' | 'money'>,
 ): { error: string } | { request: RecurringGenerateRequest } {
-  const selected = chosen(candidates, drafts).map(({ candidate, draft }) => ({
+  const selected = chosen(candidates, drafts, money).map(({ candidate, draft }) => ({
     seriesId: candidate.seriesId,
     description: candidate.source.description,
     date: draft.date,
-    valueCents: parseMoney(draft.value),
+    valueCents: money.parse(draft.value),
   }));
-  const error = validateRecurringSelection(selected, month);
+  const error = validateRecurringSelection(selected, month, t);
   if (error) return { error };
   return {
     request: {

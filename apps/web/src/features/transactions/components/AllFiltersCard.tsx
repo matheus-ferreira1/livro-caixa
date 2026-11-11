@@ -1,16 +1,17 @@
-import type { Category, Period } from '@livro-caixa/domain';
+import type { Category, MessageKey, Period } from '@livro-caixa/domain';
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/utils';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { Segmented } from '@/shared/Segmented';
 import { Toggle } from '@/shared/ui/toggle';
 import { sortedCategoryChips } from '../view-model';
 
 const PERIOD_OPTIONS = [
-  ['all', 'Todo período'],
-  ['year', 'Este ano'],
-  ['12m', 'Últimos 12 meses'],
-  ['custom', 'Personalizado'],
-] as const;
+  ['all', 'transactions.periodAll'],
+  ['year', 'transactions.periodYear'],
+  ['12m', 'transactions.period12m'],
+  ['custom', 'transactions.periodCustom'],
+] as const satisfies readonly (readonly [Period, MessageKey])[];
 
 interface AllFiltersCardProps {
   period: Period;
@@ -22,35 +23,36 @@ interface AllFiltersCardProps {
 }
 
 export function AllFiltersCard({ period, from, to, category, categories, onChange }: AllFiltersCardProps) {
+  const { t } = usePreferences();
   const chips: { id: string; label: string; color?: string }[] = [
-    { id: 'all', label: 'Todas' },
+    { id: 'all', label: t('transactions.categoryAll') },
     ...sortedCategoryChips(categories).map((c) => ({ id: c.id, label: c.name, color: c.color })),
-    { id: 'none', label: 'Sem categoria (acertos)' },
+    { id: 'none', label: t('transactions.categoryNone') },
   ];
 
   return (
     <div className="flex flex-col gap-3 rounded-[14px] border bg-card p-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
-        <FilterLabel>Período</FilterLabel>
+        <FilterLabel>{t('transactions.period')}</FilterLabel>
         <Segmented
-          label="Período"
+          label={t('transactions.period')}
           size="sm"
           value={period}
-          options={PERIOD_OPTIONS}
+          options={PERIOD_OPTIONS.map(([value, key]) => [value, t(key)] as const)}
           onChange={(v) => onChange({ period: v })}
         />
         {period === 'custom' && (
           <div className="flex flex-wrap items-center gap-2">
-            <DateField label="De" value={from} onChange={(v) => onChange({ from: v })} />
-            <DateField label="Até" value={to} onChange={(v) => onChange({ to: v })} />
+            <DateField label={t('transactions.from')} value={from} onChange={(v) => onChange({ from: v })} />
+            <DateField label={t('transactions.to')} value={to} onChange={(v) => onChange({ to: v })} />
           </div>
         )}
       </div>
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2.5">
-        <FilterLabel className="sm:min-h-9">Categoria</FilterLabel>
+        <FilterLabel className="sm:min-h-9">{t('transactions.categoryFilter')}</FilterLabel>
         <div
           role="group"
-          aria-label="Filtrar por categoria"
+          aria-label={t('transactions.categoryFilterGroup')}
           className="flex min-w-0 flex-1 flex-wrap gap-1.5"
         >
           {chips.map((chip) => (

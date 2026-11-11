@@ -1,26 +1,33 @@
 import {
   dateParts,
-  formatMoney,
   type Category,
+  type Localization,
+  type MessageKey,
   type Transaction,
   type TransactionType,
 } from '@livro-caixa/domain';
 
-/** Labels, sign and color classes per entry type, as in the design. */
+/** Label key, sign and color classes per entry type, as in the design. */
 export const TYPE_META: Record<
   TransactionType,
-  { label: string; sign: '+' | '−'; text: string; bg: string; border: string }
+  { labelKey: MessageKey; sign: '+' | '−'; text: string; bg: string; border: string }
 > = {
-  receita: { label: 'Receita', sign: '+', text: 'text-income', bg: 'bg-income-bg', border: 'border-income' },
+  receita: {
+    labelKey: 'transactions.type.receita',
+    sign: '+',
+    text: 'text-income',
+    bg: 'bg-income-bg',
+    border: 'border-income',
+  },
   despesa: {
-    label: 'Despesa',
+    labelKey: 'transactions.type.despesa',
     sign: '−',
     text: 'text-expense',
     bg: 'bg-expense-bg',
     border: 'border-expense',
   },
   acerto: {
-    label: 'Acerto',
+    labelKey: 'transactions.type.acerto',
     sign: '+',
     text: 'text-settlement',
     bg: 'bg-settlement-bg',
@@ -46,34 +53,35 @@ export interface RowViewModel {
   canSplit: boolean;
   split: boolean;
   confirmed: boolean;
-  statusLabel: 'Confirmado' | 'Previsto';
+  statusLabel: string;
 }
 
 export function rowViewModel(
-  t: Transaction,
+  transaction: Transaction,
   categories: Map<string, Category>,
   { withYear }: { withYear: boolean },
+  { t, money }: Pick<Localization, 't' | 'money'>,
 ): RowViewModel {
-  const parts = dateParts(t.date);
-  const category = t.categoryId ? categories.get(t.categoryId) : undefined;
-  const meta = TYPE_META[t.type];
+  const parts = dateParts(transaction.date, t);
+  const category = transaction.categoryId ? categories.get(transaction.categoryId) : undefined;
+  const meta = TYPE_META[transaction.type];
   return {
-    id: t.id,
+    id: transaction.id,
     day: `${parts.dd}/${parts.mm}${withYear ? `/${parts.yy}` : ''}`,
     weekday: parts.weekday,
-    description: t.description,
-    note: t.note,
-    recurring: t.recurring,
-    categoryName: category?.name ?? (t.type === 'acerto' ? 'Acerto' : 'Sem categoria'),
+    description: transaction.description,
+    note: transaction.note,
+    recurring: transaction.recurring,
+    categoryName: category?.name ?? (transaction.type === 'acerto' ? t(meta.labelKey) : t('category.none')),
     categoryColor: category?.color ?? NEUTRAL_SWATCH,
-    typeLabel: meta.label,
+    typeLabel: t(meta.labelKey),
     typeText: meta.text,
     typeBg: meta.bg,
-    valueLabel: `${meta.sign} ${formatMoney(t.valueCents)}`,
-    canSplit: t.type === 'despesa',
-    split: t.split,
-    confirmed: t.confirmed,
-    statusLabel: t.confirmed ? 'Confirmado' : 'Previsto',
+    valueLabel: `${meta.sign} ${money.format(transaction.valueCents)}`,
+    canSplit: transaction.type === 'despesa',
+    split: transaction.split,
+    confirmed: transaction.confirmed,
+    statusLabel: t(transaction.confirmed ? 'transactions.status.confirmed' : 'transactions.status.pending'),
   };
 }
 

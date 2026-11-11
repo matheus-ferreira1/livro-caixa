@@ -10,6 +10,7 @@ import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useCategories, useSettings } from '@/features/settings/api';
 import { showError, useMonthTransactions, useSaveTransaction } from '@/features/transactions/api';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { Dialog, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
 import { settlementViewModel, type SettlementViewModel } from './view-model';
@@ -40,12 +41,14 @@ export function SettlementDialog({ month, open, onClose }: SettlementDialogProps
 }
 
 function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open'>) {
+  const l10n = usePreferences();
+  const { t } = l10n;
   const { data: transactions = [] } = useMonthTransactions(month, true);
   const { data: categories = [] } = useCategories();
   const { data: settings } = useSettings();
   const save = useSaveTransaction();
   const [includePending, setIncludePending] = useState(true);
-  const partnerName = settings ? displayPartnerName(settings) : '';
+  const partnerName = settings ? displayPartnerName(settings, t) : '';
 
   const settlement = useMemo(
     () => computeSettlement(transactions, settings?.partnerShare ?? 0, { includePending }),
@@ -55,14 +58,18 @@ function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open
     () => new Map<string, Category>(categories.map((c) => [c.id, c])),
     [categories],
   );
-  const vm = settlementViewModel(settlement, { month, partnerName, categories: categoryMap, includePending });
+  const vm = settlementViewModel(
+    settlement,
+    { month, partnerName, categories: categoryMap, includePending },
+    l10n,
+  );
 
   const register = () =>
     save.mutate(
-      { id: null, input: settlementEntry(settlement, { month, partnerName }) },
+      { id: null, input: settlementEntry(settlement, { month, partnerName }, l10n) },
       {
         onSuccess: () => {
-          toast('Acerto registrado como previsto. Confirme quando receber.');
+          toast(t('settlement.registered'));
           onClose();
         },
         onError: showError,
@@ -72,8 +79,8 @@ function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open
   return (
     <>
       <DialogTitleBar
-        title="Acerto de contas"
-        description={`${vm.monthLabel} · contas divididas com ${partnerName}`}
+        title={t('settlement.dialogTitle')}
+        description={t('settlement.dialogDescription', vm.monthLabel, partnerName)}
       />
 
       <div className="flex flex-wrap gap-6 p-4 sm:p-6">
@@ -82,10 +89,8 @@ function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open
           <IncludePendingOption checked={includePending} onChange={setIncludePending} />
           <ShareMessage vm={vm} />
           <div className="flex flex-col gap-2 rounded-xl bg-settlement-bg p-4 text-info-text">
-            <span className="font-semibold">Quando {partnerName} enviar o valor</span>
-            <span className="text-[13px]">
-              Registre o acerto como previsto agora e marque como confirmado quando o dinheiro cair.
-            </span>
+            <span className="font-semibold">{t('settlement.whenSent', partnerName)}</span>
+            <span className="text-[13px]">{t('settlement.registerHelp')}</span>
             <button
               type="button"
               onClick={register}
@@ -102,24 +107,25 @@ function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open
 }
 
 function PrintSummary({ vm, partnerName }: { vm: SettlementViewModel; partnerName: string }) {
+  const { t } = usePreferences();
   return (
     <div className="flex min-w-0 flex-[1_1_460px] flex-col gap-2.5">
-      <SectionLabel>Resumo para print</SectionLabel>
+      <SectionLabel>{t('settlement.printSummary')}</SectionLabel>
       <div className="overflow-hidden rounded-2xl border bg-card">
         <div className="flex flex-col gap-1 bg-ink px-4 sm:px-[22px] py-5 text-background">
           <span className="text-xs font-semibold tracking-[0.1em] text-mint uppercase">
-            Acerto · {vm.monthLabel}
+            {t('settlement.printHeader', vm.monthLabel)}
           </span>
-          <span className="text-sm text-on-dark-muted">Valor a acertar por {partnerName}</span>
+          <span className="text-sm text-on-dark-muted">{t('settlement.amountDue', partnerName)}</span>
           <span className="font-mono text-[34px] font-semibold tracking-[-0.02em]">{vm.balance}</span>
         </div>
         <div className="px-4 sm:px-[22px] pt-2 pb-1">
           <div
             className={`${ITEM_GRID} border-b py-2.5 text-[11px] font-semibold tracking-[0.04em] text-muted-foreground uppercase sm:text-xs sm:tracking-[0.06em]`}
           >
-            <span>Conta</span>
-            <span className="text-right">Total</span>
-            <span className="text-right">Parte {partnerName}</span>
+            <span>{t('settlement.columnBill')}</span>
+            <span className="text-right">{t('settlement.columnTotal')}</span>
+            <span className="text-right">{t('settlement.columnPartner', partnerName)}</span>
           </div>
           {vm.items.map((item) => (
             <div key={item.id} className={`${ITEM_GRID} items-center border-b border-divider py-2.5 text-sm`}>
@@ -134,10 +140,10 @@ function PrintSummary({ vm, partnerName }: { vm: SettlementViewModel; partnerNam
             </div>
           ))}
           {vm.items.length === 0 && (
-            <p className="m-0 py-6 text-center text-muted-foreground">Nenhuma conta dividida neste mês.</p>
+            <p className="m-0 py-6 text-center text-muted-foreground">{t('settlement.noBills')}</p>
           )}
           <dl className="m-0 flex flex-col gap-2 pt-3.5 pb-[18px] text-sm">
-            <TotalLine label="Total das contas divididas" value={vm.total} strong />
+            <TotalLine label={t('settlement.totalBills')} value={vm.total} strong />
             <TotalLine label={vm.mineLabel} value={vm.mine} muted />
             <TotalLine label={vm.partnerLabel} value={vm.partner} strong accent />
             {vm.deductions.map((d) => (
@@ -183,6 +189,7 @@ function IncludePendingOption({
   checked: boolean;
   onChange: (next: boolean) => void;
 }) {
+  const { t } = usePreferences();
   const id = useId();
   return (
     <label
@@ -199,10 +206,10 @@ function IncludePendingOption({
       />
       <span className="flex flex-col gap-0.5">
         <span id={`${id}-title`} className="font-semibold">
-          Incluir contas previstas
+          {t('settlement.includePendingTitle')}
         </span>
         <span id={`${id}-description`} className="text-[13px] text-muted-foreground">
-          Útil para avisar o valor antes de todas as contas vencerem.
+          {t('settlement.includePendingHelp')}
         </span>
       </span>
     </label>
@@ -210,6 +217,7 @@ function IncludePendingOption({
 }
 
 function ShareMessage({ vm }: { vm: SettlementViewModel }) {
+  const { t } = usePreferences();
   const [copyState, setCopyState] = useState<CopyState>('idle');
 
   useEffect(() => {
@@ -233,7 +241,7 @@ function ShareMessage({ vm }: { vm: SettlementViewModel }) {
   return (
     <>
       <div className="flex flex-col gap-2">
-        <SectionLabel>Mensagem em texto</SectionLabel>
+        <SectionLabel>{t('settlement.messageLabel')}</SectionLabel>
         <pre className="m-0 max-h-[300px] overflow-auto rounded-xl border bg-card px-4 py-3.5 font-mono text-[12.5px] leading-[1.55] whitespace-pre-wrap text-ink">
           {vm.shareText}
         </pre>
@@ -241,16 +249,16 @@ function ShareMessage({ vm }: { vm: SettlementViewModel }) {
       <div className="grid grid-cols-2 gap-2.5">
         <button type="button" onClick={() => void copy()} className={outlineButton}>
           <Copy className="size-[17px]" aria-hidden="true" />
-          {copyState === 'copied' ? 'Copiado!' : 'Copiar texto'}
+          {copyState === 'copied' ? t('settlement.copied') : t('settlement.copy')}
         </button>
         <a href={vm.whatsappUrl} target="_blank" rel="noopener noreferrer" className={outlineButton}>
           <MessageCircle className="size-[17px]" aria-hidden="true" />
-          Enviar no WhatsApp
+          {t('settlement.whatsapp')}
         </a>
       </div>
       {copyState === 'failed' && (
         <span role="status" className="text-[13px] text-pending">
-          Não foi possível copiar automaticamente. Selecione o texto acima e copie.
+          {t('settlement.copyFailed')}
         </span>
       )}
     </>

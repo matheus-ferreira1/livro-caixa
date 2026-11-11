@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { useCategories } from '@/features/settings/api';
 import { TYPE_META } from '@/features/transactions/view-model';
 import { isUnauthorized } from '@/shared/api/query-client';
-import { cn, pluralize } from '@/shared/lib/utils';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { cn } from '@/shared/lib/utils';
 import { STACKED_FIELD } from '@/shared/stacked';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
@@ -36,12 +37,13 @@ interface RecurringDialogProps {
 }
 
 export function RecurringDialog({ month, open, onClose }: RecurringDialogProps) {
+  const { t } = usePreferences();
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-[1040px] overflow-hidden bg-card">
         <DialogTitleBar
-          title="Gerar lançamentos recorrentes"
-          description={`${monthLabel(month)} · a partir da última ocorrência de cada lançamento recorrente`}
+          title={t('recurring.dialogTitle')}
+          description={t('recurring.dialogDescription', monthLabel(month, t))}
         />
         {/* Remount on every open so the review starts from the suggestions again. */}
         {open && <RecurringReview month={month} onClose={onClose} />}
@@ -51,6 +53,8 @@ export function RecurringDialog({ month, open, onClose }: RecurringDialogProps) 
 }
 
 function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>) {
+  const l10n = usePreferences();
+  const { t, money } = l10n;
   const { data: candidates } = useRecurringCandidates(month, true);
   const { data: categories = [] } = useCategories();
   const generate = useGenerateRecurring();
@@ -63,8 +67,8 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
   );
 
   if (!candidates) return null;
-  const rows = recurringRows(candidates, drafts, categoryMap);
-  const summary = recurringSummary(candidates, drafts);
+  const rows = recurringRows(candidates, drafts, categoryMap, l10n);
+  const summary = recurringSummary(candidates, drafts, l10n);
 
   const updateRow = (row: RecurringRow, patch: Partial<RecurringDraft>) => {
     setDrafts((previous) => ({
@@ -76,14 +80,14 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
   const toggleAll = () => rows.forEach((row) => updateRow(row, { include: !summary.allSelected }));
 
   const submit = () => {
-    const result = generateRequest(month, candidates, drafts);
+    const result = generateRequest(month, candidates, drafts, l10n);
     if ('error' in result) {
       setError(result.error);
       return;
     }
     generate.mutate(result.request, {
       onSuccess: ({ transactions }) => {
-        toast(`${pluralize(transactions.length, 'lançamento gerado', 'lançamentos gerados')} como previstos`);
+        toast(t('recurring.generated', transactions.length));
         onClose();
       },
       onError: (err) => {
@@ -98,8 +102,9 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
         {rows.length ? (
           <>
             <p className="m-0 text-sm text-icon">
-              Os lançamentos entram como <strong>previstos</strong>, sem observação. Ajuste datas e valores
-              aqui ou depois, direto na lista. Desmarque o que não acontece neste mês.
+              {t('recurring.introBefore')}
+              <strong>{t('recurring.introStrong')}</strong>
+              {t('recurring.introAfter')}
             </p>
             <div className="overflow-hidden rounded-xl border">
               <div className="md:overflow-x-auto">
@@ -111,16 +116,18 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
                     )}
                   >
                     <Checkbox
-                      aria-label="Selecionar todos"
+                      aria-label={t('recurring.selectAll')}
                       checked={summary.allSelected}
                       onCheckedChange={toggleAll}
                       className={checkboxClass}
                     />
-                    <span className="col-span-2 md:col-auto">Lançamento</span>
-                    <span className="hidden md:block">Tipo</span>
-                    <span className="hidden md:block">Data</span>
-                    <span className="hidden text-right md:block">Valor (R$)</span>
-                    <span className="hidden text-right md:block">Último lançado</span>
+                    <span className="col-span-2 md:col-auto">{t('recurring.columnEntry')}</span>
+                    <span className="hidden md:block">{t('recurring.columnType')}</span>
+                    <span className="hidden md:block">{t('recurring.columnDate')}</span>
+                    <span className="hidden text-right md:block">
+                      {t('recurring.columnValue', money.symbol)}
+                    </span>
+                    <span className="hidden text-right md:block">{t('recurring.columnLast')}</span>
                   </div>
                   {rows.map((row) => (
                     <ReviewRow
@@ -137,8 +144,8 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
         ) : (
           <div className="flex flex-col items-center gap-2.5 px-5 py-12 text-center text-muted-foreground">
             <CalendarCheck className="size-7 text-income" aria-hidden="true" />
-            <span className="text-base font-semibold text-ink">Tudo em dia</span>
-            <span>Todos os lançamentos recorrentes já estão em {monthLabel(month)}.</span>
+            <span className="text-base font-semibold text-ink">{t('recurring.allDoneTitle')}</span>
+            <span>{t('recurring.allDoneText', monthLabel(month, t))}</span>
           </div>
         )}
       </div>
@@ -158,7 +165,7 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
         </div>
         <div className="flex gap-2.5">
           <DialogClose className="min-h-11 rounded-[10px] border bg-card px-[18px] font-semibold text-ink hover:bg-accent">
-            Cancelar
+            {t('recurring.cancel')}
           </DialogClose>
           <button
             type="button"
@@ -183,6 +190,7 @@ function ReviewRow({
   month: MonthKey;
   onChange: (patch: Partial<RecurringDraft>) => void;
 }) {
+  const { t, money } = usePreferences();
   const meta = TYPE_META[row.type];
   const inputClass =
     'min-h-11 w-full min-w-0 md:min-h-10 rounded-lg border border-input bg-card px-2.5 text-sm text-ink';
@@ -213,7 +221,7 @@ function ReviewRow({
       >
         {row.typeLabel}
       </span>
-      <label data-label="Data" className={cn(STACKED_FIELD, '[grid-area:2/1/3/3]')}>
+      <label data-label={t('recurring.columnDate')} className={cn(STACKED_FIELD, '[grid-area:2/1/3/3]')}>
         <input
           type="date"
           aria-label={row.dateLabel}
@@ -224,7 +232,10 @@ function ReviewRow({
           className={inputClass}
         />
       </label>
-      <label data-label="Valor (R$)" className={cn(STACKED_FIELD, '[grid-area:2/3/3/4]')}>
+      <label
+        data-label={t('recurring.columnValue', money.symbol)}
+        className={cn(STACKED_FIELD, '[grid-area:2/3/3/4]')}
+      >
         <input
           type="text"
           inputMode="decimal"

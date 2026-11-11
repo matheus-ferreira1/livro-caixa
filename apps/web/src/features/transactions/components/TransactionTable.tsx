@@ -1,6 +1,7 @@
-import type { SortDirection, SortKey } from '@livro-caixa/domain';
+import type { MessageKey, SortDirection, SortKey } from '@livro-caixa/domain';
 import { ArrowDown, ArrowUp, Check, Clock, Pencil, Repeat, Trash2, Users } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import type { RowViewModel } from '../view-model';
 
@@ -47,11 +48,15 @@ interface TransactionTableProps extends RowActions {
 }
 
 export function TransactionTable({ groups, sort, onSort, empty, footer, ...actions }: TransactionTableProps) {
+  const { t } = usePreferences();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const hasRows = groups.some((g) => g.rows.length > 0);
 
   return (
-    <section aria-label="Lista de lançamentos" className="overflow-hidden rounded-[14px] border bg-card">
+    <section
+      aria-label={t('transactions.listLabel')}
+      className="overflow-hidden rounded-[14px] border bg-card"
+    >
       <div className="md:overflow-x-auto">
         <div className="md:min-w-[1120px]">
           <div
@@ -60,14 +65,25 @@ export function TransactionTable({ groups, sort, onSort, empty, footer, ...actio
               'min-h-11 border-b bg-muted text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase',
             )}
           >
-            <SortButton label="Data" column="date" sort={sort} onSort={onSort} />
-            <SortButton label="Descrição" column="description" sort={sort} onSort={onSort} />
-            <span className="hidden md:block">Categoria</span>
-            <span className="hidden md:block">Tipo</span>
-            <span className="hidden md:block">Dividido</span>
-            <span className="hidden md:block">Status</span>
-            <SortButton label="Valor" column="value" sort={sort} onSort={onSort} alignEnd />
-            <span className="hidden text-right md:block">Ações</span>
+            <SortButton label={t('transactions.columnDate')} column="date" sort={sort} onSort={onSort} />
+            <SortButton
+              label={t('transactions.columnDescription')}
+              column="description"
+              sort={sort}
+              onSort={onSort}
+            />
+            <span className="hidden md:block">{t('transactions.columnCategory')}</span>
+            <span className="hidden md:block">{t('transactions.columnType')}</span>
+            <span className="hidden md:block">{t('transactions.columnSplit')}</span>
+            <span className="hidden md:block">{t('transactions.columnStatus')}</span>
+            <SortButton
+              label={t('transactions.columnValue')}
+              column="value"
+              sort={sort}
+              onSort={onSort}
+              alignEnd
+            />
+            <span className="hidden text-right md:block">{t('transactions.columnActions')}</span>
           </div>
           {groups.map((group) => (
             <div key={group.key}>
@@ -92,7 +108,11 @@ export function TransactionTable({ groups, sort, onSort, empty, footer, ...actio
   );
 }
 
-const SORT_LABELS: Record<SortKey, string> = { date: 'data', description: 'descrição', value: 'valor' };
+const SORT_LABELS = {
+  date: 'transactions.sortDate',
+  description: 'transactions.sortDescription',
+  value: 'transactions.sortValue',
+} as const satisfies Record<SortKey, MessageKey>;
 
 function SortButton({
   label,
@@ -107,6 +127,7 @@ function SortButton({
   onSort: TransactionTableProps['onSort'];
   alignEnd?: boolean;
 }) {
+  const { t } = usePreferences();
   const active = sort.key === column;
   const next = sort.nextDir(column);
   const arrow = active ? (
@@ -120,7 +141,7 @@ function SortButton({
     <button
       type="button"
       onClick={() => onSort(column, next)}
-      aria-label={`Ordenar por ${SORT_LABELS[column]}, ${next === 'asc' ? 'crescente' : 'decrescente'}`}
+      aria-label={t('transactions.sortBy', t(SORT_LABELS[column]), next === 'asc')}
       className={cn(
         'flex min-h-11 items-center gap-1 border-0 bg-transparent p-0 tracking-[inherit] uppercase',
         alignEnd ? 'justify-self-end' : 'justify-self-start',
@@ -135,6 +156,7 @@ function SortButton({
 }
 
 function GroupHeader({ label, countLabel, netLabel, negative, onOpen }: NonNullable<RowGroup['header']>) {
+  const { t } = usePreferences();
   return (
     <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b bg-background px-4 py-2 md:px-5">
       <span className="flex items-baseline gap-2.5">
@@ -150,10 +172,10 @@ function GroupHeader({ label, countLabel, netLabel, negative, onOpen }: NonNulla
         <button
           type="button"
           onClick={onOpen}
-          aria-label={`Abrir ${label} na visão por mês`}
+          aria-label={t('transactions.openMonthLabel', label)}
           className="min-h-11 rounded-lg border bg-card px-2.5 text-[13px] font-semibold text-settlement md:min-h-8"
         >
-          Abrir mês
+          {t('transactions.openMonth')}
         </button>
       </span>
     </div>
@@ -177,6 +199,7 @@ function TransactionRow({
   onDelete,
   onEdit,
 }: TransactionRowProps) {
+  const { t } = usePreferences();
   return (
     <div className={cn('border-b border-divider', deleting ? 'bg-expense-row' : 'bg-card')}>
       <div className={cn(GRID, 'min-h-16 gap-y-0.5 pt-3 pb-2 md:py-3')}>
@@ -192,7 +215,7 @@ function TransactionRow({
             {row.recurring && (
               <Repeat
                 role="img"
-                aria-label="Recorrente"
+                aria-label={t('transactions.recurringIcon')}
                 className="size-3.5 flex-none text-muted-foreground"
                 strokeWidth={2.2}
               />
@@ -225,7 +248,7 @@ function TransactionRow({
                 type="button"
                 onClick={() => onToggleSplit(row)}
                 aria-pressed={row.split}
-                aria-label={`Conta dividida: ${row.split ? 'sim' : 'não'}`}
+                aria-label={t('transactions.splitToggle', row.split)}
                 className={cn(
                   TALLER_TOUCH_AREA,
                   'flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-semibold',
@@ -235,7 +258,7 @@ function TransactionRow({
                 )}
               >
                 <Users className="size-[15px]" aria-hidden="true" />
-                {row.split ? 'Sim' : 'Não'}
+                {row.split ? t('transactions.yes') : t('transactions.no')}
               </button>
             ) : (
               <span className="text-muted-foreground">—</span>
@@ -245,7 +268,7 @@ function TransactionRow({
             type="button"
             onClick={() => onToggleConfirmed(row)}
             aria-pressed={row.confirmed}
-            aria-label={`${row.statusLabel}, clique para alternar`}
+            aria-label={t('transactions.statusToggle', row.statusLabel)}
             className={cn(
               TALLER_TOUCH_AREA,
               'flex min-h-9 items-center gap-1.5 justify-self-start rounded-full border px-3 text-[13px] font-semibold',
@@ -276,7 +299,7 @@ function TransactionRow({
             <button
               type="button"
               onClick={() => onEdit(row)}
-              aria-label={`Editar ${row.description}`}
+              aria-label={t('transactions.edit', row.description)}
               className="flex size-11 items-center justify-center rounded-lg text-icon hover:bg-accent md:size-10"
             >
               <Pencil className="size-[17px]" aria-hidden="true" />
@@ -285,7 +308,7 @@ function TransactionRow({
           <button
             type="button"
             onClick={onAskDelete}
-            aria-label={`Excluir ${row.description}`}
+            aria-label={t('transactions.delete', row.description)}
             className="flex size-11 items-center justify-center rounded-lg text-expense hover:bg-expense-row md:size-10"
           >
             <Trash2 className="size-[17px]" aria-hidden="true" />
@@ -295,21 +318,21 @@ function TransactionRow({
       {deleting && (
         <div className="flex flex-wrap items-center justify-end gap-2.5 px-4 pb-3.5 md:px-5">
           <span className="text-sm font-semibold text-expense">
-            Excluir “{row.description}”? Esta ação não pode ser desfeita.
+            {t('transactions.confirmDelete', row.description)}
           </span>
           <button
             type="button"
             onClick={onCancelDelete}
             className="min-h-11 rounded-lg border bg-card px-3.5 text-sm font-semibold text-ink md:min-h-9"
           >
-            Cancelar
+            {t('transactions.cancel')}
           </button>
           <button
             type="button"
             onClick={() => onDelete(row)}
             className="min-h-11 rounded-lg bg-expense px-3.5 text-sm font-semibold text-white md:min-h-9"
           >
-            Excluir
+            {t('transactions.deleteConfirm')}
           </button>
         </div>
       )}

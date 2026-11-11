@@ -2,6 +2,7 @@ import type { MonthKey, Totals, Transaction, TransactionInput } from '@livro-cai
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch, jsonBody } from '@/shared/api/client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { isUnauthorized } from '@/shared/api/query-client';
 
 export const TRANSACTIONS_KEY = ['transactions'] as const;
@@ -73,10 +74,11 @@ export function useToggleFlags() {
 
 export function useDeleteTransaction() {
   const queryClient = useQueryClient();
+  const { t } = usePreferences();
   return useMutation({
     mutationFn: (id: string) => apiFetch<null>(`/api/transactions/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
-      toast('Lançamento excluído');
+      toast(t('transactions.deleted'));
       return queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
     onError: showError,
