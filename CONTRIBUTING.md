@@ -12,9 +12,12 @@ You need [Bun](https://bun.sh) 1.3. Fork the repository, clone your fork, then:
 
 ```bash
 bun install
-bun run seed:demo                                       # a year of sample data in a dev database
-bun run --cwd=apps/api cli create-user you@example.com  # your dev account; asks for a password
-bun run dev                                             # API on :3000, web on :5173
+# a year of sample data in a dev database
+bun run seed:demo
+# your dev account; it asks for a password
+bun run --cwd=apps/api cli create-user you@example.com
+# API on :3000, web on :5173
+bun run dev
 ```
 
 ## Commands
