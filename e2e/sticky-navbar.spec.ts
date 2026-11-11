@@ -80,6 +80,16 @@ test.describe('the top navigation while scrolling', () => {
     });
   }
 
+  test('scrolls away on a phone held sideways, where it would take too much of the screen', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await openLongPage(page);
+    await scrollToBottom(page);
+
+    await expect(page.getByRole('navigation', { name: 'Principal' })).not.toBeInViewport();
+  });
+
   test('scrolls away with the page on a phone, leaving the bottom bar', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await openLongPage(page);
