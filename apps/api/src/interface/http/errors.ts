@@ -1,4 +1,3 @@
-import { DEFAULT_LANGUAGE, translator } from '@livro-caixa/domain';
 import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 import { ApplicationError, type ApplicationErrorCode } from '../../application/errors';
@@ -27,14 +26,5 @@ export const errorHandler =
       return;
     }
     console.error(err);
-    res.status(500).json({ error: { code: 'internal_error', message: unexpectedMessage(translate) } });
+    res.status(500).json({ error: { code: 'internal_error', message: translate()('api.unexpected') } });
   };
-
-/** The 500 path must not throw, and a failing settings read may be the very error being reported. */
-function unexpectedMessage(translate: TranslateProvider): string {
-  try {
-    return translate()('api.unexpected');
-  } catch {
-    return translator(DEFAULT_LANGUAGE)('api.unexpected');
-  }
-}

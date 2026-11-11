@@ -1,5 +1,4 @@
 import type { Database } from 'bun:sqlite';
-import { translator } from '@livro-caixa/domain';
 import { Authenticate } from './application/auth/Authenticate';
 import { Login } from './application/auth/Login';
 import { ACCOUNT_THROTTLE_POLICY, IP_THROTTLE_POLICY, LoginThrottle } from './application/auth/LoginThrottle';
@@ -11,6 +10,8 @@ import { ListCategories } from './application/categories/queries';
 import { GetDashboard } from './application/dashboard/queries';
 import type { Clock, PasswordHasher, QuoteProvider } from './application/ports';
 import { GenerateRecurring, ListRecurringCandidates } from './application/recurring/recurring';
+import { CachedSettingsRepository } from './application/settings/CachedSettingsRepository';
+import { createTranslateProvider } from './application/settings/translate-provider';
 import { UpdateSettings } from './application/settings/UpdateSettings';
 import { GetYearSummary } from './application/summary/queries';
 import {
@@ -58,8 +59,8 @@ export function createContainer({
   const ipThrottle = new LoginThrottle(clock, IP_THROTTLE_POLICY);
   const transactions = new SqliteTransactionRepository(db);
   const categories = new SqliteCategoryRepository(db);
-  const settings = new SqliteSettingsRepository(db);
-  const translate = () => translator(settings.get().language);
+  const settings = new CachedSettingsRepository(new SqliteSettingsRepository(db));
+  const translate = createTranslateProvider(settings);
   const assets = new SqliteAssetRepository(db);
   const snapshots = new SqliteSnapshotRepository(db, assets);
 

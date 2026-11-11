@@ -241,6 +241,27 @@ describe('error messages follow the instance language', () => {
   });
 });
 
+describe('when the settings cannot be read', () => {
+  test.each([
+    ['an unknown route', 404, 'Rota não encontrada.'],
+    ['a malformed body', 400, 'Dados inválidos.'],
+    ['a missing session', 401, 'Sessão expirada. Entre novamente.'],
+  ])('still answers %s with the error shape, in pt-BR', async (name, status, message) => {
+    const { agent, app, container } = await signedIn();
+    container.settings.get = () => {
+      throw new Error('database is locked');
+    };
+    const response =
+      name === 'an unknown route'
+        ? await agent.get('/api/nope')
+        : name === 'a malformed body'
+          ? await agent.post('/api/categories').send({})
+          : await request(app).get('/api/categories');
+    expect(response.status).toBe(status);
+    expect(response.body.error).toEqual(expect.objectContaining({ message }));
+  });
+});
+
 describe('authorization', () => {
   test.each([
     ['post', '/api/categories'],
