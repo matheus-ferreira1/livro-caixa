@@ -5,6 +5,11 @@ export type Language = (typeof LANGUAGES)[number];
 export const CURRENCIES = ['BRL', 'USD', 'EUR', 'GBP'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
+export const isLanguage = (value: string): value is Language =>
+  (LANGUAGES as readonly string[]).includes(value);
+export const isCurrency = (value: string): value is Currency =>
+  (CURRENCIES as readonly string[]).includes(value);
+
 export const DEFAULT_LANGUAGE: Language = 'pt-BR';
 export const DEFAULT_CURRENCY: Currency = 'BRL';
 

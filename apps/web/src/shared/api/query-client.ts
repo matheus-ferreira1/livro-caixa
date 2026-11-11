@@ -1,4 +1,7 @@
 import { MutationCache, QueryCache, QueryClient, type DefaultOptions } from '@tanstack/react-query';
+import { DEFAULT_PREFERENCES, type Preferences } from '@livro-caixa/domain';
+import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
+import { setLanguageSource } from '@/shared/i18n/language-source';
 import { ApiError } from './client';
 
 const UNAUTHORIZED_STATUS = 401;
@@ -37,5 +40,8 @@ export function createQueryClient({ onUnauthorized, defaultOptions }: QueryClien
       },
     },
   });
+  setLanguageSource(
+    () => (queryClient.getQueryData<Preferences>(PREFERENCES_KEY) ?? DEFAULT_PREFERENCES).language,
+  );
   return queryClient;
 }

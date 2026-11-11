@@ -1,4 +1,12 @@
-import { CURRENCIES, LANGUAGES, type Currency, type Language, type MessageKey } from '@livro-caixa/domain';
+import {
+  CURRENCIES,
+  isCurrency,
+  isLanguage,
+  LANGUAGES,
+  type Currency,
+  type Language,
+  type MessageKey,
+} from '@livro-caixa/domain';
 import { useId } from 'react';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { useSaveSettings } from '../api';
@@ -13,9 +21,6 @@ const CURRENCY_LABELS: Record<Currency, MessageKey> = {
   EUR: 'settings.currencyEUR',
   GBP: 'settings.currencyGBP',
 };
-
-const isLanguage = (value: string): value is Language => (LANGUAGES as readonly string[]).includes(value);
-const isCurrency = (value: string): value is Currency => (CURRENCIES as readonly string[]).includes(value);
 
 /** Saves on its own, like the split section. The select shows what the app is using, so it never lags behind. */
 export function PreferencesSection() {

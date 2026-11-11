@@ -1,5 +1,5 @@
 import { translator } from '@livro-caixa/domain';
-import { documentLanguage } from '@/shared/i18n/document-language';
+import { instanceLanguage } from '@/shared/i18n/language-source';
 
 export class ApiError extends Error {
   constructor(
@@ -17,7 +17,7 @@ interface ErrorBody {
 }
 
 /** The server's own errors arrive translated; this one is raised here, when it cannot be reached. */
-const fallbackMessage = () => translator(documentLanguage())('api.unreachable');
+const fallbackMessage = () => translator(instanceLanguage())('api.unreachable');
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
