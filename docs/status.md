@@ -64,6 +64,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#30](https://github.com/matheus-ferreira1/livro-caixa/pull/30) | `chore/slim-claude-md` | `CLAUDE.md` keeps the rules every task needs; the status moved to `docs/status.md`, the user stories to `docs/user-stories.md` and the design system to `apps/web/CLAUDE.md` |
 | [#31](https://github.com/matheus-ferreira1/livro-caixa/pull/31) | `fix/entry-validation` | `isIsoDate` accepts only real calendar days from 1900 on; an entry's amount is capped at `MAX_ENTRY_CENTS` |
 | [#32](https://github.com/matheus-ferreira1/livro-caixa/pull/32) | `fix/login-throttle-burst` | `Login` handles one attempt per client IP at a time (`KeyedQueue`), so a burst cannot outrun the lock |
+| [#34](https://github.com/matheus-ferreira1/livro-caixa/pull/34) | `fix/sticky-navbar` | The header sticks to the top from 768px; `scroll-padding-top` keeps focus and anchors clear of it; only on screens at least 480px tall; e2e spec at 1440px, 768px, 844×390 and 375px |
 
 ### Web routes
 
@@ -159,7 +160,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Domain unit | 317 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 222 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 188 | `bun run --filter '@livro-caixa/web' test` |
-| E2E | 9 flows: the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
+| E2E | 13 tests: the top navigation while scrolling (sticky at 1440px and 768px, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck` and `build`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -301,6 +302,12 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - Clients that share an IP share the queue, as they already share the per-IP lock: behind a reverse proxy in another container with `TRUST_PROXY` left at `loopback`, every sign-in waits its turn. At most 20 password checks stand ahead before the IP lock ends the rest. The answer is the same as for the lock: set `TRUST_PROXY`.
 - The queue has no length limit. A flood from one IP keeps its requests waiting until the 20th failure locks the IP, and then they end at once. A limit would need a new answer for "too many at once", and the per-IP lock already bounds the password checks.
 - `createContainer` takes an optional `hasher`, so the HTTP test counts the passwords checked with a fake one (`CountingHasher` in `test/harness.ts`).
+
+### Decisions taken for the sticky header (PR #34)
+
+- From 768px the header is `position: sticky; top: 0` with `z-40`, below the `z-50` dialogs, sheets and menus. On phones it scrolls away as before and the nav stays a fixed bottom bar.
+- The header sticks only on screens at least 480px tall (the `tall` variant in `index.css`). A phone held sideways is 768px wide or more but under 450px tall, and the two-row header would keep over a quarter of it.
+- `html` gets `scroll-padding-top: var(--sticky-header-height)` from 768px on those tall screens, so a focused field or a scroll target is not hidden under the header. The variable is 6.75rem (108px, the two-row tablet header) and 4rem (64px, the single row) from 1024px, as measured in the browser.
 
 ## Roadmap
 
