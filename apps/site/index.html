@@ -125,14 +125,22 @@
             </div>
           </div>
           <figure class="relative mt-14 -mb-24 sm:mt-16 sm:-mb-40">
-            <img
-              src="/screenshots/visao-geral.webp"
-              width="1440"
-              height="900"
-              alt="Visão geral, the dashboard, for October 2026: the month's balance of R$ 7.328,25, a 62,6% savings rate, net spending and the year-to-date total, above a bar chart of income and expenses for the last 12 months."
-              fetchpriority="high"
-              class="shot block h-auto w-full"
-            />
+            <picture>
+              <source
+                media="(max-width: 639px)"
+                srcset="/screenshots/visao-geral-phone.webp"
+                width="750"
+                height="1624"
+              />
+              <img
+                src="/screenshots/visao-geral.webp"
+                width="1440"
+                height="900"
+                alt="Visão geral, the dashboard, for October 2026: the month's balance of R$ 7.328,25, a 62,6% savings rate, net spending and the year-to-date total, and, on wide screens, a bar chart of income and expenses for the last 12 months."
+                fetchpriority="high"
+                class="shot block h-auto w-full"
+              />
+            </picture>
             <figcaption class="sr-only">The dashboard (Visão geral) with the demo data.</figcaption>
           </figure>
         </div>
@@ -372,46 +380,66 @@
 
             <div id="quick-start" class="mt-16">
               <h3 class="text-2xl font-bold">Quick start</h3>
-              <ol class="mt-5 grid max-w-[60ch] list-decimal gap-2 pl-5 marker:font-mono marker:text-muted">
-                <li>Clone the repository and copy the example environment file.</li>
+              <ol
+                class="mt-5 grid max-w-[60ch] list-decimal [&>li]:min-w-0 gap-5 pl-5 marker:font-mono marker:text-muted"
+              >
+                <li>
+                  Clone the repository, then copy the example environment file from inside it.
+                  <div class="on-dark bg-ink text-white mt-3 flex items-center overflow-hidden rounded-card">
+                    <pre
+                      class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
+                    ><code id="quick-start-env">cp .env.example .env</code></pre>
+                    <div class="flex shrink-0 items-center gap-2 pr-2">
+                      <span
+                        data-copy-status="quick-start-env"
+                        role="status"
+                        class="max-w-[7rem] text-right text-sm leading-tight text-mint"
+                      ></span>
+                      <button
+                        type="button"
+                        data-copy="quick-start-env"
+                        hidden
+                        aria-label="Copy: cp .env.example .env"
+                        class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </li>
                 <li>
                   Set <code class="font-mono text-[0.92em]">ADMIN_PASSWORD</code> in
                   <code class="font-mono text-[0.92em]">.env</code>: it creates the first account.
                 </li>
-                <li>Build and start the container.</li>
+                <li>
+                  Build and start the container.
+                  <div class="on-dark bg-ink text-white mt-3 flex items-center overflow-hidden rounded-card">
+                    <pre
+                      class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
+                    ><code id="quick-start-up">docker compose up --build</code></pre>
+                    <div class="flex shrink-0 items-center gap-2 pr-2">
+                      <span
+                        data-copy-status="quick-start-up"
+                        role="status"
+                        class="max-w-[7rem] text-right text-sm leading-tight text-mint"
+                      ></span>
+                      <button
+                        type="button"
+                        data-copy="quick-start-up"
+                        hidden
+                        aria-label="Copy: docker compose up --build"
+                        class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </li>
                 <li>
                   Open <span class="font-mono text-[0.92em]">http://localhost:3000</span> and sign in with
                   <code class="font-mono text-[0.92em]">ADMIN_EMAIL</code> and that password.
                 </li>
               </ol>
-              <div class="on-dark mt-6 overflow-hidden rounded-card bg-ink text-white">
-                <div
-                  class="flex min-h-[48px] items-center justify-between gap-4 border-b border-header-active px-4"
-                >
-                  <span class="text-sm text-on-dark-muted">Terminal</span>
-                  <span class="flex items-center gap-3">
-                    <span
-                      data-copy-status="quick-start-commands"
-                      role="status"
-                      class="text-sm text-mint"
-                    ></span>
-                    <button
-                      type="button"
-                      data-copy="quick-start-commands"
-                      hidden
-                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
-                    >
-                      Copy commands
-                    </button>
-                  </span>
-                </div>
-                <pre
-                  class="overflow-x-auto p-5 font-mono text-[14px] leading-7"
-                ><code id="quick-start-commands"><span data-comment class="text-on-dark-muted"># after git clone, inside the repository</span>
-cp .env.example .env
-<span data-comment class="text-on-dark-muted"># set ADMIN_PASSWORD in .env, then:</span>
-docker compose up --build</code></pre>
-              </div>
               <p class="mt-4 max-w-[60ch] text-sm text-muted">
                 Behind HTTPS, set <code class="font-mono">SECURE_COOKIES=true</code>. The other settings, such
                 as <code class="font-mono">TRUST_PROXY</code> for a reverse proxy, are in
@@ -570,32 +598,116 @@ docker compose up --build</code></pre>
             <p class="mt-3 max-w-[56ch] text-on-dark-muted">
               Fork the repository and clone your fork. Then, with Bun 1.3 installed:
             </p>
-            <div class="mt-5 overflow-hidden rounded-card border border-header-active bg-[#0f1613]">
-              <div
-                class="flex min-h-[48px] items-center justify-between gap-4 border-b border-header-active px-4"
-              >
-                <span class="text-sm text-on-dark-muted">Terminal</span>
-                <span class="flex items-center gap-3">
-                  <span data-copy-status="contribute-commands" role="status" class="text-sm text-mint"></span>
-                  <button
-                    type="button"
-                    data-copy="contribute-commands"
-                    hidden
-                    class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
-                  >
-                    Copy commands
-                  </button>
-                </span>
-              </div>
-              <pre
-                class="overflow-x-auto p-5 font-mono text-[14px] leading-7"
-              ><code id="contribute-commands">bun install
-bun run seed:demo     <span data-comment class="text-on-dark-muted"># a year of sample data</span>
-<span data-comment class="text-on-dark-muted"># your dev account; it asks for a password</span>
-bun run --cwd=apps/api cli create-user you@example.com
-bun run dev           <span data-comment class="text-on-dark-muted"># API on :3000, web on :5173</span>
-bun run test          <span data-comment class="text-on-dark-muted"># unit, integration and component</span></code></pre>
-            </div>
+            <ol
+              class="mt-5 grid list-decimal [&>li]:min-w-0 gap-5 pl-5 marker:font-mono marker:text-on-dark-muted"
+            >
+              <li>
+                Install the dependencies and load a year of sample data.
+                <div
+                  class="border border-header-active bg-[#0f1613] mt-3 flex items-center overflow-hidden rounded-card"
+                >
+                  <pre
+                    class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
+                  ><code id="contribute-install">bun install
+bun run seed:demo</code></pre>
+                  <div class="flex shrink-0 items-center gap-2 pr-2">
+                    <span
+                      data-copy-status="contribute-install"
+                      role="status"
+                      class="max-w-[7rem] text-right text-sm leading-tight text-mint"
+                    ></span>
+                    <button
+                      type="button"
+                      data-copy="contribute-install"
+                      hidden
+                      aria-label="Copy: bun install, bun run seed:demo"
+                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </li>
+              <li>
+                Create your dev account. It asks for a password.
+                <div
+                  class="border border-header-active bg-[#0f1613] mt-3 flex items-center overflow-hidden rounded-card"
+                >
+                  <pre
+                    class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
+                  ><code id="contribute-user">bun run --cwd=apps/api cli create-user you@example.com</code></pre>
+                  <div class="flex shrink-0 items-center gap-2 pr-2">
+                    <span
+                      data-copy-status="contribute-user"
+                      role="status"
+                      class="max-w-[7rem] text-right text-sm leading-tight text-mint"
+                    ></span>
+                    <button
+                      type="button"
+                      data-copy="contribute-user"
+                      hidden
+                      aria-label="Copy: bun run --cwd=apps/api cli create-user you@example.com"
+                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </li>
+              <li>
+                Start the app, with the API on :3000 and the web app on :5173. It keeps running, so leave it
+                be.
+                <div
+                  class="border border-header-active bg-[#0f1613] mt-3 flex items-center overflow-hidden rounded-card"
+                >
+                  <pre
+                    class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
+                  ><code id="contribute-dev">bun run dev</code></pre>
+                  <div class="flex shrink-0 items-center gap-2 pr-2">
+                    <span
+                      data-copy-status="contribute-dev"
+                      role="status"
+                      class="max-w-[7rem] text-right text-sm leading-tight text-mint"
+                    ></span>
+                    <button
+                      type="button"
+                      data-copy="contribute-dev"
+                      hidden
+                      aria-label="Copy: bun run dev"
+                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </li>
+              <li>
+                In another terminal, run the unit, integration and component tests.
+                <div
+                  class="border border-header-active bg-[#0f1613] mt-3 flex items-center overflow-hidden rounded-card"
+                >
+                  <pre
+                    class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
+                  ><code id="contribute-test">bun run test</code></pre>
+                  <div class="flex shrink-0 items-center gap-2 pr-2">
+                    <span
+                      data-copy-status="contribute-test"
+                      role="status"
+                      class="max-w-[7rem] text-right text-sm leading-tight text-mint"
+                    ></span>
+                    <button
+                      type="button"
+                      data-copy="contribute-test"
+                      hidden
+                      aria-label="Copy: bun run test"
+                      class="min-h-[44px] rounded-control px-3 text-sm font-semibold text-mint hover:bg-header-active focus-visible:-outline-offset-3"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ol>
             <p class="mt-5 max-w-[56ch] text-on-dark-muted">
               Work test first, one branch and one pull request per change, with Conventional Commits in
               English. The UI copy stays in Brazilian Portuguese, word for word from the design. The

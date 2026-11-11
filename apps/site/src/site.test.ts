@@ -20,6 +20,25 @@ function publicFile(path: string): string {
   return fromSite(`public/${path.replace(/^\//, '')}`);
 }
 
+/** Commands that wait for input or never return, so nothing pasted after them in one go would run as intended. */
+const BLOCKING_COMMANDS = [/\bcli create-user\b/, /^bun run dev\b/, /^docker compose up\b/];
+
+/** The text a copy button would put on the clipboard: no `data-comment` spans, no blank lines. */
+function commandsIn(block: Element): string[] {
+  const copy = block.cloneNode(true) as Element;
+  for (const comment of copy.querySelectorAll('[data-comment]')) comment.remove();
+  return (copy.textContent ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function copyTarget(button: Element): Element {
+  const target = page.getElementById(button.getAttribute('data-copy') ?? '');
+  if (!target) throw new Error(`No copy target for ${button.outerHTML}`);
+  return target;
+}
+
 function readmeCommands(): string[] {
   const readme = read('../../README.md');
   const block = /```bash\n([\s\S]*?)```/.exec(readme)?.[1] ?? '';
@@ -66,10 +85,36 @@ describe('project site', () => {
     expect(hrefs).toContain(`${REPO_URL}/issues`);
   });
 
-  it('shows the quick-start commands exactly as the README has them', () => {
-    const block = page.querySelector('#quick-start pre code')?.textContent ?? '';
-    const commands = block.split('\n').filter((line) => line.trim() && !line.startsWith('#'));
-    expect(commands).toEqual(readmeCommands());
+  it('shows the quick-start commands exactly as the README has them, across its steps in order', () => {
+    const blocks = all('#quick-start pre code').map((block) => commandsIn(block));
+    expect(blocks.flat()).toEqual(readmeCommands());
+  });
+
+  it('gives every copy button a name that says what it copies, and a status next to it', () => {
+    const buttons = all('button[data-copy]');
+    expect(buttons.length).toBeGreaterThan(1);
+    for (const button of buttons) {
+      const id = button.getAttribute('data-copy') ?? '';
+      expect(button.hasAttribute('hidden'), id).toBe(true);
+      expect(page.getElementById(id), id).not.toBeNull();
+      expect(button.getAttribute('aria-label'), id).toContain(commandsIn(copyTarget(button))[0]);
+      expect(page.querySelector(`[role="status"][data-copy-status="${id}"]`), id).not.toBeNull();
+    }
+  });
+
+  it('never puts a command that prompts or keeps running before another one in a copy target', () => {
+    const targets = all('button[data-copy]').map((button) => commandsIn(copyTarget(button)));
+    for (const commands of targets) {
+      for (const blocking of BLOCKING_COMMANDS) {
+        const index = commands.findIndex((command) => blocking.test(command));
+        if (index !== -1) expect(index, commands.join(' / ')).toBe(commands.length - 1);
+      }
+    }
+    const sharesBlock = targets.some(
+      (commands) =>
+        commands.includes('cp .env.example .env') && commands.includes('docker compose up --build'),
+    );
+    expect(sharesBlock, 'the password must be set between cp and docker compose').toBe(false);
   });
 
   it('gives every image explicit dimensions and a file that exists', () => {
@@ -82,6 +127,16 @@ describe('project site', () => {
       expect(Number(image.getAttribute('height')), src).toBeGreaterThan(0);
       expect(existsSync(publicFile(src)), src).toBe(true);
     }
+  });
+
+  it('serves the hero a phone-sized dashboard on narrow screens, sized to avoid layout shift', () => {
+    const source = page.querySelector('picture source');
+    expect(source?.getAttribute('media')).toMatch(/max-width/);
+    const srcset = source?.getAttribute('srcset') ?? '';
+    expect(existsSync(publicFile(srcset)), srcset).toBe(true);
+    expect(Number(source?.getAttribute('width'))).toBeGreaterThan(0);
+    expect(Number(source?.getAttribute('height'))).toBeGreaterThan(0);
+    expect(source?.parentElement?.querySelector('img')?.getAttribute('loading')).not.toBe('lazy');
   });
 
   it('describes every screenshot and lazy-loads all but the hero one', () => {

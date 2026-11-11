@@ -14,9 +14,17 @@ You need [Bun](https://bun.sh) 1.3. Fork the repository, clone your fork, then:
 bun install
 # a year of sample data in a dev database
 bun run seed:demo
-# your dev account; it asks for a password
+```
+
+Create your dev account. The command asks for a password, so run it on its own:
+
+```bash
 bun run --cwd=apps/api cli create-user you@example.com
-# API on :3000, web on :5173
+```
+
+Start the app, with the API on :3000 and the web app on :5173. It keeps running, so run the tests from another terminal:
+
+```bash
 bun run dev
 ```
 
@@ -29,7 +37,7 @@ bun run dev
 | `bun run lint`                   | ESLint                                                          |
 | `bun run typecheck`              | TypeScript in every workspace and in `e2e/`                     |
 | `bun run build`                  | Builds the app's SPA (what the Docker image ships)              |
-| `bun run dev:site`, `build:site` | The project site in `apps/site`, published to GitHub Pages      |
+| `bun run dev:site`, `build:site` | The project site in `apps/site` (dev on :5174), on GitHub Pages |
 | `bun run capture:site`           | Retakes the site's screenshots from the app with the demo data  |
 
 ## How changes are made
