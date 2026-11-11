@@ -40,8 +40,10 @@ export default defineConfig({
     contextOptions: { reducedMotion: 'reduce' },
   },
   webServer: {
+    // Playwright starts the web server before globalSetup, and every worker re-evaluates this file,
+    // so the old database is removed by the first step of the command, in Bun rather than `rm`.
     command: [
-      `rm -f "${DATABASE_PATH}" "${DATABASE_PATH}-wal" "${DATABASE_PATH}-shm"`,
+      'bun apps/site/scripts/remove-capture-database.ts',
       'bun run build',
       'bun apps/api/src/seed-demo.ts',
       'bun --cwd=apps/api src/server.ts',
