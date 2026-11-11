@@ -36,10 +36,14 @@ async function settle(page: Page, heading: string | RegExp) {
   await page.waitForLoadState('networkidle');
 }
 
-async function save(page: Page, name: string) {
+async function snapshot(page: Page, options: Parameters<Page['screenshot']>[0] = {}) {
   // The pointer would otherwise rest where the last click was and open a chart tooltip.
   await page.mouse.move(0, 0);
-  const png = await page.screenshot({ animations: 'disabled', caret: 'hide' });
+  return page.screenshot({ ...options, animations: 'disabled', caret: 'hide' });
+}
+
+async function save(page: Page, name: string) {
+  const png = await snapshot(page);
   writeFileSync(resolve(OUTPUT_DIR, `${name}.webp`), await toWebp(page, png));
 }
 
@@ -57,7 +61,8 @@ test('desktop screens at 1440px', async ({ page }) => {
   await save(page, 'visao-geral');
   // Link previews crop to 1.91:1, so the app is laid out at that size rather than cropped.
   await page.setViewportSize(OPEN_GRAPH);
-  await page.screenshot({
+  await settle(page, 'Outubro 2026');
+  await snapshot(page, {
     path: resolve(OUTPUT_DIR, '../og-image.jpg'),
     type: 'jpeg',
     quality: OG_JPEG_QUALITY,
@@ -89,8 +94,10 @@ test.describe('phone', () => {
   // A phone shot is shown at its CSS size, so it needs the pixel density of a phone to stay sharp.
   test.use({ viewport: PHONE, deviceScaleFactor: 2 });
 
-  test('phone screen at 375px', async ({ page }) => {
+  test('phone screens at 375px', async ({ page }) => {
     await signIn(page);
+    await settle(page, 'Outubro 2026');
+    await save(page, 'visao-geral-phone');
     await page.goto('/lancamentos');
     await settle(page, 'Outubro 2026');
     await save(page, 'lancamentos-phone');
