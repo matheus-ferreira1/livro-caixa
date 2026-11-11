@@ -9,6 +9,8 @@
 @import '@fontsource/ibm-plex-mono/latin-600.css';
 
 @custom-variant dark (&:is(.dark *));
+/* Screens tall enough to spare room for a header that stays put: a phone held sideways is not. */
+@custom-variant tall (@media (min-height: 30rem));
 
 /* Design tokens from the Livro-caixa design (see apps/web/CLAUDE.md › Design system). */
 :root {
@@ -70,7 +72,7 @@
   --phone-nav-height: 3.5rem;
   --phone-nav-clearance: calc(var(--phone-nav-height) + env(safe-area-inset-bottom));
 
-  /* The sticky header's height from 768px: two rows on tablets, one from 1024px. */
+  /* The sticky header's height from 768px on tall screens: two rows on tablets, one from 1024px. */
   --sticky-header-height: 6.75rem;
 }
 
@@ -79,8 +81,10 @@
   :root {
     --phone-nav-clearance: 0px;
   }
+}
 
-  /* Keeps focused fields and scroll targets from landing under the sticky header. */
+/* Keeps focused fields and scroll targets from landing under the sticky header. */
+@media (min-width: 48rem) and (min-height: 30rem) {
   html {
     scroll-padding-top: var(--sticky-header-height);
   }
