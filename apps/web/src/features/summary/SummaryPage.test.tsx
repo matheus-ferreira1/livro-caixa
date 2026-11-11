@@ -1,6 +1,7 @@
 import {
   monthName,
   monthOf,
+  translator,
   todayIso,
   yearSummary,
   type SummaryMode,
@@ -33,7 +34,11 @@ const ENTRIES = [
   entry({ date: '2026-03-10', valueCents: 10_000, split: true, confirmed: false }),
 ];
 
-function setup(path: string, entries: Transaction[] = ENTRIES) {
+function setup(
+  path: string,
+  entries: Transaction[] = ENTRIES,
+  preferences?: { language: 'pt-BR' | 'en'; currency: 'BRL' | 'USD' },
+) {
   const requests: string[] = [];
   mockApi((url) => {
     requests.push(url);
@@ -49,6 +54,7 @@ function setup(path: string, entries: Transaction[] = ENTRIES) {
         { path: '/lancamentos', element: <h1>Lançamentos</h1> },
       ],
       path,
+      { preferences },
     ),
   };
 }
@@ -127,7 +133,9 @@ describe('SummaryPage', () => {
   test('flags the current month', async () => {
     const month = monthOf(todayIso());
     setup(`/resumo?ano=${month.slice(0, 4)}`, []);
-    expect(within(await monthRow(monthName(month))).getByText('Atual')).toBeInTheDocument();
+    expect(
+      within(await monthRow(monthName(month, translator('pt-BR')))).getByText('Atual'),
+    ).toBeInTheDocument();
   });
 
   test('draws a labeled bar for a month with data', async () => {
@@ -142,5 +150,17 @@ describe('SummaryPage', () => {
     await user.click(await screen.findByRole('link', { name: 'Ver lançamentos de Março' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/lancamentos'));
     expect(router.state.location.search).toBe('?mes=2026-03');
+  });
+
+  test('speaks English with dollar amounts when the instance is set that way', async () => {
+    setup('/resumo?ano=2026', [entry({ date: '2026-02-05', type: 'receita', valueCents: 123_456 })], {
+      language: 'en',
+      currency: 'USD',
+    });
+    expect(await screen.findByText('Income this year')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Actual' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View entries for February' })).toBeInTheDocument();
+    expect(screen.getAllByText('$1,234.56').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Receitas no ano')).not.toBeInTheDocument();
   });
 });

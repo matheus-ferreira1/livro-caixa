@@ -1,6 +1,7 @@
-import type { SummaryStatus } from '@livro-caixa/domain';
+import type { MessageKey, SummaryStatus } from '@livro-caixa/domain';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { STACKED_CELL_LABEL } from '@/shared/stacked';
 import type { SummaryMonthRow, SummaryViewModel } from '../view-model';
@@ -44,7 +45,12 @@ const BALANCE_CLASSES: Record<SummaryMonthRow['balanceTone'], string> = {
   expense: 'text-expense',
 };
 
-const AMOUNT_COLUMNS = ['Receitas', 'Despesas', 'Acertos', 'Balanço'];
+const AMOUNT_COLUMNS = [
+  'summary.colIncome',
+  'summary.colExpense',
+  'summary.colSettlement',
+  'summary.colBalance',
+] as const satisfies readonly MessageKey[];
 
 export function SummaryTable({
   year,
@@ -55,8 +61,9 @@ export function SummaryTable({
   months: SummaryMonthRow[];
   totals: SummaryViewModel['totals'];
 }) {
+  const { t } = usePreferences();
   return (
-    <section aria-label="Tabela do resumo mensal" className="overflow-hidden rounded-[14px] border bg-card">
+    <section aria-label={t('summary.tableLabel')} className="overflow-hidden rounded-[14px] border bg-card">
       <div className="md:overflow-x-auto">
         <table
           role="table"
@@ -75,18 +82,18 @@ export function SummaryTable({
           <thead role="rowgroup" className="max-md:sr-only">
             <tr role="row" className="h-11 border-b bg-muted font-sans">
               <th role="columnheader" scope="col" className={cn(HEADER_CELL, 'pl-5 text-left')}>
-                Mês
+                {t('summary.colMonth')}
               </th>
               {AMOUNT_COLUMNS.map((label) => (
                 <th key={label} role="columnheader" scope="col" className={cn(HEADER_CELL, 'text-right')}>
-                  {label}
+                  {t(label)}
                 </th>
               ))}
               <th role="columnheader" scope="col" className={cn(HEADER_CELL, 'text-left')}>
-                Acumulado
+                {t('summary.colAccumulated')}
               </th>
               <th role="columnheader" scope="col" className={cn(HEADER_CELL, 'text-left')}>
-                Situação
+                {t('summary.colStatus')}
               </th>
               <td role="cell" />
             </tr>
@@ -99,32 +106,32 @@ export function SummaryTable({
           <tfoot role="rowgroup" className="block md:table-footer-group">
             <tr role="row" className={cn(ROW, 'bg-muted font-semibold md:h-14')}>
               <th role="rowheader" scope="row" className={cn(FIRST_CELL, 'min-h-9 font-bold')}>
-                Total {year}
+                {t('summary.total', year)}
               </th>
               <td
                 role="cell"
-                data-label="Receitas"
+                data-label={t('summary.colIncome')}
                 className={cn(AMOUNT_CELL, STACKED_AREA.income, 'text-income')}
               >
                 {totals.income}
               </td>
               <td
                 role="cell"
-                data-label="Despesas"
+                data-label={t('summary.colExpense')}
                 className={cn(AMOUNT_CELL, STACKED_AREA.expense, 'text-expense')}
               >
                 {totals.expense}
               </td>
               <td
                 role="cell"
-                data-label="Acertos"
+                data-label={t('summary.colSettlement')}
                 className={cn(AMOUNT_CELL, STACKED_AREA.settlement, 'text-settlement')}
               >
                 {totals.settlement}
               </td>
               <td
                 role="cell"
-                data-label="Balanço"
+                data-label={t('summary.colBalance')}
                 className={cn(AMOUNT_CELL, STACKED_AREA.balance, BALANCE_CLASSES[totals.balanceTone])}
               >
                 {totals.balance}
@@ -139,6 +146,7 @@ export function SummaryTable({
 }
 
 function MonthRow({ month: m }: { month: SummaryMonthRow }) {
+  const { t } = usePreferences();
   const cellColor = m.hasData ? undefined : 'text-muted-foreground';
   // Stacked, a month with nothing to show keeps only its first line.
   const amountCell = cn(AMOUNT_CELL, !m.hasData && 'max-md:hidden');
@@ -149,20 +157,28 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
           {m.name}
           {m.isCurrent && (
             <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-white uppercase">
-              Atual
+              {t('summary.current')}
             </span>
           )}
         </span>
       </th>
-      <td role="cell" data-label="Receitas" className={cn(amountCell, STACKED_AREA.income, cellColor)}>
+      <td
+        role="cell"
+        data-label={t('summary.colIncome')}
+        className={cn(amountCell, STACKED_AREA.income, cellColor)}
+      >
         {m.income}
       </td>
-      <td role="cell" data-label="Despesas" className={cn(amountCell, STACKED_AREA.expense, cellColor)}>
+      <td
+        role="cell"
+        data-label={t('summary.colExpense')}
+        className={cn(amountCell, STACKED_AREA.expense, cellColor)}
+      >
         {m.expense}
       </td>
       <td
         role="cell"
-        data-label="Acertos"
+        data-label={t('summary.colSettlement')}
         className={cn(
           amountCell,
           STACKED_AREA.settlement,
@@ -173,14 +189,14 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
       </td>
       <td
         role="cell"
-        data-label="Balanço"
+        data-label={t('summary.colBalance')}
         className={cn(amountCell, STACKED_AREA.balance, 'font-semibold', BALANCE_CLASSES[m.balanceTone])}
       >
         {m.balance}
       </td>
       <td
         role="cell"
-        data-label="Acumulado"
+        data-label={t('summary.colAccumulated')}
         className={cn(
           STACKED_CELL_LABEL,
           m.hasData ? STACKED_AREA.accumulated : STACKED_AREA.accumulatedAlone,

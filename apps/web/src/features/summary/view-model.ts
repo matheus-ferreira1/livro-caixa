@@ -1,10 +1,11 @@
 import {
   formatCompactAmount,
-  formatMoney,
   monthName,
   monthShortName,
   summaryStatus,
   type Cents,
+  type Localization,
+  type MessageKey,
   type MonthKey,
   type SummaryStatus,
   type YearSummary,
@@ -15,11 +16,11 @@ import type { TileSpec } from '@/shared/SummaryTiles';
 
 const NO_VALUE = '—';
 
-const STATUS_LABELS: Record<SummaryStatus, string> = {
-  empty: 'Sem lançamentos',
-  open: 'Em aberto',
-  closed: 'Fechado',
-};
+const STATUS_KEYS = {
+  empty: 'summary.statusEmpty',
+  open: 'summary.statusOpen',
+  closed: 'summary.statusClosed',
+} as const satisfies Record<SummaryStatus, MessageKey>;
 
 export type BarTone = 'surplus' | 'surplus-pending' | 'deficit' | 'deficit-pending';
 
@@ -69,37 +70,36 @@ export interface SummaryViewModel {
   };
 }
 
-function summaryTiles(totals: YearSummaryTotals): TileSpec[] {
+function summaryTiles(totals: YearSummaryTotals, { t, money }: Localization): TileSpec[] {
   const { activeMonths, bestMonth } = totals;
+  const formatMoney = money.format;
   return [
     {
-      label: 'Receitas no ano',
+      label: t('summary.tileIncome'),
       tone: 'income',
       value: formatMoney(totals.incomeCents),
-      sub: `Mais ${formatMoney(totals.settlementCents)} em acertos`,
+      sub: t('summary.tileIncomeSub', formatMoney(totals.settlementCents)),
     },
     {
-      label: 'Despesas no ano',
+      label: t('summary.tileExpense'),
       tone: 'expense',
       value: formatMoney(totals.expenseCents),
-      sub: `Média de ${formatMoney(totals.averageExpenseCents)} por mês`,
+      sub: t('summary.tileExpenseSub', formatMoney(totals.averageExpenseCents)),
     },
     {
-      label: 'Média de balanço mensal',
+      label: t('summary.tileAverage'),
       negative: totals.averageBalanceCents < 0,
       value: formatMoney(totals.averageBalanceCents),
-      sub: activeMonths
-        ? `Em ${activeMonths} ${activeMonths === 1 ? 'mês' : 'meses'} com lançamentos`
-        : 'Nenhum mês com lançamentos',
+      sub: activeMonths ? t('summary.tileAverageSub', activeMonths) : t('summary.tileAverageNone'),
     },
     {
-      label: 'Acumulado no ano',
+      label: t('summary.tileAccumulated'),
       dark: true,
       negative: totals.balanceCents < 0,
       value: formatMoney(totals.balanceCents),
       sub: bestMonth
-        ? `Melhor mês: ${monthName(bestMonth.month)} (${formatMoney(bestMonth.balanceCents)})`
-        : 'Sem lançamentos no ano',
+        ? t('summary.tileAccumulatedBest', monthName(bestMonth.month, t), formatMoney(bestMonth.balanceCents))
+        : t('summary.tileAccumulatedNone'),
     },
   ];
 }
@@ -112,7 +112,11 @@ function chartScale(months: YearSummaryMonth[]) {
   return { highest, percent: (cents: Cents) => `${((cents / range) * 100).toFixed(2)}%` };
 }
 
-function barOf(m: YearSummaryMonth, { highest, percent }: ReturnType<typeof chartScale>): SummaryBar | null {
+function barOf(
+  m: YearSummaryMonth,
+  { highest, percent }: ReturnType<typeof chartScale>,
+  { t, money, language }: Localization,
+): SummaryBar | null {
   if (!m.hasData) return null;
   const positive = m.balanceCents >= 0;
   const top = positive ? highest - m.balanceCents : highest;
@@ -124,56 +128,62 @@ function barOf(m: YearSummaryMonth, { highest, percent }: ReturnType<typeof char
     labelTop: positive ? `calc(${percent(top)} - 20px)` : `calc(${percent(top + height)} + 4px)`,
     positive,
     tone: m.hasPending ? `${base}-pending` : base,
-    compactLabel: formatCompactAmount(m.balanceCents),
-    ariaLabel: `${monthName(m.month)}: balanço de ${formatMoney(m.balanceCents)}`,
+    compactLabel: formatCompactAmount(m.balanceCents, language),
+    ariaLabel: t('summary.barLabel', monthName(m.month, t), money.format(m.balanceCents)),
   };
 }
 
-const moneyOrDash = (shown: boolean, cents: Cents) => (shown ? formatMoney(cents) : NO_VALUE);
+const moneyOrDash = (money: Localization['money'], shown: boolean, cents: Cents) =>
+  shown ? money.format(cents) : NO_VALUE;
 
 /** Display data for the Resumo mensal, labeled as in the design. */
-export function summaryViewModel(summary: YearSummary, currentMonth: MonthKey): SummaryViewModel {
+export function summaryViewModel(
+  summary: YearSummary,
+  currentMonth: MonthKey,
+  l10n: Localization,
+): SummaryViewModel {
+  const { t, money } = l10n;
   const { months, totals } = summary;
   const scale = chartScale(months);
   const largestAccumulated = Math.max(1, ...months.map((m) => Math.abs(m.accumulatedCents ?? 0)));
 
   return {
-    tiles: summaryTiles(totals),
+    tiles: summaryTiles(totals, l10n),
     zeroLineTop: scale.percent(scale.highest),
     months: months.map((m) => {
-      const name = monthName(m.month);
+      const name = monthName(m.month, t);
       const status = summaryStatus(m);
       const hasSettlement = m.hasData && m.settlementCents > 0;
       const accumulated = m.accumulatedCents;
       return {
         month: m.month,
         name,
-        shortName: monthShortName(m.month),
+        shortName: monthShortName(m.month, t),
         isCurrent: m.month === currentMonth,
-        income: moneyOrDash(m.hasData, m.incomeCents),
-        expense: moneyOrDash(m.hasData, m.expenseCents),
-        settlement: moneyOrDash(hasSettlement, m.settlementCents),
+        income: moneyOrDash(money, m.hasData, m.incomeCents),
+        expense: moneyOrDash(money, m.hasData, m.expenseCents),
+        settlement: moneyOrDash(money, hasSettlement, m.settlementCents),
         hasData: m.hasData,
         hasSettlement,
-        balance: moneyOrDash(m.hasData, m.balanceCents),
+        balance: moneyOrDash(money, m.hasData, m.balanceCents),
         balanceTone: !m.hasData ? 'muted' : m.balanceCents < 0 ? 'expense' : 'income',
-        accumulated: accumulated === null ? NO_VALUE : formatMoney(accumulated),
+        accumulated: accumulated === null ? NO_VALUE : money.format(accumulated),
         hasAccumulated: accumulated !== null,
         accumulatedWidth:
           accumulated === null ? '0%' : `${((Math.abs(accumulated) / largestAccumulated) * 100).toFixed(1)}%`,
         accumulatedNegative: accumulated !== null && accumulated < 0,
-        statusLabel: STATUS_LABELS[status],
+        statusLabel: t(STATUS_KEYS[status]),
         statusTone: status,
-        openLabel: `Ver lançamentos de ${name}`,
+        openLabel: t('summary.openMonth', name),
         href: `/lancamentos?mes=${m.month}`,
-        bar: barOf(m, scale),
+        bar: barOf(m, scale, l10n),
       };
     }),
     totals: {
-      income: formatMoney(totals.incomeCents),
-      expense: formatMoney(totals.expenseCents),
-      settlement: formatMoney(totals.settlementCents),
-      balance: formatMoney(totals.balanceCents),
+      income: money.format(totals.incomeCents),
+      expense: money.format(totals.expenseCents),
+      settlement: money.format(totals.settlementCents),
+      balance: money.format(totals.balanceCents),
       balanceTone: totals.balanceCents < 0 ? 'expense' : 'income',
     },
   };
