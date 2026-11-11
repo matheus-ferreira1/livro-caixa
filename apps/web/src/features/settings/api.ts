@@ -1,5 +1,4 @@
 import {
-  DEFAULT_PREFERENCES,
   type Category,
   type CategoryInput,
   type CategoryPatch,
@@ -110,14 +109,18 @@ export function useSaveSettings() {
     mutationFn: async (changes: SettingsInput) =>
       (await apiFetch<{ settings: Settings }>('/api/settings', { method: 'PUT', ...jsonBody(changes) }))
         .settings,
-    onSuccess: (settings, changes) => {
+    onSuccess: (settings) => {
       queryClient.setQueryData(SETTINGS_KEY, settings);
-      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, (current = DEFAULT_PREFERENCES) => ({
-        language: changes.language ?? current.language,
-        currency: changes.currency ?? current.currency,
-      }));
+      // Taken from the response, which merges onto what the server holds, so a change made on
+      // another device in the meantime is not hidden behind what this client last knew.
+      const previous = queryClient.getQueryData<Preferences>(PREFERENCES_KEY);
+      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, {
+        language: settings.language,
+        currency: settings.currency,
+      });
       // The server writes some text itself (the dashboard's category names and partner name).
-      if (changes.language) void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (settings.language !== previous?.language)
+        void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
     onError: showError,
   });
