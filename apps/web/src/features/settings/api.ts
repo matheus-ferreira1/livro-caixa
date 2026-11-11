@@ -10,6 +10,7 @@ import {
 } from '@livro-caixa/domain';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { TRANSACTIONS_KEY } from '@/features/transactions/api';
 import { apiFetch, jsonBody } from '@/shared/api/client';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
@@ -115,6 +116,8 @@ export function useSaveSettings() {
         language: changes.language ?? current.language,
         currency: changes.currency ?? current.currency,
       }));
+      // The server writes some text itself (the dashboard's category names and partner name).
+      if (changes.language) void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
     onError: showError,
   });

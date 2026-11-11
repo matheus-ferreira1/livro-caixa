@@ -1,6 +1,7 @@
 import type { PublicUser } from '@livro-caixa/domain';
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, jsonBody } from '@/shared/api/client';
+import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 import { IGNORE_UNAUTHORIZED, isUnauthorized } from '@/shared/api/query-client';
 
 export const CURRENT_USER_KEY = ['auth', 'me'] as const;
@@ -48,7 +49,8 @@ export function useLogout() {
     // Signing out handles a gone session itself and shows its own notice.
     meta: IGNORE_UNAUTHORIZED,
     onSettled: () => {
-      queryClient.clear();
+      // The language and currency belong to the instance, not to the user who leaves.
+      queryClient.removeQueries({ predicate: ({ queryKey }) => queryKey[0] !== PREFERENCES_KEY[0] });
       queryClient.setQueryData(CURRENT_USER_KEY, null);
     },
   });

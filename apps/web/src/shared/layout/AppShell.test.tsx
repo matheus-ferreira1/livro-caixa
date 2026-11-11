@@ -2,6 +2,7 @@ import { buildDashboard, translator, yearSummary } from '@livro-caixa/domain';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { routes } from '@/routes';
+import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 import { mockApi, renderRoutes } from '@/test/render';
 
 const USER = { id: 'u1', email: 'maria.silva@casa.dev', name: 'Maria Silva' };
@@ -110,5 +111,26 @@ describe('AppShell', () => {
     ).toEqual(['Overview', 'Entries', 'Net worth', 'Monthly summary', 'Settings']);
     await user.click(screen.getByRole('button', { name: 'Maria Silva’s account' }));
     expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
+  });
+
+  test('keeps the instance language on the sign-in page after signing out', async () => {
+    let signedIn = true;
+    mockApi((url, init) => {
+      if (url === '/api/auth/logout' && init.method === 'POST') {
+        signedIn = false;
+        return { status: 204 };
+      }
+      return signedIn ? { status: 200, body: { user: USER } } : { status: 401 };
+    });
+    const { user, queryClient } = renderRoutes(routes, '/lancamentos', {
+      preferences: { language: 'en', currency: 'USD' },
+    });
+    await user.click(await screen.findByRole('button', { name: 'Maria Silva’s account' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('You signed out of your account.');
+    expect(document.documentElement.lang).toBe('en');
+    expect(queryClient.getQueryData(PREFERENCES_KEY)).toEqual({ language: 'en', currency: 'USD' });
   });
 });

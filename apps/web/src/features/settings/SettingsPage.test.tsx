@@ -207,4 +207,16 @@ describe('Configurações', () => {
     await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Give the category a name.');
   });
+
+  test('refetches what the server wrote in the old language when the language changes', async () => {
+    const { user, queryClient } = setup();
+    const dashboardKey = ['transactions', 'dashboard', '2026-03', 'real'];
+    queryClient.setQueryData(dashboardKey, { partnerName: 'Companheira' });
+    await user.selectOptions(await screen.findByLabelText('Moeda'), 'USD');
+    await waitFor(() => expect(screen.getByLabelText('Moeda')).toHaveValue('USD'));
+    expect(queryClient.getQueryState(dashboardKey)?.isInvalidated).toBe(false);
+
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
+    await waitFor(() => expect(queryClient.getQueryState(dashboardKey)?.isInvalidated).toBe(true));
+  });
 });
