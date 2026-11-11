@@ -12,5 +12,8 @@ export const commonPtBR = {
 
   'common.close': 'Fechar',
 
+  'preferences.loadFailed': 'Não foi possível carregar as preferências.',
+  'preferences.retry': 'Tentar novamente',
+
   'api.unreachable': 'Não foi possível falar com o servidor. Tente novamente.',
 };

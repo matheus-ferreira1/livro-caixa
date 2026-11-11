@@ -13,5 +13,8 @@ export const commonEn: typeof commonPtBR = {
 
   'common.close': 'Close',
 
+  'preferences.loadFailed': 'Could not load the preferences.',
+  'preferences.retry': 'Try again',
+
   'api.unreachable': 'Could not reach the server. Try again.',
 };
