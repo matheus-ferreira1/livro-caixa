@@ -21,3 +21,5 @@ export function numberMarks(currency: Currency): NumberMarks {
 }
 
 export const groupMarkFor = (decimal: NumberMarks['decimal']): ',' | '.' => (decimal === ',' ? '.' : ',');
+
+export const escapeForRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -1,6 +1,6 @@
 import type { Currency, Language } from '../settings/preferences';
 import { formatQuantity, parseQuantity, toQuantityInput } from '../wealth/quantity';
-import { groupMarkFor, numberMarks, type NumberMarks } from './number-marks';
+import { escapeForRegExp, groupMarkFor, numberMarks, type NumberMarks } from './number-marks';
 
 /** Money is always an integer number of cents, whatever the currency (all of them have two decimals). */
 export type Cents = number;
@@ -32,8 +32,6 @@ export interface MoneyFormat {
   parseQuantity(input: string): number | null;
   toQuantityInput(quantityE8: number): string;
 }
-
-const escapeForRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function moneyPatterns({ decimal }: NumberMarks) {
   const group = escapeForRegExp(groupMarkFor(decimal));
@@ -73,9 +71,7 @@ export function moneyFormat(currency: Currency): MoneyFormat {
     format,
     formatSigned: (cents) => `${cents < 0 ? MINUS : '+'} ${format(Math.abs(cents))}`,
     formatPercent: (ratio, fractionDigits = 1) =>
-      new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: fractionDigits })
-        .format(ratio)
-        .replace('-', MINUS),
+      percentFormatter(locale, fractionDigits).format(ratio).replace('-', MINUS),
     parse,
     parseSigned(input) {
       const raw = input.trim();
@@ -90,9 +86,31 @@ export function moneyFormat(currency: Currency): MoneyFormat {
   };
 }
 
+const percentFormatters = new Map<string, Intl.NumberFormat>();
+
+/** One formatter per locale and precision: building one is far dearer than using it. */
+function percentFormatter(locale: string, fractionDigits: number): Intl.NumberFormat {
+  const key = `${locale}:${fractionDigits}`;
+  const cached = percentFormatters.get(key);
+  if (cached) return cached;
+  const created = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: fractionDigits });
+  percentFormatters.set(key, created);
+  return created;
+}
+
+const compactFormatters = new Map<Language, Intl.NumberFormat>();
+
+function compactFormatter(language: Language): Intl.NumberFormat {
+  const cached = compactFormatters.get(language);
+  if (cached) return cached;
+  const created = new Intl.NumberFormat(language, { notation: 'compact', maximumFractionDigits: 1 });
+  compactFormatters.set(language, created);
+  return created;
+}
+
 /** The word in a compact amount follows the language ("1,2 mil", "1.2K"), so it is the one number that does. */
 export function formatCompactAmount(cents: Cents, language: Language): string {
-  return new Intl.NumberFormat(language, { notation: 'compact', maximumFractionDigits: 1 })
+  return compactFormatter(language)
     .format(cents / CENTS_PER_UNIT)
     .replace('-', MINUS);
 }
