@@ -1,11 +1,12 @@
-import type { WealthGrouping } from '@livro-caixa/domain';
+import type { MessageKey, WealthGrouping } from '@livro-caixa/domain';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { Segmented } from '@/shared/Segmented';
 import type { AllocationView } from '../view-model';
 
 const GROUPING_OPTIONS = [
-  ['class', 'Por classe'],
-  ['institution', 'Por instituição'],
-] as const;
+  ['class', 'wealth.byClass'],
+  ['institution', 'wealth.byInstitution'],
+] as const satisfies readonly (readonly [WealthGrouping, MessageKey])[];
 
 interface AllocationCardProps {
   allocation: AllocationView;
@@ -14,6 +15,8 @@ interface AllocationCardProps {
 }
 
 export function AllocationCard({ allocation, grouping, onGroupingChange }: AllocationCardProps) {
+  const { t } = usePreferences();
+  const options = GROUPING_OPTIONS.map(([key, label]) => [key, t(label)] as const);
   return (
     <section
       aria-labelledby="allocation-title"
@@ -21,17 +24,17 @@ export function AllocationCard({ allocation, grouping, onGroupingChange }: Alloc
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="allocation-title" className="m-0 text-base font-bold">
-          Distribuição da carteira
+          {t('wealth.allocationTitle')}
         </h2>
         <Segmented
-          label="Agrupar por"
+          label={t('wealth.groupBy')}
           value={grouping}
-          options={GROUPING_OPTIONS}
+          options={options}
           onChange={onGroupingChange}
         />
       </div>
       {allocation.legend.length === 0 ? (
-        <p className="m-0 text-sm text-muted-foreground">Nenhum ativo na carteira.</p>
+        <p className="m-0 text-sm text-muted-foreground">{t('wealth.noAssets')}</p>
       ) : (
         <>
           <div

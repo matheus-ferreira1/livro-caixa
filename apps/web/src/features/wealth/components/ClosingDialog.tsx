@@ -9,6 +9,7 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { isUnauthorized } from '@/shared/api/query-client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { STACKED_CELL_LABEL, STACKED_FIELD } from '@/shared/stacked';
 import { Dialog, DialogClose, DialogContent, DialogTitleBar } from '@/shared/ui/dialog';
@@ -38,12 +39,14 @@ interface ClosingDialogProps {
 }
 
 export function ClosingDialog({ wealth, today, open, onClose }: ClosingDialogProps) {
+  const localization = usePreferences();
+  const { t } = localization;
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-[1000px] overflow-hidden bg-card">
         <DialogTitleBar
-          title={`Fechamento de ${monthLabel(wealth.openMonth)}`}
-          description={closingSubtitle(wealth.kpis.lastClosing)}
+          title={t('wealth.closingOf', monthLabel(wealth.openMonth, t))}
+          description={closingSubtitle(wealth.kpis.lastClosing, localization)}
         />
         {/* Remount on every open so the review starts from the stored values again. */}
         {open && <ClosingForm wealth={wealth} today={today} onClose={onClose} />}
@@ -53,11 +56,13 @@ export function ClosingDialog({ wealth, today, open, onClose }: ClosingDialogPro
 }
 
 function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'>) {
+  const l10n = usePreferences();
+  const { t, money } = l10n;
   const [edits, setEdits] = useState<ClosingEdits>({});
   const [error, setError] = useState('');
   const register = useRegisterClosing();
   const month = wealth.openMonth;
-  const view = closingView(wealth.assets, edits, month, wealth.kpis.lastClosing, Date.now());
+  const view = closingView(wealth.assets, edits, month, wealth.kpis.lastClosing, Date.now(), l10n);
 
   const edit = (id: string, patch: ClosingEdits[string]) => {
     setEdits((previous) => ({ ...previous, [id]: { ...previous[id], ...patch } }));
@@ -65,14 +70,14 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
   };
 
   const submit = () => {
-    const result = closingRequestFrom(closingDraft(wealth.assets, edits), month, today);
+    const result = closingRequestFrom(closingDraft(wealth.assets, edits, money), month, today, t);
     if ('error' in result) {
       setError(result.error);
       return;
     }
     register.mutate(result.request, {
       onSuccess: () => {
-        toast(`Fechamento de ${monthLabel(month)} registrado`);
+        toast(t('wealth.closing.registered', monthLabel(month, t)));
         onClose();
       },
       onError: (err) => {
@@ -87,11 +92,8 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
         {view.manualRows.length > 0 && (
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-col gap-0.5">
-              <h3 className="m-0 text-base font-bold">1. Valores manuais</h3>
-              <span className="text-sm text-muted-foreground">
-                Abra o app do banco uma vez, copie o saldo de cada item e informe quanto você colocou (+) ou
-                tirou (−) no mês.
-              </span>
+              <h3 className="m-0 text-base font-bold">{t('wealth.closing.manualTitle')}</h3>
+              <span className="text-sm text-muted-foreground">{t('wealth.closing.manualHelp')}</span>
             </div>
             <div className="overflow-hidden rounded-xl border">
               <div className="md:overflow-x-auto">
@@ -102,10 +104,10 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
                       'min-h-11 border-b max-md:hidden bg-muted text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase',
                     )}
                   >
-                    <span>Ativo</span>
-                    <span className="text-right">Último valor</span>
-                    <span className="text-right">Aporte / resgate</span>
-                    <span className="text-right">Valor atual</span>
+                    <span>{t('wealth.colAsset')}</span>
+                    <span className="text-right">{t('wealth.closing.colLast')}</span>
+                    <span className="text-right">{t('wealth.closing.colFlow')}</span>
+                    <span className="text-right">{t('wealth.closing.colValue')}</span>
                   </div>
                   {view.manualRows.map((row) => (
                     <ManualRow key={row.id} row={row} onChange={(patch) => edit(row.id, patch)} />
@@ -119,7 +121,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
         {view.autoRows.length > 0 && (
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-col gap-0.5">
-              <h3 className="m-0 text-base font-bold">2. Cotações automáticas</h3>
+              <h3 className="m-0 text-base font-bold">{t('wealth.closing.autoTitle')}</h3>
               <span className="text-sm text-muted-foreground">{view.autoNote}</span>
             </div>
             <div className="overflow-hidden rounded-xl border">
@@ -146,10 +148,18 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
 
       <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 border-t bg-muted px-4 py-4 sm:px-6">
         <div className="flex flex-wrap gap-x-6 gap-y-2">
-          <Total label="Patrimônio no fechamento" value={view.total} />
-          <Total label="Variação no mês" value={view.change} className={toneClass(view.changeCents)} />
-          <Total label="Aportes" value={view.contributions} />
-          <Total label="Rendimento" value={view.yieldLabel} className={toneClass(view.yieldCents)} />
+          <Total label={t('wealth.closing.totalWealth')} value={view.total} />
+          <Total
+            label={t('wealth.closing.totalChange')}
+            value={view.change}
+            className={toneClass(view.changeCents)}
+          />
+          <Total label={t('wealth.closing.totalContributions')} value={view.contributions} />
+          <Total
+            label={t('wealth.closing.totalYield')}
+            value={view.yieldLabel}
+            className={toneClass(view.yieldCents)}
+          />
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {error && (
@@ -159,7 +169,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
           )}
           <div className="flex flex-wrap justify-end gap-2.5">
             <DialogClose className="min-h-11 rounded-[10px] border bg-card px-[18px] font-semibold text-ink hover:bg-accent">
-              Cancelar
+              {t('wealth.cancel')}
             </DialogClose>
             <button
               type="button"
@@ -183,6 +193,7 @@ function ManualRow({
   row: ClosingRowView;
   onChange: (patch: { flow?: string; value?: string }) => void;
 }) {
+  const { t } = usePreferences();
   return (
     <div className={cn(ROW_GRID, 'min-h-[60px] border-b border-divider py-3 last:border-b-0 md:py-2')}>
       <span className="flex min-w-0 flex-col">
@@ -190,13 +201,13 @@ function ManualRow({
         <span className="truncate text-[13px] text-muted-foreground">{row.subtitle}</span>
       </span>
       <span
-        data-label="Último valor"
+        data-label={t('wealth.closing.colLast')}
         className={cn(STACKED_CELL_LABEL, 'flex flex-col items-end font-mono text-sm')}
       >
         {row.last}
         <span className="font-sans text-xs text-muted-foreground">{row.lastDate}</span>
       </span>
-      <label data-label="Aporte / resgate" className={STACKED_FIELD}>
+      <label data-label={t('wealth.closing.colFlow')} className={STACKED_FIELD}>
         <input
           type="text"
           aria-label={row.flowLabel}
@@ -206,7 +217,7 @@ function ManualRow({
           className={cn(AMOUNT_INPUT, row.flowValid ? 'border-input' : 'border-expense')}
         />
       </label>
-      <label data-label="Valor atual" className={STACKED_FIELD}>
+      <label data-label={t('wealth.closing.colValue')} className={STACKED_FIELD}>
         <input
           type="text"
           inputMode="decimal"

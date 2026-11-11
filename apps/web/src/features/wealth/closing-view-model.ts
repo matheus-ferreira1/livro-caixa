@@ -4,22 +4,19 @@ import {
   CLOSING_OPEN_DAY,
   closingDraft,
   dateParts,
-  formatMoney,
-  formatQuantity,
-  formatSignedMoney,
   monthLabel,
   monthName,
   unavailableQuoteCount,
   type Asset,
   type ClosingEdits,
+  type Localization,
+  type Translate,
   type MonthKey,
   type Wealth,
 } from '@livro-caixa/domain';
 import { pricingOf, type AssetRow } from './view-model';
 
 const NO_VALUE = '—';
-const MANUAL_REVIEW = 'Uma vez por mês: confira os valores manuais e informe aportes ou resgates.';
-const AUTO_TRADES = 'Compras e vendas são registradas editando o ativo (quantidade e preço médio).';
 
 type LastClosing = { month: MonthKey; totalCents: number };
 
@@ -57,40 +54,46 @@ export interface ClosingView {
   submitLabel: string;
 }
 
-function missingQuotes(count: number): string {
-  return count === 1
-    ? '1 ativo sem cotação usa o último preço salvo.'
-    : `${count} ativos sem cotação usam o último preço salvo.`;
+function missingQuotes(count: number, t: Translate): string {
+  return count === 1 ? t('wealth.closing.missingOne') : t('wealth.closing.missingMany', count);
 }
 
-function closingAutoNote(assets: Asset[]): string {
+function closingAutoNote(assets: Asset[], t: Translate): string {
   const missing = unavailableQuoteCount(assets);
+  const trades = t('wealth.closing.autoTrades');
   return missing === 0
-    ? `Já atualizadas, nada a fazer. ${AUTO_TRADES}`
-    : `${missingQuotes(missing)} Para atualizar o preço, edite o ativo antes de fechar. ${AUTO_TRADES}`;
+    ? t('wealth.closing.autoUpToDate', trades)
+    : t('wealth.closing.autoStale', missingQuotes(missing, t), trades);
 }
 
-function closingBannerDetail(assets: Asset[]): string {
+function closingBannerDetail(assets: Asset[], t: Translate): string {
   const missing = unavailableQuoteCount(assets);
+  const review = t('wealth.closing.manualReview');
   return missing === 0
-    ? `${MANUAL_REVIEW} As cotações automáticas já estão em dia.`
-    : `${MANUAL_REVIEW} ${missingQuotes(missing)}`;
+    ? t('wealth.closing.bannerUpToDate', review)
+    : t('wealth.closing.bannerMissing', review, missingQuotes(missing, t));
 }
 
-export function closingBanner(wealth: Wealth): ClosingBanner {
+export function closingBanner(wealth: Wealth, t: Translate): ClosingBanner {
   const open = wealth.openMonth;
   if (wealth.closingAvailable) {
     return {
       kind: 'open',
-      title: `O fechamento de ${monthLabel(open)} está disponível.`,
-      detail: closingBannerDetail(wealth.assets),
+      title: t('wealth.closing.available', monthLabel(open, t)),
+      detail: closingBannerDetail(wealth.assets, t),
     };
   }
   const last = wealth.kpis.lastClosing;
   if (!last) return null;
   return {
     kind: 'waiting',
-    label: `Fechamento de ${monthLabel(last.month)} registrado. O de ${monthName(open)} abre em ${CLOSING_OPEN_DAY}/${open.slice(5)} e até lá não há nada para atualizar.`,
+    label: t(
+      'wealth.closing.waiting',
+      monthLabel(last.month, t),
+      monthName(open, t),
+      CLOSING_OPEN_DAY,
+      open.slice(5),
+    ),
   };
 }
 
@@ -100,10 +103,10 @@ function differenceOf(totalCents: number, contributionsCents: number, previousCe
   return { changeCents, yieldCents: changeCents - contributionsCents };
 }
 
-export const closingSubtitle = (last: LastClosing | null): string =>
+export const closingSubtitle = (last: LastClosing | null, { t, money }: Localization): string =>
   last
-    ? `Comparado ao fechamento de ${monthName(last.month)} (${formatMoney(last.totalCents)})`
-    : 'Primeiro fechamento';
+    ? t('wealth.closing.comparedTo', monthName(last.month, t), money.format(last.totalCents))
+    : t('wealth.firstClosing');
 
 export function closingView(
   assets: Asset[],
@@ -111,45 +114,47 @@ export function closingView(
   month: MonthKey,
   last: LastClosing | null,
   now: number,
+  l10n: Localization,
 ): ClosingView {
-  const draft = closingDraft(assets, edits);
+  const { t, money } = l10n;
+  const draft = closingDraft(assets, edits, money);
   const { changeCents, yieldCents } = differenceOf(
     draft.totalCents,
     draft.contributionsCents,
     last?.totalCents ?? null,
   );
   return {
-    subtitle: closingSubtitle(last),
+    subtitle: closingSubtitle(last, l10n),
     manualRows: draft.rows.map(({ asset, flowInput, valueInput, flowCents, valueCents }) => {
-      const { dd, mm } = dateParts(asset.updatedAt);
+      const { dd, mm } = dateParts(asset.updatedAt, t);
       return {
         id: asset.id,
         name: asset.name,
-        subtitle: `${asset.institution} · ${assetClassLabel(asset.assetClass)}`,
-        last: formatMoney(asset.currentCents),
-        lastDate: `em ${dd}/${mm}`,
+        subtitle: `${asset.institution} · ${assetClassLabel(asset.assetClass, t)}`,
+        last: money.format(asset.currentCents),
+        lastDate: t('wealth.since', `${dd}/${mm}`),
         flowInput,
         valueInput,
-        flowLabel: `Aporte ou resgate em ${asset.name}`,
-        valueLabel: `Valor atual de ${asset.name}`,
+        flowLabel: t('wealth.closing.flowLabel', asset.name),
+        valueLabel: t('wealth.closing.valueLabel', asset.name),
         flowValid: flowCents !== null,
         valueValid: valueCents !== null,
       };
     }),
-    autoNote: closingAutoNote(assets),
+    autoNote: closingAutoNote(assets, t),
     autoRows: draft.autoAssets.map((asset) => ({
-      ...pricingOf(asset, now),
+      ...pricingOf(asset, now, l10n),
       id: asset.id,
       name: asset.name,
-      subtitle: `${asset.institution} · ${formatQuantity(asset.quantityE8)} × ${formatMoney(asset.priceCents)}`,
-      value: formatMoney(assetValue(asset)),
+      subtitle: `${asset.institution} · ${money.formatQuantity(asset.quantityE8)} × ${money.format(asset.priceCents)}`,
+      value: money.format(assetValue(asset)),
     })),
-    total: formatMoney(draft.totalCents),
-    change: changeCents === null ? NO_VALUE : formatSignedMoney(changeCents),
-    contributions: formatSignedMoney(draft.contributionsCents),
-    yieldLabel: yieldCents === null ? NO_VALUE : formatSignedMoney(yieldCents),
+    total: money.format(draft.totalCents),
+    change: changeCents === null ? NO_VALUE : money.formatSigned(changeCents),
+    contributions: money.formatSigned(draft.contributionsCents),
+    yieldLabel: yieldCents === null ? NO_VALUE : money.formatSigned(yieldCents),
     changeCents,
     yieldCents,
-    submitLabel: `Registrar fechamento de ${monthName(month)}`,
+    submitLabel: t('wealth.closing.submit', monthName(month, t)),
   };
 }

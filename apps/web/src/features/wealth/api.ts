@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { showError } from '@/features/transactions/api';
 import { apiFetch, jsonBody } from '@/shared/api/client';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 
 const WEALTH_KEY = ['wealth'] as const;
 
@@ -36,11 +37,12 @@ export function useRegisterClosing() {
 
 export function useDeleteAsset() {
   const queryClient = useQueryClient();
+  const { t } = usePreferences();
   return useMutation({
     mutationFn: ({ id }: { id: string; name: string }) =>
       apiFetch<null>(`/api/assets/${id}`, { method: 'DELETE' }),
     onSuccess: (_, { name }) => {
-      toast(`“${name}” removido da carteira`);
+      toast(t('wealth.removed', name));
       return queryClient.invalidateQueries({ queryKey: WEALTH_KEY });
     },
     onError: showError,

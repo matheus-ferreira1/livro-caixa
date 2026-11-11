@@ -1,6 +1,7 @@
 import { draftFromAsset, emptyAssetDraft, todayIso, type WealthGrouping } from '@livro-caixa/domain';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { SummaryTiles } from '@/shared/SummaryTiles';
 import { useWealth } from './api';
@@ -13,13 +14,15 @@ import { EvolutionChart } from './components/EvolutionChart';
 import { wealthViewModel } from './view-model';
 
 export function WealthPage() {
+  const localization = usePreferences();
+  const { t } = localization;
   const today = todayIso();
   const { data } = useWealth(today);
   const [grouping, setGrouping] = useState<WealthGrouping>('class');
   const [calm, setCalm] = useState(true);
   const [formTarget, setFormTarget] = useState<AssetFormTarget | null>(null);
   const [closingOpen, setClosingOpen] = useState(false);
-  const wealth = data && wealthViewModel(data, grouping, calm, Date.now());
+  const wealth = data && wealthViewModel(data, grouping, calm, Date.now(), localization);
   const openNewAsset = () => setFormTarget({ id: null, draft: emptyAssetDraft() });
 
   return (
@@ -29,7 +32,7 @@ export function WealthPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-[13px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-                Patrimônio
+                {t('wealth.title')}
               </span>
               <h1 className="m-0 font-mono text-[clamp(28px,8vw,36px)] font-semibold tracking-[-0.03em]">
                 {wealth.total}
@@ -44,7 +47,7 @@ export function WealthPage() {
                 className="flex min-h-11 items-center gap-2 rounded-[10px] border border-input bg-card px-[18px] font-semibold text-ink hover:bg-accent"
               >
                 <Plus className="size-[18px]" aria-hidden="true" />
-                Novo ativo
+                {t('wealth.newAsset')}
               </button>
               <button
                 type="button"
@@ -52,12 +55,12 @@ export function WealthPage() {
                 disabled={!data.closingAvailable}
                 className="min-h-11 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-neutral-swatch"
               >
-                {data.closingAvailable ? 'Fazer fechamento' : 'Fechamento em dia'}
+                {data.closingAvailable ? t('wealth.doClosing') : t('wealth.closingUpToDate')}
               </button>
             </div>
           </div>
 
-          <ClosingBanner banner={closingBanner(data)} onOpen={() => setClosingOpen(true)} />
+          <ClosingBanner banner={closingBanner(data, t)} onOpen={() => setClosingOpen(true)} />
           <SummaryTiles tiles={wealth.tiles} />
           <EvolutionChart {...wealth.chart} />
           <AllocationCard allocation={wealth.allocation} grouping={grouping} onGroupingChange={setGrouping} />
@@ -68,7 +71,9 @@ export function WealthPage() {
             invested={wealth.invested}
             total={wealth.total}
             onNew={openNewAsset}
-            onEdit={(asset) => setFormTarget({ id: asset.id, draft: draftFromAsset(asset) })}
+            onEdit={(asset) =>
+              setFormTarget({ id: asset.id, draft: draftFromAsset(asset, localization.money) })
+            }
           />
           <AssetFormSheet
             target={formTarget}
@@ -89,6 +94,7 @@ export function WealthPage() {
 }
 
 function ClosingBanner({ banner, onOpen }: { banner: ClosingBannerView; onOpen: () => void }) {
+  const { t } = usePreferences();
   if (!banner) return null;
   if (banner.kind === 'waiting') {
     return <p className="m-0 rounded-xl border bg-card px-4 py-3 text-sm text-icon">{banner.label}</p>;
@@ -107,13 +113,14 @@ function ClosingBanner({ banner, onOpen }: { banner: ClosingBannerView; onOpen: 
         onClick={onOpen}
         className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-white hover:bg-settlement/90"
       >
-        Fazer fechamento
+        {t('wealth.doClosing')}
       </button>
     </div>
   );
 }
 
 function CalmToggle({ calm, onToggle }: { calm: boolean; onToggle: () => void }) {
+  const { t } = usePreferences();
   return (
     <button
       type="button"
@@ -131,9 +138,9 @@ function CalmToggle({ calm, onToggle }: { calm: boolean; onToggle: () => void })
         <span className="size-[18px] rounded-full bg-white" />
       </span>
       <span className="flex flex-col leading-[1.2]">
-        <span className="text-sm font-semibold">Modo tranquilo</span>
+        <span className="text-sm font-semibold">{t('wealth.calmTitle')}</span>
         <span className="text-xs text-muted-foreground">
-          {calm ? 'Variações diárias ocultas' : 'Mostrando variações do dia'}
+          {calm ? t('wealth.calmOn') : t('wealth.calmOff')}
         </span>
       </span>
     </button>
