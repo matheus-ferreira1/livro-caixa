@@ -18,19 +18,27 @@ interface SetupOptions {
 
 function setup({ preferences }: SetupOptions = {}) {
   const writes: Write[] = [];
+  let stored: Record<string, unknown> = {
+    partnerName: 'Bia',
+    partnerShare: 40,
+    language: preferences?.language ?? 'pt-BR',
+    currency: preferences?.currency ?? 'BRL',
+  };
   mockApi((url, init) => {
     const method = init.method ?? 'GET';
     const body: unknown = init.body ? JSON.parse(String(init.body)) : undefined;
     if (method === 'GET' && url === '/api/categories')
       return { status: 200, body: { categories: CATEGORIES, usage: { 'c-mercado': 3, 'c-salario': 1 } } };
-    if (method === 'GET' && url === '/api/settings')
-      return { status: 200, body: { settings: { partnerName: 'Bia', partnerShare: 40 } } };
+    if (method === 'GET' && url === '/api/settings') return { status: 200, body: { settings: stored } };
     writes.push({ method, url, body });
     if (method === 'POST') return { status: 201, body: { category: { id: 'new', ...(body as object) } } };
     if (method === 'PATCH')
       return { status: 200, body: { category: { id: 'c-mercado', ...(body as object) } } };
     if (method === 'DELETE') return { status: 204 };
-    if (method === 'PUT') return { status: 200, body: { settings: body } };
+    if (method === 'PUT') {
+      stored = { ...stored, ...(body as object) };
+      return { status: 200, body: { settings: stored } };
+    }
     return undefined;
   });
   const view = renderRoutes([{ path: '/configuracoes', element: <SettingsPage /> }], '/configuracoes', {
@@ -218,5 +226,24 @@ describe('Configurações', () => {
 
     await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
     await waitFor(() => expect(queryClient.getQueryState(dashboardKey)?.isInvalidated).toBe(true));
+  });
+
+  test('takes the preferences from the saved settings, not from what this client sent', async () => {
+    const { user, queryClient } = setup();
+    await screen.findByLabelText('Idioma');
+    // Another device changed the currency after this screen loaded its settings.
+    mockApi((url, init) =>
+      init.method === 'PUT' && url === '/api/settings'
+        ? {
+            status: 200,
+            body: { settings: { partnerName: 'Bia', partnerShare: 40, language: 'en', currency: 'EUR' } },
+          }
+        : undefined,
+    );
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
+    await waitFor(() =>
+      expect(queryClient.getQueryData(['preferences'])).toEqual({ language: 'en', currency: 'EUR' }),
+    );
+    expect(await screen.findByLabelText('Currency')).toHaveValue('EUR');
   });
 });

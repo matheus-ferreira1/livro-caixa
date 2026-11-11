@@ -23,7 +23,6 @@ No phase is planned. What is left:
 
 - **Follow-ups of language and currency (US-12)**, none of them blocking:
    - the demo seed (`seed-demo.ts`) and the 12 seeded categories stay in Portuguese, so the site's English screenshots show Portuguese descriptions and category names
-   - the `PreferencesProvider` shows pt-BR and BRL until `GET /api/preferences` answers, so an English instance may flash Portuguese on first load
    - `nameFromEmail` still falls back to "Usuário" for the name of a user created from the CLI, since it is stored data
    - the preferences are read once per page load; a change made on another device shows after a reload
 
@@ -188,7 +187,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 |---|---|---|
 | Domain unit | 392 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 241 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 242 | `bun run --filter '@livro-caixa/web' test` |
+| Web component | 245 | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
 | E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
 
@@ -355,7 +354,8 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - The domain keeps no current language: validators, dates, share text and breakdown names take a translator or a money format as a required argument. Validators return the translated text.
 - Use cases receive a `TranslateProvider` that reads the instance language when it is needed, so a change applies at once. `ApplicationError` carries the already-translated text, and the error handler translates the messages it raises itself (invalid data, 404, 500, expired session). The 500 path falls back to pt-BR if reading the settings fails.
 - `PUT /api/settings` merges what it receives onto the stored settings. The language section and the split section each send only their own fields, so a stale draft in one cannot undo the other.
-- The web reads `GET /api/preferences` (public) into one query, updated when settings are saved, and sets `<html lang>`. Tests seed that query, so no request is made.
+- The web reads `GET /api/preferences` (public) into one query and sets `<html lang>`. Tests seed that query, so no request is made. `PreferencesProvider` renders nothing until the query has data, so the app never shows or reads money under a guessed currency (and an English instance never flashes Portuguese). If it fails after one retry, a `role="alert"` in both languages (pt-BR first, from the catalog) offers "Tentar novamente / Try again" in place of the app.
+- Saving settings sets the preferences query from the server's response (the merged settings), not from what the client sent, so a change made on another device is not hidden. A language change invalidates the `['transactions']` queries; a currency-only change does not.
 - Typed amounts are read with the currency's marks, mirrored from the pt-BR rules. In USD and GBP `1,234` is 1234, and `1.234` is refused rather than rounded to 1.23.
 - Persisted enum values, routes, category names, entry descriptions and the description of an acerto already registered do not change with the language.
 - The instance language is cached in memory by `CachedSettingsRepository` (a save replaces it) and every message goes through one translator that falls back to pt-BR when the settings cannot be read, so even the 401, 404 and 400 answers keep the error shape.
