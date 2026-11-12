@@ -17,6 +17,7 @@ const INITIAL = { partnerName: 'Bia', partnerShare: 40, language: 'pt-BR', curre
 function setupDeferredServer() {
   let stored: Record<string, unknown> = INITIAL;
   const saves: Save[] = [];
+  const inFlight = { now: 0, most: 0 };
   const json = (body: unknown) =>
     new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init = {}) => {
@@ -24,11 +25,14 @@ function setupDeferredServer() {
     if (init.method === 'PUT') {
       stored = { ...stored, ...(JSON.parse(String(init.body)) as object) };
       const answer = stored;
+      inFlight.now += 1;
+      inFlight.most = Math.max(inFlight.most, inFlight.now);
       return new Promise<Response>((resolve) => {
         const save: Save = {
           answered: false,
           respond: () => {
             save.answered = true;
+            inFlight.now -= 1;
             resolve(json({ settings: answer }));
           },
         };
@@ -39,12 +43,12 @@ function setupDeferredServer() {
     if (url === '/api/categories') return json({ categories: [], usage: {} });
     throw new Error(`Unexpected request: ${url}`);
   });
-  return saves;
+  return { saves, inFlight };
 }
 
 describe('saving settings', () => {
   test('ends on the server latest state even when its answers are given newest first', async () => {
-    const saves = setupDeferredServer();
+    const { saves, inFlight } = setupDeferredServer();
     const { user, queryClient } = renderRoutes(
       [{ path: '/configuracoes', element: <SettingsPage /> }],
       '/configuracoes',
@@ -57,6 +61,7 @@ describe('saving settings', () => {
       saves.findLast((save) => !save.answered)?.respond();
     }
 
+    expect(inFlight.most).toBe(1);
     await waitFor(() => expect(queryClient.getQueryData(['settings'])).toMatchObject({ currency: 'USD' }));
     expect(queryClient.getQueryData(['preferences'])).toEqual({ language: 'en', currency: 'USD' });
     expect(queryClient.getQueryData(['settings'])).toMatchObject({ language: 'en' });
