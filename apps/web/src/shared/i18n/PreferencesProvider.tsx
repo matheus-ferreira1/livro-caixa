@@ -8,7 +8,7 @@ import {
 } from '@livro-caixa/domain';
 import { useQuery } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/button';
 import { AlertBanner } from '@/shared/ui-kit';
 import { fetchPreferences, PREFERENCES_KEY } from './preferences';
@@ -23,13 +23,15 @@ const en = translator('en');
  * are known: a guessed currency would show the wrong symbol and read a typed `1.234` the wrong way.
  */
 export function PreferencesProvider({ children }: { children: ReactNode }) {
+  // A ref, not state: `refetch` runs in the same handler, before a state change would reach the options.
+  const manualRetry = useRef(false);
   const { data, errorUpdateCount, refetch, isFetching } = useQuery({
     queryKey: PREFERENCES_KEY,
     queryFn: ({ signal }) => fetchPreferences(signal),
     staleTime: Infinity,
     // One automatic retry for the initial load; a click on the retry button is a single attempt, so
     // the wait after it is not doubled.
-    retry: (failureCount) => errorUpdateCount === 0 && failureCount < 1,
+    retry: (failureCount) => !manualRetry.current && failureCount < 1,
   });
   const [retried, setRetried] = useState(false);
   const value = useMemo(
@@ -54,6 +56,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         retrying={isFetching}
         retried={retried}
         onRetry={() => {
+          manualRetry.current = true;
           setRetried(true);
           void refetch();
         }}
