@@ -14,6 +14,8 @@ export const commonPtBR = {
 
   'preferences.loadFailed': 'Não foi possível carregar as preferências.',
   'preferences.retry': 'Tentar novamente',
+  'preferences.retrying': 'Tentando novamente…',
+  'preferences.stillFailing': 'Ainda não foi possível carregar as preferências.',
 
   'api.unreachable': 'Não foi possível falar com o servidor. Tente novamente.',
 };

@@ -5,6 +5,8 @@ import { createQueryClient } from '@/shared/api/query-client';
 import { PreferencesProvider, usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { mockApi, renderWithRoute } from '@/test/render';
 
+/** The hidden comma between the languages is read out as a pause; engines differ on the space around it. */
+const RETRY_NAME = /^Tentar novamente ?, Try again$/;
 const LOAD_TIMEOUT_MS = 4000;
 const STALL_LIMIT_MS = 10_000;
 const DEFAULT_RETRY_DELAY_MS = 1000;
@@ -40,7 +42,7 @@ describe('PreferencesProvider', () => {
     expect(alert).toHaveTextContent('Could not load the preferences.');
     expect(screen.queryByText(/R\$/)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Tentar novamente, Try again' }));
+    await user.click(screen.getByRole('button', { name: RETRY_NAME }));
     expect(await screen.findByText('$1,234.56')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -63,7 +65,7 @@ describe('PreferencesProvider', () => {
         'pt-BR',
       );
       expect(within(alert).getByText('Could not load the preferences.')).toHaveAttribute('lang', 'en');
-      const retry = screen.getByRole('button', { name: 'Tentar novamente, Try again' });
+      const retry = screen.getByRole('button', { name: RETRY_NAME });
       expect(within(retry).getByText('Tentar novamente')).toHaveAttribute('lang', 'pt-BR');
       expect(within(retry).getByText('Try again')).toHaveAttribute('lang', 'en');
     });
@@ -74,10 +76,7 @@ describe('PreferencesProvider', () => {
       const alert = await screen.findByRole('alert', {}, { timeout: LOAD_TIMEOUT_MS });
 
       expect(within(alert).queryByRole('button')).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Tentar novamente, Try again' })).toHaveAttribute(
-        'data-slot',
-        'button',
-      );
+      expect(screen.getByRole('button', { name: RETRY_NAME })).toHaveAttribute('data-slot', 'button');
     });
 
     test('keeps the focus on the button, shows the retry running and announces the second failure', async () => {
@@ -90,11 +89,7 @@ describe('PreferencesProvider', () => {
         .mockImplementationOnce(async () => failure())
         .mockImplementationOnce(() => new Promise<Response>((resolve) => (answerRetry = resolve)));
       const { user } = renderWithRoute(<Amount />, '/', { preferences: null });
-      const retry = await screen.findByRole(
-        'button',
-        { name: 'Tentar novamente, Try again' },
-        { timeout: LOAD_TIMEOUT_MS },
-      );
+      const retry = await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
       const status = screen.getByRole('status');
       expect(status).toBeEmptyDOMElement();
 
@@ -120,11 +115,7 @@ describe('PreferencesProvider', () => {
         .spyOn(globalThis, 'fetch')
         .mockImplementation(async () => new Response('{}', { status: 500 }));
       const { user } = renderWithRoute(<Amount />, '/', { preferences: null });
-      const retry = await screen.findByRole(
-        'button',
-        { name: 'Tentar novamente, Try again' },
-        { timeout: LOAD_TIMEOUT_MS },
-      );
+      const retry = await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
       await user.click(retry);
@@ -144,7 +135,7 @@ describe('PreferencesProvider', () => {
       expect(await screen.findByRole('alert', {}, { timeout: LOAD_TIMEOUT_MS })).toHaveTextContent(
         'Could not load the preferences.',
       );
-      expect(screen.getByRole('button', { name: 'Tentar novamente, Try again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: RETRY_NAME })).toBeInTheDocument();
     });
   });
 
@@ -175,7 +166,7 @@ describe('PreferencesProvider', () => {
       await act(() => vi.advanceTimersByTimeAsync(2 * STALL_LIMIT_MS + DEFAULT_RETRY_DELAY_MS + 1));
 
       expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
-      expect(screen.getByRole('button', { name: 'Tentar novamente, Try again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: RETRY_NAME })).toBeInTheDocument();
     });
   });
 });
