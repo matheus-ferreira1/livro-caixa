@@ -15,6 +15,8 @@ export const commonEn: typeof commonPtBR = {
 
   'preferences.loadFailed': 'Could not load the preferences.',
   'preferences.retry': 'Try again',
+  'preferences.retrying': 'Trying again…',
+  'preferences.stillFailing': 'Still could not load the preferences.',
 
   'api.unreachable': 'Could not reach the server. Try again.',
 };

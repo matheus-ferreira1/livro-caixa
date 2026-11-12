@@ -1,9 +1,15 @@
-import { screen } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
-import { usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { createQueryClient } from '@/shared/api/query-client';
+import { PreferencesProvider, usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { mockApi, renderWithRoute } from '@/test/render';
 
+/** The hidden comma between the languages is read out as a pause; engines differ on the space around it. */
+const RETRY_NAME = /^Tentar novamente ?, Try again$/;
 const LOAD_TIMEOUT_MS = 4000;
+const STALL_LIMIT_MS = 10_000;
+const DEFAULT_RETRY_DELAY_MS = 1000;
 
 function Amount() {
   const { money } = usePreferences();
@@ -36,8 +42,131 @@ describe('PreferencesProvider', () => {
     expect(alert).toHaveTextContent('Could not load the preferences.');
     expect(screen.queryByText(/R\$/)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Tentar novamente / Try again' }));
+    await user.click(screen.getByRole('button', { name: RETRY_NAME }));
     expect(await screen.findByText('$1,234.56')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  describe('when they cannot be loaded', () => {
+    const failing = () =>
+      mockApi((url) =>
+        url === '/api/preferences'
+          ? { status: 500, body: { error: { code: 'internal', message: 'x' } } }
+          : undefined,
+      );
+
+    test('marks each half of the message and of the retry label with its own language', async () => {
+      failing();
+      renderWithRoute(<Amount />, '/', { preferences: null });
+      const alert = await screen.findByRole('alert', {}, { timeout: LOAD_TIMEOUT_MS });
+
+      expect(within(alert).getByText('Não foi possível carregar as preferências.')).toHaveAttribute(
+        'lang',
+        'pt-BR',
+      );
+      expect(within(alert).getByText('Could not load the preferences.')).toHaveAttribute('lang', 'en');
+      const retry = screen.getByRole('button', { name: RETRY_NAME });
+      expect(within(retry).getByText('Tentar novamente')).toHaveAttribute('lang', 'pt-BR');
+      expect(within(retry).getByText('Try again')).toHaveAttribute('lang', 'en');
+    });
+
+    test('keeps the retry button outside the alert, so its label is not announced with it', async () => {
+      failing();
+      renderWithRoute(<Amount />, '/', { preferences: null });
+      const alert = await screen.findByRole('alert', {}, { timeout: LOAD_TIMEOUT_MS });
+
+      expect(within(alert).queryByRole('button')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: RETRY_NAME })).toHaveAttribute('data-slot', 'button');
+    });
+
+    test('keeps the focus on the button, shows the retry running and announces the second failure', async () => {
+      const failure = () =>
+        new Response(JSON.stringify({ error: { code: 'internal', message: 'x' } }), { status: 500 });
+      let answerRetry: (response: Response) => void = () => undefined;
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(() => new Promise<Response>((resolve) => (answerRetry = resolve)));
+      const { user } = renderWithRoute(<Amount />, '/', { preferences: null });
+      const retry = await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
+      const status = screen.getByRole('status');
+      expect(status).toBeEmptyDOMElement();
+
+      await user.click(retry);
+      await waitFor(() => expect(retry).toHaveAttribute('aria-busy', 'true'));
+      expect(retry).toHaveAttribute('aria-disabled', 'true');
+      expect(within(status).getByText('Tentando novamente…')).toHaveAttribute('lang', 'pt-BR');
+      expect(within(status).getByText('Trying again…')).toHaveAttribute('lang', 'en');
+
+      answerRetry(failure());
+      const stillFailing = await within(status).findByText(
+        'Ainda não foi possível carregar as preferências.',
+      );
+      expect(stillFailing).toHaveAttribute('lang', 'pt-BR');
+      expect(within(status).getByText('Still could not load the preferences.')).toHaveAttribute('lang', 'en');
+      expect(retry).toHaveAttribute('aria-busy', 'false');
+      expect(retry).toHaveFocus();
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+    });
+
+    test('makes a manual retry a single attempt, without the automatic one', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async () => new Response('{}', { status: 500 }));
+      const { user } = renderWithRoute(<Amount />, '/', { preferences: null });
+      const retry = await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+      await user.click(retry);
+      await screen.findByText('Ainda não foi possível carregar as preferências.');
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+    });
+
+    test.each([
+      ['a body with no preferences', () => new Response('{}', { status: 200 })],
+      ['a body that is not JSON', () => new Response('<html></html>', { status: 200 })],
+      ['an unknown language', () => new Response('{"language":"fr","currency":"BRL"}', { status: 200 })],
+      ['an unknown currency', () => new Response('{"language":"en","currency":"JPY"}', { status: 200 })],
+    ])('shows the error and the retry for a 200 with %s', async (_name, respond) => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => respond());
+      renderWithRoute(<Amount />, '/', { preferences: null });
+
+      expect(await screen.findByRole('alert', {}, { timeout: LOAD_TIMEOUT_MS })).toHaveTextContent(
+        'Could not load the preferences.',
+      );
+      expect(screen.getByRole('button', { name: RETRY_NAME })).toBeInTheDocument();
+    });
+  });
+
+  describe('when the request stalls', () => {
+    afterEach(() => vi.useRealTimers());
+
+    test('ends in the error state with a retry instead of staying blank', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        (_input, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          }),
+      );
+      const queryClient = createQueryClient({
+        onUnauthorized: () => undefined,
+        defaultOptions: { queries: { retry: false } },
+      });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PreferencesProvider>
+            <Amount />
+          </PreferencesProvider>
+        </QueryClientProvider>,
+      );
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+      await act(() => vi.advanceTimersByTimeAsync(2 * STALL_LIMIT_MS + DEFAULT_RETRY_DELAY_MS + 1));
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
+      expect(screen.getByRole('button', { name: RETRY_NAME })).toBeInTheDocument();
+    });
   });
 });

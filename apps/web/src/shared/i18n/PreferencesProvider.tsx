@@ -1,6 +1,16 @@
-import { DEFAULT_LOCALIZATION, localization, translator, type Localization } from '@livro-caixa/domain';
+import {
+  DEFAULT_LOCALIZATION,
+  isCurrency,
+  isLanguage,
+  localization,
+  translator,
+  type Localization,
+} from '@livro-caixa/domain';
 import { useQuery } from '@tanstack/react-query';
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { LoaderCircle } from 'lucide-react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Button } from '@/shared/ui/button';
+import { AlertBanner } from '@/shared/ui-kit';
 import { fetchPreferences, PREFERENCES_KEY } from './preferences';
 
 const PreferencesContext = createContext<Localization>(DEFAULT_LOCALIZATION);
@@ -13,46 +23,101 @@ const en = translator('en');
  * are known: a guessed currency would show the wrong symbol and read a typed `1.234` the wrong way.
  */
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const { data, isError, refetch, isFetching } = useQuery({
+  // A ref, not state: `refetch` runs in the same handler, before a state change would reach the options.
+  const manualRetry = useRef(false);
+  const { data, errorUpdateCount, refetch, isFetching } = useQuery({
     queryKey: PREFERENCES_KEY,
-    queryFn: fetchPreferences,
+    queryFn: ({ signal }) => fetchPreferences(signal),
     staleTime: Infinity,
-    retry: 1,
+    // One automatic retry for the initial load; a click on the retry button is a single attempt, so
+    // the wait after it is not doubled.
+    retry: (failureCount) => !manualRetry.current && failureCount < 1,
   });
-  const language = data?.language;
-  const currency = data?.currency;
+  const [retried, setRetried] = useState(false);
   const value = useMemo(
-    () => (language && currency ? localization(language, currency) : null),
-    [language, currency],
+    () =>
+      data && isLanguage(data.language) && isCurrency(data.currency)
+        ? localization(data.language, data.currency)
+        : null,
+    [data],
   );
+  const language = data?.language;
 
   useEffect(() => {
     if (language) document.documentElement.lang = language;
   }, [language]);
 
   if (value) return <PreferencesContext value={value}>{children}</PreferencesContext>;
-  if (isError) return <PreferencesError retrying={isFetching} onRetry={() => void refetch()} />;
+  // Not `isError`: a retry puts the query back to pending, which would remove the button (and its
+  // focus) for as long as the retry runs.
+  if (errorUpdateCount > 0)
+    return (
+      <PreferencesError
+        retrying={isFetching}
+        retried={retried}
+        onRetry={() => {
+          manualRetry.current = true;
+          setRetried(true);
+          void refetch();
+        }}
+      />
+    );
   return null;
 }
 
-/** The language is unknown here, so the message is given in both, pt-BR first. */
-function PreferencesError({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
+const bothLanguages = (
+  key: 'preferences.loadFailed' | 'preferences.retrying' | 'preferences.stillFailing',
+) => (
+  <>
+    <p lang="pt-BR" className="m-0">
+      {ptBR(key)}
+    </p>
+    <p lang="en" className="m-0">
+      {en(key)}
+    </p>
+  </>
+);
+
+/**
+ * The language is unknown here, so the message is given in both, pt-BR first, each part marked with
+ * its own language because `<html lang>` is not set yet. The button is `aria-disabled` while it
+ * retries, not `disabled`, so it keeps the focus if the retry fails; the polite status tells what
+ * the retry is doing, since the alert itself does not change.
+ */
+function PreferencesError({
+  retrying,
+  retried,
+  onRetry,
+}: {
+  retrying: boolean;
+  retried: boolean;
+  onRetry: () => void;
+}) {
   return (
-    <div
-      role="alert"
-      className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-4 text-center"
-    >
-      <p className="text-ink">{ptBR('preferences.loadFailed')}</p>
-      <p className="text-sm text-muted-foreground">{en('preferences.loadFailed')}</p>
-      <button
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
+      <AlertBanner>
+        <div className="flex flex-col gap-1 text-left">{bothLanguages('preferences.loadFailed')}</div>
+      </AlertBanner>
+      <Button
         type="button"
-        onClick={onRetry}
-        disabled={retrying}
-        className="min-h-11 rounded-[10px] bg-ink px-[18px] font-semibold text-white disabled:bg-icon"
+        aria-disabled={retrying}
+        aria-busy={retrying}
+        onClick={() => {
+          if (!retrying) onRetry();
+        }}
+        className="h-11 rounded-[10px] px-[18px] text-base font-semibold aria-disabled:cursor-default aria-disabled:opacity-60 aria-disabled:hover:bg-primary"
       >
-        {ptBR('preferences.retry')} / {en('preferences.retry')}
-      </button>
-    </div>
+        {retrying && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
+        <span lang="pt-BR">{ptBR('preferences.retry')}</span>
+        {/* Read out as a pause between the two languages; the visible divider is not copy. */}
+        <span className="sr-only">,</span>
+        <span aria-hidden="true" className="h-4 w-px bg-current opacity-40" />
+        <span lang="en">{en('preferences.retry')}</span>
+      </Button>
+      <div role="status" className="flex min-h-11 flex-col gap-1 text-sm text-muted-foreground">
+        {retried && bothLanguages(retrying ? 'preferences.retrying' : 'preferences.stillFailing')}
+      </div>
+    </main>
   );
 }
 

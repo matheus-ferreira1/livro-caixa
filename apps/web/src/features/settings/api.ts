@@ -17,6 +17,7 @@ import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 
 const CATEGORIES_KEY = ['categories'] as const;
 const SETTINGS_KEY = ['settings'] as const;
+const SETTINGS_SAVE_SCOPE = 'settings-save';
 
 interface CategoryCatalog {
   categories: Category[];
@@ -106,6 +107,9 @@ export function useDeleteCategory() {
 export function useSaveSettings() {
   const queryClient = useQueryClient();
   return useMutation({
+    // Mutations sharing a scope run one at a time, across every call site, so the caches end on
+    // the answer to the last save and an earlier answer cannot overwrite it.
+    scope: { id: SETTINGS_SAVE_SCOPE },
     mutationFn: async (changes: SettingsInput) =>
       (await apiFetch<{ settings: Settings }>('/api/settings', { method: 'PUT', ...jsonBody(changes) }))
         .settings,
