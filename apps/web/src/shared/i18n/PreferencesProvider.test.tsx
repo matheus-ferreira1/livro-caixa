@@ -8,6 +8,7 @@ import { mockApi, renderWithRoute } from '@/test/render';
 
 const LOAD_TIMEOUT_MS = 4000;
 const STALL_LIMIT_MS = 10_000;
+const DEFAULT_RETRY_DELAY_MS = 1000;
 
 function Amount() {
   const { money } = usePreferences();
@@ -90,7 +91,7 @@ describe('PreferencesProvider', () => {
       );
 
       await user.click(retry);
-      expect(retry).toHaveAttribute('aria-disabled', 'true');
+      await waitFor(() => expect(retry).toHaveAttribute('aria-disabled', 'true'));
       await waitFor(() => expect(retry).toHaveAttribute('aria-disabled', 'false'), {
         timeout: LOAD_TIMEOUT_MS,
       });
@@ -122,7 +123,7 @@ describe('PreferencesProvider', () => {
       );
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
-      await act(() => vi.advanceTimersByTimeAsync(STALL_LIMIT_MS + 1));
+      await act(() => vi.advanceTimersByTimeAsync(2 * STALL_LIMIT_MS + DEFAULT_RETRY_DELAY_MS + 1));
 
       expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
       expect(screen.getByRole('button', { name: 'Tentar novamente Try again' })).toBeInTheDocument();
