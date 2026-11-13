@@ -1,7 +1,5 @@
 import {
   DEFAULT_LOCALIZATION,
-  isCurrency,
-  isLanguage,
   localization,
   translator,
   type Localization,
@@ -41,10 +39,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   });
   const [retried, setRetried] = useState(false);
   const value = useMemo(
-    () =>
-      data && isLanguage(data.language) && isCurrency(data.currency)
-        ? localization(data.language, data.currency)
-        : null,
+    // `data` was validated by `fetchPreferences`, so its types can be trusted here.
+    () => (data ? localization(data.language, data.currency) : null),
     [data],
   );
   const language = data?.language;
