@@ -78,7 +78,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#35](https://github.com/matheus-ferreira1/livro-caixa/pull/35) | `fix/sticky-header-height` | The header takes its minimum height from `--sticky-header-height`, the variable `scroll-padding-top` reads, so the two cannot drift; e2e guard at 1440px and 768px |
 | [#36](https://github.com/matheus-ferreira1/livro-caixa/pull/36) | `chore/e2e-shared-helpers` | The e2e specs share one `signIn` in `e2e/helpers.ts`; the sticky header spec seeds its entries once and checks every response |
 | [#37](https://github.com/matheus-ferreira1/livro-caixa/pull/37) | `feat/project-site` | The project site (`apps/site`): one static page with real screenshots, a screenshot capture script, the Pages workflow, `CONTRIBUTING.md`, and the site built in CI |
-| [#42](https://github.com/matheus-ferreira1/livro-caixa/pull/42) | `fix/static-under-dot-directory` | The SPA fallback sends `index.html` with `root`, so a checkout under a dot-directory (such as `.claude/worktrees`) is served instead of answering 404 |
+| [#42](https://github.com/matheus-ferreira1/livro-caixa/pull/42) | `fix/static-under-dot-directory` | The SPA fallback sends `index.html` with `root`, so a checkout under a dot-directory (such as `.claude/worktrees`) is served instead of failing with a 500 |
 
 ### Project site (`apps/site`)
 
@@ -349,7 +349,7 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 ### Decisions taken for serving under a dot-directory (PR #42)
 
-- `send` (1.2.1, under Express 5.3.0) applies its `dotfiles: 'ignore'` policy to every segment of an absolute path, so `sendFile(join(root, 'index.html'))` answered 404 when the checkout sat under a dot-directory such as `.claude/worktrees`. The SPA fallback now calls `sendFile('index.html', { root })`, so only the path below the static root is checked.
+- `send` (1.2.1, under Express 5.3.0) applies its `dotfiles: 'ignore'` policy to every segment of an absolute path, so `sendFile(join(root, 'index.html'))` answered 500 (the error handler maps send's `NotFoundError` to `internal_error`) when the checkout sat under a dot-directory such as `.claude/worktrees`. The SPA fallback now calls `sendFile('index.html', { root })`, so only the path below the static root is checked.
 - `express.static` was not affected: it already takes the root as an option. `dotfiles` is not set to `'allow'`; a request for `/.env` or `/.git/config` still never returns the file, and falls through to the SPA fallback, which answers with `index.html`.
 
 ### Decisions taken for language and currency (US-12)

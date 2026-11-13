@@ -38,7 +38,7 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
   });
 
   if (staticDir && existsSync(staticDir)) {
-    // sendFile needs an absolute root; STATIC_DIR may be relative to the working directory.
+    // STATIC_DIR may be relative to the working directory.
     const root = resolve(staticDir);
     app.use(express.static(root, { index: false, maxAge: '1h' }));
     app.get('/{*spa}', (_req, res) => {

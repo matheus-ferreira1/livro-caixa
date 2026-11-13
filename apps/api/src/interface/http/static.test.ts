@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
@@ -31,13 +31,16 @@ describe('SPA serving from under a dot-directory', () => {
   const dist = join(base, '.hidden', 'dist');
   afterAll(() => rmSync(base, { recursive: true, force: true }));
 
-  function buildApp() {
+  beforeAll(() => {
     mkdirSync(join(dist, 'assets'), { recursive: true });
     mkdirSync(join(dist, '.git'), { recursive: true });
     writeFileSync(join(dist, 'index.html'), '<!doctype html><title>Livro-caixa</title>');
     writeFileSync(join(dist, 'assets', 'app.js'), 'console.log("app");');
     writeFileSync(join(dist, '.env'), 'SECRET=hunter2');
     writeFileSync(join(dist, '.git', 'config'), '[core]\nSECRET=hunter2');
+  });
+
+  function buildApp() {
     const container = createContainer({ db: openDatabase(':memory:'), secureCookies: false });
     return createApp(container, { staticDir: dist, trustProxy: DEFAULT_TRUST_PROXY });
   }
