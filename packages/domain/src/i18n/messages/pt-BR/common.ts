@@ -13,6 +13,8 @@ export const commonPtBR = {
   'common.close': 'Fechar',
 
   'preferences.loadFailed': 'Não foi possível carregar as preferências.',
+  'preferences.separator': ',',
+  'preferences.loading': 'Carregando…',
   'preferences.retry': 'Tentar novamente',
   'preferences.retrying': 'Tentando novamente…',
   'preferences.stillFailing': 'Ainda não foi possível carregar as preferências.',
