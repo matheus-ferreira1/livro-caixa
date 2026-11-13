@@ -1,3 +1,4 @@
+import { translator } from '@livro-caixa/domain';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -69,6 +70,15 @@ describe('PreferencesProvider', () => {
       const retry = screen.getByRole('button', { name: RETRY_NAME });
       expect(within(retry).getByText('Tentar novamente')).toHaveAttribute('lang', 'pt-BR');
       expect(within(retry).getByText('Try again')).toHaveAttribute('lang', 'en');
+    });
+
+    test('reads the pause between the languages from the catalog, in either language', async () => {
+      failing();
+      renderWithRoute(<Amount />, '/', { preferences: null });
+      const retry = await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
+
+      expect(retry.querySelector('.sr-only')).toHaveTextContent(translator('pt-BR')('preferences.separator'));
+      expect(translator('en')('preferences.separator')).toBe(translator('pt-BR')('preferences.separator'));
     });
 
     test('keeps the retry button outside the alert, so its label is not announced with it', async () => {

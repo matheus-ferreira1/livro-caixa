@@ -115,7 +115,7 @@ function PreferencesError({
         {retrying && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
         <span lang="pt-BR">{ptBR('preferences.retry')}</span>
         {/* Read out as a pause between the two languages; the visible divider is not copy. */}
-        <span className="sr-only">,</span>
+        <span className="sr-only">{ptBR('preferences.separator')}</span>
         <span aria-hidden="true" className="h-4 w-px bg-current opacity-40" />
         <span lang="en">{en('preferences.retry')}</span>
       </Button>
