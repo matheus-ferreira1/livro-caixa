@@ -1,7 +1,7 @@
 import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import { existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import type { TrustProxy } from '../../config';
 import type { Container } from '../../container';
 import { authRouter } from './auth-router';
@@ -38,11 +38,13 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
   });
 
   if (staticDir && existsSync(staticDir)) {
-    // sendFile needs an absolute path; STATIC_DIR may be relative to the working directory.
+    // STATIC_DIR may be relative to the working directory.
     const root = resolve(staticDir);
     app.use(express.static(root, { index: false, maxAge: '1h' }));
     app.get('/{*spa}', (_req, res) => {
-      res.sendFile(join(root, 'index.html'));
+      // Given as `root`, only the path below it is checked against the dotfiles policy, so a
+      // checkout under a dot-directory (such as `.claude/worktrees`) still serves the app.
+      res.sendFile('index.html', { root });
     });
   }
 
