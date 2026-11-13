@@ -14,7 +14,8 @@ export class PreferencesTimeoutError extends Error {
   }
 }
 
-const isPreferences = (body: unknown): body is Preferences =>
+/** The one check for preferences coming from the server, shared by every place that reads them. */
+export const isPreferences = (body: unknown): body is Preferences =>
   typeof body === 'object' &&
   body !== null &&
   'language' in body &&
