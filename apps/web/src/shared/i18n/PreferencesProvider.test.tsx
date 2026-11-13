@@ -12,6 +12,7 @@ const RETRY_NAME = /^Tentar novamente ?, Try again$/;
 const LOAD_TIMEOUT_MS = 4000;
 const STALL_LIMIT_MS = 10_000;
 const DEFAULT_RETRY_DELAY_MS = 1000;
+const SPINNER_DELAY_MS = 1000;
 
 function Amount() {
   const { money } = usePreferences();
@@ -26,6 +27,7 @@ describe('PreferencesProvider', () => {
     renderWithRoute(<Amount />, '/', { preferences: null });
     expect(screen.queryByText(/\d/)).not.toBeInTheDocument();
     expect(await screen.findByText('$1,234.56')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   test('shows a bilingual error with a retry instead of the app when they cannot be loaded', async () => {
@@ -199,6 +201,33 @@ describe('PreferencesProvider', () => {
 
       expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
       expect(screen.getByRole('button', { name: RETRY_NAME })).toBeInTheDocument();
+    });
+
+    test('shows nothing for the first second, then a labelled spinner in both languages', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        (_input, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          }),
+      );
+      const queryClient = createQueryClient({ onUnauthorized: () => undefined });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PreferencesProvider>
+            <Amount />
+          </PreferencesProvider>
+        </QueryClientProvider>,
+      );
+
+      await act(() => vi.advanceTimersByTimeAsync(SPINNER_DELAY_MS - 1));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+      await act(() => vi.advanceTimersByTimeAsync(1));
+      const status = screen.getByRole('status');
+      expect(within(status).getByText('Carregando…')).toHaveAttribute('lang', 'pt-BR');
+      expect(within(status).getByText('Loading…')).toHaveAttribute('lang', 'en');
+      expect(within(status).getByText('Carregando…').closest('.sr-only')).not.toBeNull();
     });
 
     test('reaches the error screen after a single timeout, without retrying the stalled request', async () => {

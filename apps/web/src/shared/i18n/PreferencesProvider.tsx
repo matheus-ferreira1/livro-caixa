@@ -16,6 +16,9 @@ const PreferencesContext = createContext<Localization>(DEFAULT_LOCALIZATION);
 /** One automatic retry for the initial load. */
 const MAX_PREFERENCES_RETRIES = 1;
 
+/** A fast load must not flash the spinner, so it appears only when the wait is noticeable. */
+const SPINNER_DELAY_MS = 1000;
+
 const ptBR = translator('pt-BR');
 const en = translator('en');
 
@@ -67,12 +70,16 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         }}
       />
     );
-  return null;
+  return <DelayedSpinner />;
 }
 
-const bothLanguages = (
-  key: 'preferences.loadFailed' | 'preferences.retrying' | 'preferences.stillFailing',
-) => (
+type BilingualKey =
+  | 'preferences.loadFailed'
+  | 'preferences.retrying'
+  | 'preferences.stillFailing'
+  | 'preferences.loading';
+
+const bothLanguages = (key: BilingualKey) => (
   <>
     <p lang="pt-BR" className="m-0">
       {ptBR(key)}
@@ -82,6 +89,24 @@ const bothLanguages = (
     </p>
   </>
 );
+
+/** Blank until the delay passes; the label is in both languages because the language is not known yet. */
+function DelayedSpinner() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), SPINNER_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!visible) return null;
+  return (
+    <main className="flex min-h-screen items-center justify-center">
+      <div role="status">
+        <LoaderCircle className="size-8 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        <div className="sr-only">{bothLanguages('preferences.loading')}</div>
+      </div>
+    </main>
+  );
+}
 
 /**
  * The language is unknown here, so the message is given in both, pt-BR first, each part marked with
