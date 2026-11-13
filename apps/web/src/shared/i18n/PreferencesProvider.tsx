@@ -12,7 +12,7 @@ const PreferencesContext = createContext<Localization>(DEFAULT_LOCALIZATION);
 const MAX_PREFERENCES_RETRIES = 1;
 
 /** A fast load must not flash the spinner, so it appears only when the wait is noticeable. */
-const SPINNER_DELAY_MS = 1000;
+export const SPINNER_DELAY_MS = 1000;
 
 const ptBR = translator('pt-BR');
 const en = translator('en');
@@ -28,6 +28,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     queryKey: PREFERENCES_KEY,
     queryFn: ({ signal }) => fetchPreferences(signal),
     staleTime: Infinity,
+    // The default 'online' mode would pause the query while the browser reports offline: the timeout
+    // would never start and the spinner would turn forever. Letting the request fail reaches the retry.
+    networkMode: 'always',
     // A click on the retry button is a single attempt, so the wait after it is not doubled. A stalled
     // request is not retried either: a second timeout would double a blank wait.
     retry: (failureCount, error) =>
@@ -42,6 +45,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [data],
   );
   const language = data?.language;
+
+  useEffect(() => {
+    // A later failure starts from a clean status line, not from the last manual retry's.
+    if (data) setRetried(false);
+  }, [data]);
 
   useEffect(() => {
     if (language) document.documentElement.lang = language;
@@ -89,12 +97,17 @@ function DelayedSpinner() {
     const timer = setTimeout(() => setVisible(true), SPINNER_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
-  if (!visible) return null;
+  // The status region is mounted from the start and filled after the delay, because screen readers
+  // announce changes to a live region and often miss one that appears together with its text.
   return (
     <main className="flex min-h-screen items-center justify-center">
       <div role="status">
-        <LoaderCircle className="size-8 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-        <div className="sr-only">{bothLanguages('preferences.loading')}</div>
+        {visible && (
+          <>
+            <LoaderCircle className="size-8 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            <div className="sr-only">{bothLanguages('preferences.loading')}</div>
+          </>
+        )}
       </div>
     </main>
   );

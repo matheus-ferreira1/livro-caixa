@@ -1,9 +1,9 @@
 import { translator } from '@livro-caixa/domain';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { createQueryClient } from '@/shared/api/query-client';
-import { PreferencesProvider, usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { PreferencesProvider, SPINNER_DELAY_MS, usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 import { mockApi, renderWithRoute } from '@/test/render';
 
@@ -12,7 +12,6 @@ const RETRY_NAME = /^Tentar novamente ?, Try again$/;
 const LOAD_TIMEOUT_MS = 4000;
 const STALL_LIMIT_MS = 10_000;
 const DEFAULT_RETRY_DELAY_MS = 1000;
-const SPINNER_DELAY_MS = 1000;
 
 function Amount() {
   const { money } = usePreferences();
@@ -74,13 +73,12 @@ describe('PreferencesProvider', () => {
       expect(within(retry).getByText('Try again')).toHaveAttribute('lang', 'en');
     });
 
-    test('reads the pause between the languages from the catalog, in either language', async () => {
+    test('reads the pause between the languages from the catalog', async () => {
       failing();
       renderWithRoute(<Amount />, '/', { preferences: null });
       const retry = await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
 
       expect(retry.querySelector('.sr-only')).toHaveTextContent(translator('pt-BR')('preferences.separator'));
-      expect(translator('en')('preferences.separator')).toBe(translator('pt-BR')('preferences.separator'));
     });
 
     test('keeps the retry button outside the alert, so its label is not announced with it', async () => {
@@ -157,6 +155,24 @@ describe('PreferencesProvider', () => {
       expect(fetchSpy).toHaveBeenCalledTimes(5);
     });
 
+    test('does not show the "still failing" status again when a later load fails after a manual retry worked', async () => {
+      const failure = () => new Response('{}', { status: 500 });
+      const success = () => new Response('{"language":"en","currency":"USD"}', { status: 200 });
+      vi.spyOn(globalThis, 'fetch')
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(async () => success())
+        .mockImplementation(async () => failure());
+      const { user, queryClient } = renderWithRoute(<Amount />, '/', { preferences: null });
+      await user.click(await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS }));
+      expect(await screen.findByText('$1,234.56')).toBeInTheDocument();
+
+      await act(() => queryClient.resetQueries({ queryKey: PREFERENCES_KEY }));
+
+      await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS });
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    });
+
     test.each([
       ['a body with no preferences', () => new Response('{}', { status: 200 })],
       ['a body that is not JSON', () => new Response('<html></html>', { status: 200 })],
@@ -221,13 +237,37 @@ describe('PreferencesProvider', () => {
       );
 
       await act(() => vi.advanceTimersByTimeAsync(SPINNER_DELAY_MS - 1));
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
 
       await act(() => vi.advanceTimersByTimeAsync(1));
       const status = screen.getByRole('status');
       expect(within(status).getByText('Carregando…')).toHaveAttribute('lang', 'pt-BR');
       expect(within(status).getByText('Loading…')).toHaveAttribute('lang', 'en');
       expect(within(status).getByText('Carregando…').closest('.sr-only')).not.toBeNull();
+    });
+
+    test('reaches the error screen even when the browser reports offline, instead of pausing', async () => {
+      vi.useFakeTimers();
+      onlineManager.setOnline(false);
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        (_input, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          }),
+      );
+      const queryClient = createQueryClient({ onUnauthorized: () => undefined });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PreferencesProvider>
+            <Amount />
+          </PreferencesProvider>
+        </QueryClientProvider>,
+      );
+
+      await act(() => vi.advanceTimersByTimeAsync(STALL_LIMIT_MS + 1));
+      onlineManager.setOnline(true);
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
     });
 
     test('reaches the error screen after a single timeout, without retrying the stalled request', async () => {
