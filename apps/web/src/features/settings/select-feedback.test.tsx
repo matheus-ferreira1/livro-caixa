@@ -1,5 +1,7 @@
+import { DEFAULT_PREFERENCES } from '@livro-caixa/domain';
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
+import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 import { renderRoutes } from '@/test/render';
 import { SettingsPage } from './SettingsPage';
 
@@ -101,5 +103,23 @@ describe('language and currency selects while saves are pending', () => {
 
     await waitFor(() => expect(language).toHaveValue('pt-BR'));
     expect(currency).toHaveValue('USD');
+  });
+});
+
+describe('a save answered with values the app does not know', () => {
+  test('leaves the preferences as they were and the app rendered', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init = {}) => {
+      const url = String(input);
+      if (init.method === 'PUT') return json({ settings: { ...INITIAL, currency: 'JPY' } });
+      if (url === '/api/settings') return json({ settings: INITIAL });
+      if (url === '/api/categories') return json({ categories: [], usage: {} });
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const { user, queryClient } = renderSettings();
+
+    await user.selectOptions(await screen.findByLabelText('Moeda'), 'USD');
+
+    await waitFor(() => expect(screen.getByLabelText('Moeda')).toHaveValue('BRL'));
+    expect(queryClient.getQueryData(PREFERENCES_KEY)).toEqual(DEFAULT_PREFERENCES);
   });
 });

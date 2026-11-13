@@ -13,12 +13,12 @@ import { TRANSACTIONS_KEY } from '@/features/transactions/api';
 import { apiFetch, jsonBody } from '@/shared/api/client';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
-import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
+import { isPreferences, PREFERENCES_KEY } from '@/shared/i18n/preferences';
 
 const CATEGORIES_KEY = ['categories'] as const;
 const SETTINGS_KEY = ['settings'] as const;
 const SETTINGS_SAVE_SCOPE = 'settings-save';
-const SETTINGS_SAVE_KEY = ['settings-save'] as const;
+const SETTINGS_SAVE_KEY = [SETTINGS_SAVE_SCOPE] as const;
 
 interface CategoryCatalog {
   categories: Category[];
@@ -124,10 +124,11 @@ export function useSaveSettings() {
       // Taken from the response, which merges onto what the server holds, so a change made on
       // another device in the meantime is not hidden behind what this client last knew.
       const previous = queryClient.getQueryData<Preferences>(PREFERENCES_KEY);
-      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, {
-        language: settings.language,
-        currency: settings.currency,
-      });
+      const next = { language: settings.language, currency: settings.currency };
+      // A proxy or an older server could answer with values the app cannot localize; the cache then
+      // keeps what it had, since rendering with them would throw.
+      if (!isPreferences(next)) return;
+      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, next);
       // The server writes some text itself (the dashboard's category names and partner name).
       if (settings.language !== previous?.language)
         void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
@@ -142,9 +143,12 @@ export function useSaveSettings() {
  * answer. A failed save drops out of the list, which returns the control to the applied value.
  */
 export function usePendingSettings(): SettingsInput {
-  const pending = useMutationState({
+  const pending = useMutationState<{ changes: SettingsInput; submittedAt: number }>({
     filters: { mutationKey: SETTINGS_SAVE_KEY, status: 'pending' },
-    select: (mutation) => mutation.state.variables as SettingsInput,
+    // `variables` is typed `unknown` by the cache; saves under this key are only made by `useSaveSettings`.
+    select: ({ state }) => ({ changes: state.variables as SettingsInput, submittedAt: state.submittedAt }),
   });
-  return Object.assign({}, ...pending) as SettingsInput;
+  // Oldest first, so the newest pick of each field overwrites the earlier ones.
+  const oldestFirst = [...pending].sort((a, b) => a.submittedAt - b.submittedAt);
+  return oldestFirst.reduce<SettingsInput>((picked, { changes }) => ({ ...picked, ...changes }), {});
 }
