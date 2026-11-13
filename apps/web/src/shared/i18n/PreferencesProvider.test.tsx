@@ -190,5 +190,28 @@ describe('PreferencesProvider', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
       expect(screen.getByRole('button', { name: RETRY_NAME })).toBeInTheDocument();
     });
+
+    test('reaches the error screen after a single timeout, without retrying the stalled request', async () => {
+      vi.useFakeTimers();
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        (_input, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          }),
+      );
+      const queryClient = createQueryClient({ onUnauthorized: () => undefined });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PreferencesProvider>
+            <Amount />
+          </PreferencesProvider>
+        </QueryClientProvider>,
+      );
+
+      await act(() => vi.advanceTimersByTimeAsync(STALL_LIMIT_MS + 1));
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Could not load the preferences.');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
   });
 });

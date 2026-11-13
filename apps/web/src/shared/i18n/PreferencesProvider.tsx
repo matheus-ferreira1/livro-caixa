@@ -11,9 +11,12 @@ import { LoaderCircle } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/button';
 import { AlertBanner } from '@/shared/ui-kit';
-import { fetchPreferences, PREFERENCES_KEY } from './preferences';
+import { fetchPreferences, PREFERENCES_KEY, PreferencesTimeoutError } from './preferences';
 
 const PreferencesContext = createContext<Localization>(DEFAULT_LOCALIZATION);
+
+/** One automatic retry for the initial load. */
+const MAX_PREFERENCES_RETRIES = 1;
 
 const ptBR = translator('pt-BR');
 const en = translator('en');
@@ -29,9 +32,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     queryKey: PREFERENCES_KEY,
     queryFn: ({ signal }) => fetchPreferences(signal),
     staleTime: Infinity,
-    // One automatic retry for the initial load; a click on the retry button is a single attempt, so
-    // the wait after it is not doubled.
-    retry: (failureCount) => !manualRetry.current && failureCount < 1,
+    // A click on the retry button is a single attempt, so the wait after it is not doubled. A stalled
+    // request is not retried either: a second timeout would double a blank wait.
+    retry: (failureCount, error) =>
+      !manualRetry.current &&
+      failureCount < MAX_PREFERENCES_RETRIES &&
+      !(error instanceof PreferencesTimeoutError),
   });
   const [retried, setRetried] = useState(false);
   const value = useMemo(
