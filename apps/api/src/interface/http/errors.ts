@@ -31,7 +31,11 @@ function clientErrorStatus(err: unknown): number | undefined {
 
 export const errorHandler =
   (translate: TranslateProvider): ErrorRequestHandler =>
-  (err, _req, res, _next) => {
+  (err, _req, res, next) => {
+    if (res.headersSent) {
+      next(err);
+      return;
+    }
     if (err instanceof ZodError) {
       res.status(400).json({
         error: { code: 'validation_error', message: translate()('api.invalidData'), issues: err.issues },

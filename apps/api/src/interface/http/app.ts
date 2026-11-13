@@ -8,8 +8,16 @@ import { authRouter } from './auth-router';
 import { errorHandler } from './errors';
 import { ledgerRouter } from './ledger-router';
 
+/** Largest JSON request body accepted; a bigger one answers 413. */
+export const JSON_BODY_LIMIT_BYTES = 100 * 1024;
+
 /** Vite emits every hashed bundle under this directory, so a miss there is a stale deploy, not a route. */
 const ASSETS_PATH_PREFIX = '/assets/';
+
+// `extname('/lancamentos.')` is '.', but a bare trailing dot (a link pasted from chat) names no file type.
+function hasFileExtension(path: string): boolean {
+  return extname(path).length > 1;
+}
 
 /**
  * Client routes have no file extension, so anything that does (`.png`, `.js`) or lives under the
@@ -18,7 +26,7 @@ const ASSETS_PATH_PREFIX = '/assets/';
  * A dotfile such as `/.env` has no extension to Node, so it keeps falling back to the app.
  */
 function isNavigation(path: string): boolean {
-  return !path.startsWith(ASSETS_PATH_PREFIX) && extname(path) === '';
+  return !path.startsWith(ASSETS_PATH_PREFIX) && !hasFileExtension(path);
 }
 
 export interface AppOptions {
@@ -32,7 +40,7 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', trustProxy);
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: JSON_BODY_LIMIT_BYTES }));
   app.use(cookieParser());
 
   app.get('/api/health', (_req, res) => {
@@ -62,7 +70,14 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
       }
       // Given as `root`, only the path below it is checked against the dotfiles policy, so a
       // checkout under a dot-directory (such as `.claude/worktrees`) still serves the app.
-      res.sendFile('index.html', { root });
+      res.sendFile('index.html', { root }, (err) => {
+        // After the headers went out the response cannot change (a client that aborts mid-download
+        // lands here), so there is nothing to log or answer.
+        if (!err || res.headersSent) return;
+        // A missing index.html is a broken deploy: send's 404 must not reach the client as a quiet
+        // not-found, so the error is rewrapped without its status and answered as a logged 500.
+        next(new Error('The SPA entry point could not be sent', { cause: err }));
+      });
     });
     app.use(routeNotFound);
   }

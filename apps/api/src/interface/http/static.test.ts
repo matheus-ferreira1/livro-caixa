@@ -118,14 +118,18 @@ describe('SPA fallback for requests that are not navigations', () => {
     expect(icon.headers['content-type']).toContain('image/svg+xml');
   });
 
-  test.each(['/', '/lancamentos', '/configuracoes', '/qualquer-coisa', '/lancamentos?busca=a.b'])(
-    'still serves the app for the client route %s',
-    async (path) => {
-      const res = await request(buildApp()).get(path).expect(200);
-      expect(res.headers['content-type']).toContain('text/html');
-      expect(res.text).toContain('<title>Livro-caixa</title>');
-    },
-  );
+  test.each([
+    '/',
+    '/lancamentos',
+    '/configuracoes',
+    '/qualquer-coisa',
+    '/lancamentos?busca=a.b',
+    '/lancamentos.',
+  ])('still serves the app for the client route %s', async (path) => {
+    const res = await request(buildApp()).get(path).expect(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('<title>Livro-caixa</title>');
+  });
 
   test('keeps answering a dotfile with the app, never with the file', async () => {
     for (const path of ['/.env', '/.git/config']) {

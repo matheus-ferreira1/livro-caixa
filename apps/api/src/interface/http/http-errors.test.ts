@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import express from 'express';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import express, { type Request, type Response } from 'express';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,10 +7,10 @@ import request from 'supertest';
 import { DEFAULT_TRUST_PROXY } from '../../config';
 import { createContainer } from '../../container';
 import { openDatabase } from '../../infrastructure/db/database';
-import { createApp } from './app';
+import { createApp, JSON_BODY_LIMIT_BYTES } from './app';
 import { errorHandler } from './errors';
 
-const OVERSIZED_BODY_BYTES = 200 * 1024;
+const OVERSIZED_BODY_BYTES = JSON_BODY_LIMIT_BYTES * 2;
 
 function buildApp(staticDir?: string) {
   const container = createContainer({ db: openDatabase(':memory:'), secureCookies: false });
@@ -63,17 +63,19 @@ describe('client errors raised by the HTTP layer', () => {
     expect(res.body.error.code).toBe('validation_error');
   });
 
-  test('a static root without index.html answers 404 not_found', async () => {
+  // Deliberate change of expectation: a missing index.html is a broken deploy, a server fault, so it
+  // is logged and answered 500 (as on main) instead of a quiet client 404.
+  test('a static root without index.html answers 500 internal_error and logs it once', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'livro-caixa-empty-'));
     try {
       const { app, container } = buildApp(dir);
 
-      const res = await request(app).get('/lancamentos').expect(404);
+      const res = await request(app).get('/lancamentos').expect(500);
 
       expect(res.body).toEqual({
-        error: { code: 'not_found', message: container.translate()('api.routeNotFound') },
+        error: { code: 'internal_error', message: container.translate()('api.unexpected') },
       });
-      expect(consoleError).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalledTimes(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -96,6 +98,17 @@ describe('error handler', () => {
     app.use(errorHandler(container.translate));
     return { app, container };
   }
+
+  test('delegates to Express when the response has already started', () => {
+    const { container } = buildApp();
+    const error = new Error('after the first byte');
+    const res = { headersSent: true };
+    const next = mock();
+
+    errorHandler(container.translate)(error, {} as Request, res as Response, next);
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
 
   test('an unexpected error answers 500 internal_error, logs it and leaks nothing', async () => {
     const { app, container } = appThrowing(new Error('secret detail'));
