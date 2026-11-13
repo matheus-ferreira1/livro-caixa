@@ -9,7 +9,7 @@ import {
 } from '@livro-caixa/domain';
 import { useId } from 'react';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
-import { useSaveSettings } from '../api';
+import { usePendingSettings, useSaveSettings } from '../api';
 import { settingsInputClass } from './CategoriesSection';
 
 /** Each language is named in itself in both languages, so it can be found by someone who cannot read the current one. */
@@ -22,12 +22,16 @@ const CURRENCY_LABELS: Record<Currency, MessageKey> = {
   GBP: 'settings.currencyGBP',
 };
 
-/** Saves on its own, like the split section. The select shows what the app is using, so it never lags behind. */
+/**
+ * Saves on its own, like the split section. A select shows the user's pick while its save is
+ * queued or in flight, then what the server answered; the rest of the app follows the answer only.
+ */
 export function PreferencesSection() {
   const { t, language, currency } = usePreferences();
   const languageId = useId();
   const currencyId = useId();
   const { mutate: save } = useSaveSettings();
+  const pending = usePendingSettings();
 
   return (
     <section aria-labelledby="preferences-title" className="flex flex-col gap-4">
@@ -44,7 +48,7 @@ export function PreferencesSection() {
           </label>
           <select
             id={languageId}
-            value={language}
+            value={pending.language ?? language}
             onChange={(event) => isLanguage(event.target.value) && save({ language: event.target.value })}
             className={settingsInputClass}
           >
@@ -61,7 +65,7 @@ export function PreferencesSection() {
           </label>
           <select
             id={currencyId}
-            value={currency}
+            value={pending.currency ?? currency}
             onChange={(event) => isCurrency(event.target.value) && save({ currency: event.target.value })}
             className={settingsInputClass}
           >

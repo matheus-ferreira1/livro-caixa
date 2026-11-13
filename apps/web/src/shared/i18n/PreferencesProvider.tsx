@@ -1,19 +1,18 @@
-import {
-  DEFAULT_LOCALIZATION,
-  isCurrency,
-  isLanguage,
-  localization,
-  translator,
-  type Localization,
-} from '@livro-caixa/domain';
+import { DEFAULT_LOCALIZATION, localization, translator, type Localization } from '@livro-caixa/domain';
 import { useQuery } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/button';
 import { AlertBanner } from '@/shared/ui-kit';
-import { fetchPreferences, PREFERENCES_KEY } from './preferences';
+import { fetchPreferences, PREFERENCES_KEY, PreferencesTimeoutError } from './preferences';
 
 const PreferencesContext = createContext<Localization>(DEFAULT_LOCALIZATION);
+
+/** One automatic retry for the initial load. */
+const MAX_PREFERENCES_RETRIES = 1;
+
+/** A fast load must not flash the spinner, so it appears only when the wait is noticeable. */
+export const SPINNER_DELAY_MS = 1000;
 
 const ptBR = translator('pt-BR');
 const en = translator('en');
@@ -29,19 +28,28 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     queryKey: PREFERENCES_KEY,
     queryFn: ({ signal }) => fetchPreferences(signal),
     staleTime: Infinity,
-    // One automatic retry for the initial load; a click on the retry button is a single attempt, so
-    // the wait after it is not doubled.
-    retry: (failureCount) => !manualRetry.current && failureCount < 1,
+    // The default 'online' mode would pause the query while the browser reports offline: the timeout
+    // would never start and the spinner would turn forever. Letting the request fail reaches the retry.
+    networkMode: 'always',
+    // A click on the retry button is a single attempt, so the wait after it is not doubled. A stalled
+    // request is not retried either: a second timeout would double a blank wait.
+    retry: (failureCount, error) =>
+      !manualRetry.current &&
+      failureCount < MAX_PREFERENCES_RETRIES &&
+      !(error instanceof PreferencesTimeoutError),
   });
   const [retried, setRetried] = useState(false);
   const value = useMemo(
-    () =>
-      data && isLanguage(data.language) && isCurrency(data.currency)
-        ? localization(data.language, data.currency)
-        : null,
+    // `data` was validated by `fetchPreferences`, so its types can be trusted here.
+    () => (data ? localization(data.language, data.currency) : null),
     [data],
   );
   const language = data?.language;
+
+  useEffect(() => {
+    // A later failure starts from a clean status line, not from the last manual retry's.
+    if (data) setRetried(false);
+  }, [data]);
 
   useEffect(() => {
     if (language) document.documentElement.lang = language;
@@ -58,16 +66,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         onRetry={() => {
           manualRetry.current = true;
           setRetried(true);
-          void refetch();
+          // Cleared once the attempt settles, so a later failing fetch gets its automatic retry back.
+          void refetch().finally(() => {
+            manualRetry.current = false;
+          });
         }}
       />
     );
-  return null;
+  return <DelayedSpinner />;
 }
 
-const bothLanguages = (
-  key: 'preferences.loadFailed' | 'preferences.retrying' | 'preferences.stillFailing',
-) => (
+type BilingualKey =
+  'preferences.loadFailed' | 'preferences.retrying' | 'preferences.stillFailing' | 'preferences.loading';
+
+const bothLanguages = (key: BilingualKey) => (
   <>
     <p lang="pt-BR" className="m-0">
       {ptBR(key)}
@@ -77,6 +89,29 @@ const bothLanguages = (
     </p>
   </>
 );
+
+/** Blank until the delay passes; the label is in both languages because the language is not known yet. */
+function DelayedSpinner() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), SPINNER_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  // The status region is mounted from the start and filled after the delay, because screen readers
+  // announce changes to a live region and often miss one that appears together with its text.
+  return (
+    <main className="flex min-h-screen items-center justify-center">
+      <div role="status">
+        {visible && (
+          <>
+            <LoaderCircle className="size-8 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            <div className="sr-only">{bothLanguages('preferences.loading')}</div>
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
 
 /**
  * The language is unknown here, so the message is given in both, pt-BR first, each part marked with
@@ -110,7 +145,7 @@ function PreferencesError({
         {retrying && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
         <span lang="pt-BR">{ptBR('preferences.retry')}</span>
         {/* Read out as a pause between the two languages; the visible divider is not copy. */}
-        <span className="sr-only">,</span>
+        <span className="sr-only">{ptBR('preferences.separator')}</span>
         <span aria-hidden="true" className="h-4 w-px bg-current opacity-40" />
         <span lang="en">{en('preferences.retry')}</span>
       </Button>

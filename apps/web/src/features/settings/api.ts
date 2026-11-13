@@ -7,17 +7,18 @@ import {
   type Settings,
   type SettingsInput,
 } from '@livro-caixa/domain';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TRANSACTIONS_KEY } from '@/features/transactions/api';
 import { apiFetch, jsonBody } from '@/shared/api/client';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
-import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
+import { isPreferences, PREFERENCES_KEY } from '@/shared/i18n/preferences';
 
 const CATEGORIES_KEY = ['categories'] as const;
 const SETTINGS_KEY = ['settings'] as const;
 const SETTINGS_SAVE_SCOPE = 'settings-save';
+const SETTINGS_SAVE_KEY = [SETTINGS_SAVE_SCOPE] as const;
 
 interface CategoryCatalog {
   categories: Category[];
@@ -109,7 +110,12 @@ export function useSaveSettings() {
   return useMutation({
     // Mutations sharing a scope run one at a time, across every call site, so the caches end on
     // the answer to the last save and an earlier answer cannot overwrite it.
+    mutationKey: SETTINGS_SAVE_KEY,
     scope: { id: SETTINGS_SAVE_SCOPE },
+    // The default 'online' mode would pause a save made while the browser reports offline, and
+    // the shared scope would then hold back every later save with no feedback. Letting fetch fail
+    // surfaces the unreachable error at once.
+    networkMode: 'always',
     mutationFn: async (changes: SettingsInput) =>
       (await apiFetch<{ settings: Settings }>('/api/settings', { method: 'PUT', ...jsonBody(changes) }))
         .settings,
@@ -118,14 +124,31 @@ export function useSaveSettings() {
       // Taken from the response, which merges onto what the server holds, so a change made on
       // another device in the meantime is not hidden behind what this client last knew.
       const previous = queryClient.getQueryData<Preferences>(PREFERENCES_KEY);
-      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, {
-        language: settings.language,
-        currency: settings.currency,
-      });
+      const next = { language: settings.language, currency: settings.currency };
+      // A proxy or an older server could answer with values the app cannot localize; the cache then
+      // keeps what it had, since rendering with them would throw.
+      if (!isPreferences(next)) return;
+      queryClient.setQueryData<Preferences>(PREFERENCES_KEY, next);
       // The server writes some text itself (the dashboard's category names and partner name).
       if (settings.language !== previous?.language)
         void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
     onError: showError,
   });
+}
+
+/**
+ * What the user has picked in saves that are queued or in flight, the newest pick of each field
+ * winning. It lets a control show the pick at once; the app itself switches only on the server's
+ * answer. A failed save drops out of the list, which returns the control to the applied value.
+ */
+export function usePendingSettings(): SettingsInput {
+  const pending = useMutationState<{ changes: SettingsInput; submittedAt: number }>({
+    filters: { mutationKey: SETTINGS_SAVE_KEY, status: 'pending' },
+    // `variables` is typed `unknown` by the cache; saves under this key are only made by `useSaveSettings`.
+    select: ({ state }) => ({ changes: state.variables as SettingsInput, submittedAt: state.submittedAt }),
+  });
+  // Oldest first, so the newest pick of each field overwrites the earlier ones.
+  const oldestFirst = [...pending].sort((a, b) => a.submittedAt - b.submittedAt);
+  return oldestFirst.reduce<SettingsInput>((picked, { changes }) => ({ ...picked, ...changes }), {});
 }
