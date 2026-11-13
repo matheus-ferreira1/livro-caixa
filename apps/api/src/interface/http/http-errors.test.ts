@@ -56,7 +56,7 @@ describe('client errors raised by the HTTP layer', () => {
 
     const res = await request(app)
       .post('/api/auth/login')
-      .set('Content-Type', 'application/json; charset=utf-7')
+      .set('Content-Type', 'application/json; charset=latin1')
       .send('{}')
       .expect(415);
 
