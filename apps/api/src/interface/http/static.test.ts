@@ -53,11 +53,12 @@ describe('SPA serving from under a dot-directory', () => {
     expect(asset.text).toContain('console.log');
   });
 
-  test('does not serve dotfiles inside the static directory', async () => {
+  test('answers a dotfile inside the static directory with the app, never with the file', async () => {
     const app = buildApp();
 
     for (const path of ['/.env', '/.git/config']) {
-      const res = await request(app).get(path);
+      const res = await request(app).get(path).expect(200);
+      expect(res.text).toContain('<title>Livro-caixa</title>');
       expect(res.text).not.toContain('hunter2');
     }
   });
