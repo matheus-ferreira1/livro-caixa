@@ -8,7 +8,6 @@ export const dashboardPtBR = {
   'dashboard.modeRealHint': 'Só lançamentos confirmados.',
   'dashboard.modeProjHint': 'Inclui previstos e o acerto esperado.',
 
-
   'dashboard.balanceLabel': 'Balanço do mês',
   'dashboard.balanceHint': 'Receitas + acertos − despesas',
   'dashboard.noEntriesInMonth': 'Sem lançamentos no mês',

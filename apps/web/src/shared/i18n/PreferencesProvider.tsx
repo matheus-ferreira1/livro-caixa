@@ -1,9 +1,4 @@
-import {
-  DEFAULT_LOCALIZATION,
-  localization,
-  translator,
-  type Localization,
-} from '@livro-caixa/domain';
+import { DEFAULT_LOCALIZATION, localization, translator, type Localization } from '@livro-caixa/domain';
 import { useQuery } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -74,10 +69,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 }
 
 type BilingualKey =
-  | 'preferences.loadFailed'
-  | 'preferences.retrying'
-  | 'preferences.stillFailing'
-  | 'preferences.loading';
+  'preferences.loadFailed' | 'preferences.retrying' | 'preferences.stillFailing' | 'preferences.loading';
 
 const bothLanguages = (key: BilingualKey) => (
   <>
