@@ -7,6 +7,7 @@ import type { Container } from '../../container';
 import { authRouter } from './auth-router';
 import { errorHandler } from './errors';
 import { ledgerRouter } from './ledger-router';
+import { isServerFault } from './send-file-error';
 
 /** Largest JSON request body accepted; a bigger one answers 413. */
 export const JSON_BODY_LIMIT_BYTES = 100 * 1024;
@@ -71,9 +72,9 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
       // Given as `root`, only the path below it is checked against the dotfiles policy, so a
       // checkout under a dot-directory (such as `.claude/worktrees`) still serves the app.
       res.sendFile('index.html', { root }, (err) => {
-        // After the headers went out the response cannot change (a client that aborts mid-download
-        // lands here), so there is nothing to log or answer.
-        if (!err || res.headersSent) return;
+        // A client that leaves mid-request is not a fault, and once the headers went out the
+        // response cannot change, so neither is logged nor answered.
+        if (res.headersSent || !isServerFault(err)) return;
         // A missing index.html is a broken deploy: send's 404 must not reach the client as a quiet
         // not-found, so the error is rewrapped without its status and answered as a logged 500.
         next(new Error('The SPA entry point could not be sent', { cause: err }));
