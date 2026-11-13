@@ -7,7 +7,7 @@ import {
   type Settings,
   type SettingsInput,
 } from '@livro-caixa/domain';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TRANSACTIONS_KEY } from '@/features/transactions/api';
 import { apiFetch, jsonBody } from '@/shared/api/client';
@@ -18,6 +18,7 @@ import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 const CATEGORIES_KEY = ['categories'] as const;
 const SETTINGS_KEY = ['settings'] as const;
 const SETTINGS_SAVE_SCOPE = 'settings-save';
+const SETTINGS_SAVE_KEY = ['settings-save'] as const;
 
 interface CategoryCatalog {
   categories: Category[];
@@ -109,6 +110,7 @@ export function useSaveSettings() {
   return useMutation({
     // Mutations sharing a scope run one at a time, across every call site, so the caches end on
     // the answer to the last save and an earlier answer cannot overwrite it.
+    mutationKey: SETTINGS_SAVE_KEY,
     scope: { id: SETTINGS_SAVE_SCOPE },
     // The default 'online' mode would pause a save made while the browser reports offline, and
     // the shared scope would then hold back every later save with no feedback. Letting fetch fail
@@ -132,4 +134,17 @@ export function useSaveSettings() {
     },
     onError: showError,
   });
+}
+
+/**
+ * What the user has picked in saves that are queued or in flight, the newest pick of each field
+ * winning. It lets a control show the pick at once; the app itself switches only on the server's
+ * answer. A failed save drops out of the list, which returns the control to the applied value.
+ */
+export function usePendingSettings(): SettingsInput {
+  const pending = useMutationState({
+    filters: { mutationKey: SETTINGS_SAVE_KEY, status: 'pending' },
+    select: (mutation) => mutation.state.variables as SettingsInput,
+  });
+  return Object.assign({}, ...pending) as SettingsInput;
 }
