@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { createQueryClient } from '@/shared/api/query-client';
 import { PreferencesProvider, usePreferences } from '@/shared/i18n/PreferencesProvider';
+import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 import { mockApi, renderWithRoute } from '@/test/render';
 
 /** The hidden comma between the languages is read out as a pause; engines differ on the space around it. */
@@ -121,6 +122,27 @@ describe('PreferencesProvider', () => {
       await user.click(retry);
       await screen.findByText('Ainda não foi possível carregar as preferências.');
       expect(fetchSpy).toHaveBeenCalledTimes(3);
+    });
+
+    test('retries automatically again on a later failing fetch once a manual retry has settled', async () => {
+      const failure = () => new Response('{}', { status: 500 });
+      const success = () => new Response('{"language":"en","currency":"USD"}', { status: 200 });
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(async () => success())
+        .mockImplementationOnce(async () => failure())
+        .mockImplementationOnce(async () => success());
+      const { user, queryClient } = renderWithRoute(<Amount />, '/', { preferences: null });
+      await user.click(await screen.findByRole('button', { name: RETRY_NAME }, { timeout: LOAD_TIMEOUT_MS }));
+      expect(await screen.findByText('$1,234.56')).toBeInTheDocument();
+
+      await act(() => queryClient.resetQueries({ queryKey: PREFERENCES_KEY }));
+
+      expect(await screen.findByText('$1,234.56', {}, { timeout: LOAD_TIMEOUT_MS })).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(fetchSpy).toHaveBeenCalledTimes(5);
     });
 
     test.each([

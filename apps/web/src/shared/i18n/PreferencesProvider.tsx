@@ -58,7 +58,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         onRetry={() => {
           manualRetry.current = true;
           setRetried(true);
-          void refetch();
+          // Cleared once the attempt settles, so a later failing fetch gets its automatic retry back.
+          void refetch().finally(() => {
+            manualRetry.current = false;
+          });
         }}
       />
     );
