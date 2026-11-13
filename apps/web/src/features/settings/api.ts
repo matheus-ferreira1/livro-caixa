@@ -110,6 +110,10 @@ export function useSaveSettings() {
     // Mutations sharing a scope run one at a time, across every call site, so the caches end on
     // the answer to the last save and an earlier answer cannot overwrite it.
     scope: { id: SETTINGS_SAVE_SCOPE },
+    // The default 'online' mode would pause a save made while the browser reports offline, and
+    // the shared scope would then hold back every later save with no feedback. Letting fetch fail
+    // surfaces the unreachable error at once.
+    networkMode: 'always',
     mutationFn: async (changes: SettingsInput) =>
       (await apiFetch<{ settings: Settings }>('/api/settings', { method: 'PUT', ...jsonBody(changes) }))
         .settings,
