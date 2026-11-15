@@ -1,5 +1,6 @@
 import {
   buildDashboard,
+  formatCompactAmount,
   DEFAULT_PREFERENCES,
   translator,
   monthLabel,
@@ -175,6 +176,26 @@ describe('DashboardPage', () => {
     const empty = screen.getByRole('img', { name: /^Fevereiro 2026: receitas/ });
     await user.hover(empty);
     expect(within(empty).getByText('Sem lançamentos')).toBeInTheDocument();
+  });
+
+  test('the strip under the bars shows each month balance, signed, and nothing for empty months', async () => {
+    setup(`/visao-geral?mes=${MONTH}`, {
+      entries: [entry({ type: 'receita', valueCents: 100_000 }), entry({ valueCents: 40_000 })],
+    });
+    const strip = await screen.findByTestId('balance-strip');
+    expect(within(strip).getByText(`+${formatCompactAmount(60_000, 'pt-BR')}`)).toBeInTheDocument();
+    expect(within(strip).getAllByText('▲')).toHaveLength(1);
+    expect(within(strip).queryByText('▼')).not.toBeInTheDocument();
+  });
+
+  test('the legend names the settlement bar and the balance signs', async () => {
+    setup(`/visao-geral?mes=${MONTH}`);
+    const chart = (await screen.findByRole('heading', { name: /^Receitas e despesas/ })).closest('section');
+    const legend = within(chart as HTMLElement);
+    for (const label of ['Receitas', 'Despesas', 'Acertos', 'Sobrou', 'Faltou']) {
+      expect(legend.getAllByText(label).length).toBeGreaterThan(0);
+    }
+    expect(legend.getByText(/^Barra azul: acerto recebido/)).toBeInTheDocument();
   });
 
   test('the bars show the tooltip on keyboard focus too', async () => {
