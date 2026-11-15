@@ -47,7 +47,7 @@ No phase is planned. What is left:
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phases 1 to 7)
+## What is built
 
 | PR | Branch | Delivered |
 |---|---|---|
