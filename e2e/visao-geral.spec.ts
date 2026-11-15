@@ -28,6 +28,9 @@ test('lands on the dashboard after sign-in and confirms what is open', async ({ 
   await page.getByRole('radio', { name: 'Com previstos' }).click();
   await expect(balance).toContainText('−R$ 50,00');
 
+  // The strip under the bars shows the month's signed balance.
+  await expect(page.getByTestId('balance-strip')).toContainText('−');
+
   await page.getByRole('button', { name: 'Confirmar Internet' }).click();
   await expect(page.getByText('“Internet” confirmado')).toBeVisible();
   await expect(page.getByText('Nada pendente em Maio 2029.')).toBeVisible();
