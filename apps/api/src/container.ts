@@ -1,7 +1,12 @@
 import type { Database } from 'bun:sqlite';
 import { Authenticate } from './application/auth/Authenticate';
 import { Login } from './application/auth/Login';
-import { ACCOUNT_THROTTLE_POLICY, IP_THROTTLE_POLICY, LoginThrottle } from './application/auth/LoginThrottle';
+import {
+  ACCOUNT_THROTTLE_POLICY,
+  EMAIL_THROTTLE_POLICY,
+  IP_THROTTLE_POLICY,
+  LoginThrottle,
+} from './application/auth/LoginThrottle';
 import { Logout } from './application/auth/Logout';
 import { PurgeExpiredSessions } from './application/auth/PurgeExpiredSessions';
 import { CreateUser, ResetPassword } from './application/auth/user-admin';
@@ -55,8 +60,11 @@ export function createContainer({
 }: ContainerOptions) {
   const users = new SqliteUserRepository(db);
   const sessions = new SqliteSessionRepository(db);
-  const accountThrottle = new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY);
-  const ipThrottle = new LoginThrottle(clock, IP_THROTTLE_POLICY);
+  const loginThrottles = {
+    account: new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY),
+    ip: new LoginThrottle(clock, IP_THROTTLE_POLICY),
+    email: new LoginThrottle(clock, EMAIL_THROTTLE_POLICY),
+  };
   const transactions = new SqliteTransactionRepository(db);
   const categories = new SqliteCategoryRepository(db);
   const settings = new CachedSettingsRepository(new SqliteSettingsRepository(db));
@@ -67,7 +75,7 @@ export function createContainer({
   return {
     secureCookies,
     users,
-    login: new Login(users, sessions, hasher, accountThrottle, ipThrottle, clock, translate),
+    login: new Login(users, sessions, hasher, loginThrottles, clock, translate),
     logout: new Logout(sessions),
     authenticate: new Authenticate(users, sessions, clock),
     purgeExpiredSessions: new PurgeExpiredSessions(sessions, clock),

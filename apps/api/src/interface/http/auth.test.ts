@@ -166,6 +166,77 @@ describe('POST /api/auth/login', () => {
     });
   });
 
+  describe('per-e-mail limit', () => {
+    const EMAIL_FAILURE_LIMIT = 50;
+    const EMAIL_LOCK_MS = 5 * 60_000;
+    const FAILURES_PER_IP = 4;
+    const FRESH_IP = '198.51.100.99';
+
+    type App = Parameters<typeof request>[0];
+
+    const attemptFrom = (app: App, ip: string, password: string) =>
+      request(app)
+        .post('/api/auth/login')
+        .set('X-Forwarded-For', ip)
+        .send({ email: TEST_USER.email, password });
+
+    // Few failures per address, so neither the per-account nor the per-IP lock is what answers.
+    const guessFromManyAddresses = async (app: App, count: number) => {
+      for (let i = 0; i < count; i++) {
+        await attemptFrom(app, `203.0.113.${Math.floor(i / FAILURES_PER_IP)}`, 'errada');
+      }
+    };
+
+    test('locks one e-mail for 5 min after 50 failures spread over many IPs', async () => {
+      const { app, clock } = await buildTestApp();
+      await guessFromManyAddresses(app, EMAIL_FAILURE_LIMIT);
+
+      expect((await attemptFrom(app, FRESH_IP, TEST_USER.password)).status).toBe(429);
+
+      clock.advance(EMAIL_LOCK_MS);
+      expect((await attemptFrom(app, FRESH_IP, TEST_USER.password)).status).toBe(200);
+    });
+
+    test('a successful login clears the count', async () => {
+      const { app } = await buildTestApp();
+      await guessFromManyAddresses(app, EMAIL_FAILURE_LIMIT - 1);
+      expect((await attemptFrom(app, FRESH_IP, TEST_USER.password)).status).toBe(200);
+
+      await attemptFrom(app, '192.0.2.1', 'errada');
+      expect((await attemptFrom(app, FRESH_IP, TEST_USER.password)).status).toBe(200);
+    });
+  });
+
+  test('forgets failed attempts on an account after 15 min', async () => {
+    const { app, clock } = await buildTestApp();
+    const attempt = (password: string) =>
+      request(app).post('/api/auth/login').send({ email: TEST_USER.email, password });
+
+    for (let i = 0; i < 4; i++) await attempt('errada');
+    clock.advance(15 * 60_000);
+
+    expect((await attempt('errada')).status).toBe(401);
+  });
+
+  test('rejects an oversized e-mail or password before checking anything', async () => {
+    const hasher = new CountingHasher();
+    const { app } = await buildTestApp({ hasher });
+    const MAX_VALIDATION_MS = 500;
+    const startedAt = performance.now();
+
+    await request(app)
+      .post('/api/auth/login')
+      .send({ email: `a@${'.'.repeat(90_000)} x`, password: 'errada' })
+      .expect(400);
+    await request(app)
+      .post('/api/auth/login')
+      .send({ email: TEST_USER.email, password: 'x'.repeat(1025) })
+      .expect(400);
+
+    expect(performance.now() - startedAt).toBeLessThan(MAX_VALIDATION_MS);
+    expect(hasher.verifications).toBe(0);
+  });
+
   test('rejects malformed requests', async () => {
     const { app } = await buildTestApp();
     const res = await request(app).post('/api/auth/login').send({ email: 'x', password: '' }).expect(400);

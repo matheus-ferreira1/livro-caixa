@@ -5,7 +5,12 @@ import { SqliteSessionRepository } from '../../infrastructure/repositories/Sqlit
 import { SqliteUserRepository } from '../../infrastructure/repositories/SqliteUserRepository';
 import { CountingHasher, FakeClock } from '../../test/harness';
 import { Login } from './Login';
-import { ACCOUNT_THROTTLE_POLICY, IP_THROTTLE_POLICY, LoginThrottle } from './LoginThrottle';
+import {
+  ACCOUNT_THROTTLE_POLICY,
+  EMAIL_THROTTLE_POLICY,
+  IP_THROTTLE_POLICY,
+  LoginThrottle,
+} from './LoginThrottle';
 
 const CLIENT_IP = '203.0.113.7';
 const OTHER_IP = '198.51.100.20';
@@ -23,8 +28,11 @@ function buildLogin() {
     users,
     new SqliteSessionRepository(db),
     hasher,
-    new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY),
-    new LoginThrottle(clock, IP_THROTTLE_POLICY),
+    {
+      account: new LoginThrottle(clock, ACCOUNT_THROTTLE_POLICY),
+      ip: new LoginThrottle(clock, IP_THROTTLE_POLICY),
+      email: new LoginThrottle(clock, EMAIL_THROTTLE_POLICY),
+    },
     clock,
     () => translator('pt-BR'),
   );
