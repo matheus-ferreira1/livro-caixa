@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { ApplicationError } from '../errors';
 import type { PasswordHasher, SessionRepository, UserRepository } from '../ports';
 
-export const MIN_PASSWORD_LENGTH = 8;
+export const MIN_PASSWORD_LENGTH = 12;
 
 function assertPasswordStrength(password: string): void {
   if (password.length < MIN_PASSWORD_LENGTH) {

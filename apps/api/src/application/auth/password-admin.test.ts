@@ -28,10 +28,10 @@ describe('admin user commands', () => {
       .expect(200);
   });
 
-  test('rejects passwords shorter than 8 characters', async () => {
+  test('rejects passwords shorter than 12 characters', async () => {
     const { container } = await buildTestApp();
-    expect(container.resetPassword.execute({ email: TEST_USER.email, password: 'curta' })).rejects.toThrow(
-      '8',
-    );
+    expect(
+      container.resetPassword.execute({ email: TEST_USER.email, password: 'onze-letras' }),
+    ).rejects.toThrow('12');
   });
 });
