@@ -12,7 +12,7 @@ _Last updated: 2026-11-15, after the Visão geral chart's balance strip (PR #44)
 | 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
-| 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PR #19) |
+| 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PRs #19, #44) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 | 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
@@ -47,7 +47,7 @@ No phase is planned. What is left:
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
 
-## What is built (Phases 1 to 6)
+## What is built
 
 | PR | Branch | Delivered |
 |---|---|---|
@@ -81,7 +81,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#37](https://github.com/matheus-ferreira1/livro-caixa/pull/37) | `feat/project-site` | The project site (`apps/site`): one static page with real screenshots, a screenshot capture script, the Pages workflow, `CONTRIBUTING.md`, and the site built in CI |
 | [#42](https://github.com/matheus-ferreira1/livro-caixa/pull/42) | `fix/static-under-dot-directory` | The SPA fallback sends `index.html` with `root`, so a checkout under a dot-directory (such as `.claude/worktrees`) is served instead of failing with a 500 |
 | [#43](https://github.com/matheus-ferreira1/livro-caixa/pull/43) | `fix/api-error-and-fallback-statuses` | The error handler keeps the 4xx status of framework errors (400, 413, 415, 404) instead of answering 500; the SPA fallback serves `index.html` only for navigations, so a missing asset or file answers the JSON 404 |
-| [#44](https://github.com/matheus-ferreira1/livro-caixa/pull/44) | `feat/dashboard-chart-balance` | "Receitas e despesas" chart: acerto stacked on the income bar, a balance strip (▲ / ▼ / ·) under the bars, the viewed month tinted, legend and aria label with sobrou / faltou; the signed amount shows from 1024px up; the chart hint and the aria suffix are new in the message catalog; no API or schema change |
+| [#44](https://github.com/matheus-ferreira1/livro-caixa/pull/44) | `feat/dashboard-chart-balance` | "Receitas e despesas" chart: acerto stacked on the income bar, a balance strip (▲ / ▼ / ·) under the bars, the viewed month tinted, legend (Acertos, Sobrou, Faltou) and aria label with sobrou / faltou; the signed amount shows from 1024px up; the existing `dashboard.chartHint` is rewritten and the existing `dashboard.monthAria` gains a sobrou / faltou suffix in both catalogs; no API or schema change |
 
 ### Project site (`apps/site`)
 
@@ -193,7 +193,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | API integration | 281 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 279 | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
-| E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
+| E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck`, `build` and `build:site`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -446,7 +446,7 @@ Follow-ups found during Phase 1.5:
   - diverging "Balanço por mês" chart
   - table with Acumulado bars, Situação and links to each month
 
-### Phase 5 — Visão geral (US-09) (done, PR #19)
+### Phase 5 — Visão geral (US-09) (done, PRs #19, #44)
 
 - [x] Domain: KPIs and deltas against the 12-month average, the 12-month series, the category donut with the "Outras" bucket, open items with relative due labels.
 - [x] API `GET /api/dashboard?month=&mode=`.
@@ -457,6 +457,7 @@ Follow-ups found during Phase 1.5:
   - "Em aberto no mês" with "Confirmar"
   - acerto card
 - [x] Make Visão geral the landing page after login and the `/` redirect.
+- [x] Chart balance strip, the acerto stacked on the income bar and the viewed month tinted (PR #44), a departure from the prototype by approval.
 
 ### Phase 6 — Patrimônio and Fechamento (US-10) (done, PRs #20, #21, #22)
 
