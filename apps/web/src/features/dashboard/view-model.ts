@@ -56,6 +56,7 @@ export interface ChartGroup {
   label: string;
   current: boolean;
   incomeHeight: string;
+  hasSettlement: boolean;
   /** Share of the income bar's height taken by the settlement stacked on top of it. */
   settlementShare: string;
   expenseHeight: string;
@@ -240,8 +241,20 @@ function tilesOf({ kpis, month, partnerName }: Dashboard, words: Words): TileSpe
   ];
 }
 
-const compactBalance = (cents: number, language: Language) =>
-  cents > 0 ? `+${formatCompactAmount(cents, language)}` : formatCompactAmount(cents, language);
+// A bar is never thinner than this, so a small amount stays visible.
+const MIN_BAR_PX = 2;
+// The settlement keeps this much blue, since the dark cue above it takes no height.
+const MIN_SETTLEMENT_PX = 3;
+// The stack always has room for its settlement and a sliver of income below it.
+const MIN_SETTLEMENT_STACK_PX = MIN_SETTLEMENT_PX + 1;
+
+/** What the strip shows: a balance that rounds to zero in the compact text has no sign to show. */
+function displayedBalance(cents: number, language: Language) {
+  const zero = formatCompactAmount(0, language);
+  if (formatCompactAmount(Math.abs(cents), language) === zero) return { sign: 'zero' as const, compact: zero };
+  const compact = formatCompactAmount(cents, language);
+  return { sign: balanceSignOf(cents), compact: cents > 0 ? `+${compact}` : compact };
+}
 
 function chartOf(
   series: DashboardMonth[],
@@ -250,8 +263,8 @@ function chartOf(
   const { ticks, topCents } = niceAxis(
     Math.max(...series.map((m) => Math.max(m.incomeCents + m.settlementCents, m.expenseCents))),
   );
-  const heightOf = (cents: number, total: number) =>
-    cents > 0 ? `max(2px, ${((cents / total) * 100).toFixed(2)}%)` : '0px';
+  const heightOf = (cents: number, total: number, minPx = MIN_BAR_PX) =>
+    cents > 0 ? `max(${minPx}px, ${((cents / total) * 100).toFixed(2)}%)` : '0px';
   const height = (cents: number) => heightOf(cents, topCents);
   const signWords = {
     positive: t('summary.legendSurplus').toLocaleLowerCase(language),
@@ -265,33 +278,39 @@ function chartOf(
       top: `${(100 - (cents / topCents) * 100).toFixed(2)}%`,
       isZero: cents === 0,
     })),
-    groups: series.map((m, index) => ({
-      month: m.month,
-      label: monthAxisLabel(m.month, index, t),
-      current: index === series.length - 1,
-      incomeHeight: height(m.incomeCents + m.settlementCents),
-      settlementShare: heightOf(m.settlementCents, m.incomeCents + m.settlementCents),
-      expenseHeight: height(m.expenseCents),
-      tooltipAlign: tooltipAlignOf(index, series.length),
-      title: monthLabel(m.month, t),
-      hasData: m.hasData,
-      income: money.format(m.incomeCents),
-      expense: money.format(m.expenseCents),
-      settlement: money.format(m.settlementCents),
-      balance: money.format(m.balanceCents),
-      balanceSign: balanceSignOf(m.balanceCents),
-      balanceGlyph: BALANCE_GLYPHS[balanceSignOf(m.balanceCents)],
-      balanceCompact: compactBalance(m.balanceCents, language),
-      ariaLabel: t(
-        'dashboard.monthAria',
-        monthLabel(m.month, t),
-        money.format(m.incomeCents),
-        money.format(m.expenseCents),
-        money.format(m.settlementCents),
-        money.format(m.balanceCents),
-        signWords[balanceSignOf(m.balanceCents)],
-      ),
-    })),
+    groups: series.map((m, index) => {
+      const stackCents = m.incomeCents + m.settlementCents;
+      const hasSettlement = m.settlementCents > 0;
+      const shown = displayedBalance(m.balanceCents, language);
+      return {
+        month: m.month,
+        label: monthAxisLabel(m.month, index, t),
+        current: index === series.length - 1,
+        incomeHeight: heightOf(stackCents, topCents, hasSettlement ? MIN_SETTLEMENT_STACK_PX : MIN_BAR_PX),
+        hasSettlement,
+        settlementShare: heightOf(m.settlementCents, stackCents, MIN_SETTLEMENT_PX),
+        expenseHeight: height(m.expenseCents),
+        tooltipAlign: tooltipAlignOf(index, series.length),
+        title: monthLabel(m.month, t),
+        hasData: m.hasData,
+        income: money.format(m.incomeCents),
+        expense: money.format(m.expenseCents),
+        settlement: money.format(m.settlementCents),
+        balance: money.format(m.balanceCents),
+        balanceSign: shown.sign,
+        balanceGlyph: BALANCE_GLYPHS[shown.sign],
+        balanceCompact: shown.compact,
+        ariaLabel: t(
+          'dashboard.monthAria',
+          monthLabel(m.month, t),
+          money.format(m.incomeCents),
+          money.format(m.expenseCents),
+          money.format(m.settlementCents),
+          money.format(m.balanceCents),
+          signWords[balanceSignOf(m.balanceCents)],
+        ),
+      };
+    }),
   };
 }
 

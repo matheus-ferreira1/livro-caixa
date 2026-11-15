@@ -224,15 +224,39 @@ describe('chart', () => {
       entry({ type: 'acerto', valueCents: 400_000 }),
     ]).chart;
     const current = groups[11];
-    expect(current?.incomeHeight).toBe('max(2px, 100.00%)');
-    expect(current?.settlementShare).toBe('max(2px, 40.00%)');
+    expect(current?.incomeHeight).toBe('max(4px, 100.00%)');
+    expect(current?.settlementShare).toBe('max(3px, 40.00%)');
+    expect(current?.hasSettlement).toBe(true);
     expect(current?.expenseHeight).toBe('max(2px, 10.00%)');
     expect(ticks.at(-1)?.label).toBe(formatCompactAmount(1_000_000, 'pt-BR'));
   });
 
   test('draws no settlement segment when the month has no settlement', () => {
     const { groups } = vmOf([income(`${MONTH}-05`, 100_000)]).chart;
-    expect(groups[11]?.settlementShare).toBe('0px');
+    expect(groups[11]?.hasSettlement).toBe(false);
+  });
+
+  test('keeps a tiny settlement on a tiny income bar inside the stack', () => {
+    const current = vmOf([
+      income(`${MONTH}-05`, 100),
+      entry({ type: 'acerto', valueCents: 1 }),
+      expense('2026-05-05', 1_000_000),
+    ]).chart.groups[11];
+    expect(current).toMatchObject({
+      hasSettlement: true,
+      incomeHeight: 'max(4px, 0.01%)',
+      settlementShare: 'max(3px, 0.99%)',
+    });
+  });
+
+  test('shows the zero presentation when the compact balance rounds to zero, but not in the aria label', () => {
+    const surplus = vmOf([income(`${MONTH}-05`, 4)]).chart.groups[11];
+    expect(surplus).toMatchObject({ balanceSign: 'zero', balanceGlyph: '·', balanceCompact: '0' });
+    expect(surplus?.ariaLabel.endsWith(`balanço ${formatMoney(4)}, sobrou`)).toBe(true);
+
+    const deficit = vmOf([expense(`${MONTH}-06`, 4)]).chart.groups[11];
+    expect(deficit).toMatchObject({ balanceSign: 'zero', balanceGlyph: '·', balanceCompact: '0' });
+    expect(deficit?.ariaLabel.endsWith(`balanço ${formatMoney(-4)}, faltou`)).toBe(true);
   });
 
   test('summarizes the balance of each month for the strip and the aria label', () => {
