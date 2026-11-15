@@ -1,5 +1,6 @@
 import {
   buildDashboard,
+  DEFAULT_LOCALIZATION,
   formatCompactAmount,
   DEFAULT_PREFERENCES,
   translator,
@@ -16,6 +17,7 @@ import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
 import { DashboardPage } from './DashboardPage';
 
+const formatMoney = DEFAULT_LOCALIZATION.money.format;
 const MONTH = '2026-03';
 const SETTINGS = { partnerName: 'Bia', partnerShare: 50 };
 
@@ -193,7 +195,10 @@ describe('DashboardPage', () => {
         entry({ type: 'acerto', valueCents: 20_000 }),
       ],
     });
-    const march = await screen.findByRole('img', { name: /^Março 2026: receitas/ });
+    const march = await screen.findByRole('img', {
+      name: `Março 2026: receitas ${formatMoney(100_000)}, despesas ${formatMoney(0)}, acertos ${formatMoney(20_000)}, balanço ${formatMoney(120_000)}, sobrou`,
+    });
+    // The segment is decoration inside an image, so it has no role to query.
     expect(within(march).getByTestId('settlement-segment')).toBeInTheDocument();
   });
 

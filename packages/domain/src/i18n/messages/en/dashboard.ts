@@ -36,7 +36,6 @@ export const dashboardEn: typeof dashboardPtBR = {
   'dashboard.expense': 'Expenses',
   'dashboard.settlement': 'Settlements',
   'dashboard.balance': 'Balance',
-  'dashboard.balanceStripLabel': 'Month balance',
   'dashboard.viewTable': 'View table',
   'dashboard.noEntries': 'No entries',
   'dashboard.monthAria': (title, income, expense, settlement, balance, signWord) =>

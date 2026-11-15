@@ -7,8 +7,6 @@ import type { ChartGroup, ChartTick } from '../view-model';
 // Below 640px the chart shrinks to the screen instead of scrolling, so its columns are narrow.
 const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-0.5 sm:gap-1.5';
 const PLOT_HEIGHT = 'h-[260px]';
-// What the view model gives a month without a settlement.
-const NO_SETTLEMENT_HEIGHT = '0px';
 
 const TOOLTIP_ALIGN: Record<ChartGroup['tooltipAlign'], string> = {
   start: 'left-0',
@@ -34,7 +32,9 @@ const SIGN_COLORS: Record<ChartGroup['balanceSign'], string> = {
 };
 
 // Month columns share the viewed month's tint across the bars, the balance strip and the labels.
-const CURRENT_TINT = 'bg-background';
+// It is translucent so the gridlines drawn behind the columns stay visible through it.
+const CURRENT_TINT = 'bg-ink/5';
+const CURRENT_HOVER_TINT = 'bg-ink/10';
 
 interface IncomeExpenseChartProps {
   ticks: ChartTick[];
@@ -118,7 +118,6 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
               </div>
             </div>
             <div data-testid="balance-strip" aria-hidden="true" className={MONTH_GRID}>
-              <span className="sr-only">{t('dashboard.balanceStripLabel')}</span>
               {groups.map((group) => (
                 <BalanceCell key={group.month} group={group} />
               ))}
@@ -173,7 +172,6 @@ function MonthBars({
   onEnter: () => void;
   onLeave: () => void;
 }) {
-  const hasSettlement = group.settlementShare !== NO_SETTLEMENT_HEIGHT;
   return (
     <div
       role="img"
@@ -186,19 +184,20 @@ function MonthBars({
         // Below 640px a column is narrower than its tooltip, which is then placed against the whole plot.
         'flex h-full items-end justify-center sm:relative gap-0.5 rounded-sm px-[8%] sm:rounded-lg sm:px-[14%]',
         group.current && CURRENT_TINT,
-        hovered && 'bg-hover-track',
+        hovered && (group.current ? CURRENT_HOVER_TINT : 'bg-hover-track'),
       )}
     >
       <div className="flex max-w-[22px] flex-1 flex-col justify-end" style={{ height: group.incomeHeight }}>
-        {hasSettlement && (
-          // The top border is a cue that does not rely on color to tell the settlement from the income.
+        {group.hasSettlement && (
+          // The dark line above the segment is a cue that does not rely on color. It is a shadow, so it
+          // takes no height from the blue.
           <div
             data-testid="settlement-segment"
-            className="rounded-t border-t-2 border-ink bg-settlement"
+            className="rounded-t bg-settlement shadow-[0_-2px_0_var(--ink)]"
             style={{ height: group.settlementShare }}
           />
         )}
-        <div className={cn('min-h-0 flex-1 bg-chart-income', !hasSettlement && 'rounded-t')} />
+        <div className={cn('min-h-0 flex-1 bg-chart-income', !group.hasSettlement && 'rounded-t')} />
       </div>
       <div
         className="max-w-[22px] flex-1 rounded-t bg-chart-expense"

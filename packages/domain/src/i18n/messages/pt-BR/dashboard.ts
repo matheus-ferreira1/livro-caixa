@@ -35,7 +35,6 @@ export const dashboardPtBR = {
   'dashboard.expense': 'Despesas',
   'dashboard.settlement': 'Acertos',
   'dashboard.balance': 'Balanço',
-  'dashboard.balanceStripLabel': 'Balanço do mês',
   'dashboard.viewTable': 'Ver tabela',
   'dashboard.noEntries': 'Sem lançamentos',
   'dashboard.monthAria': (
