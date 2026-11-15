@@ -28,8 +28,10 @@ test('lands on the dashboard after sign-in and confirms what is open', async ({ 
   await page.getByRole('radio', { name: 'Com previstos' }).click();
   await expect(balance).toContainText('−R$ 50,00');
 
-  // The strip under the bars shows the month's signed balance.
-  await expect(page.getByTestId('balance-strip')).toContainText('−');
+  // The strip's last cell is the viewed month, with the same −R$ 50,00 as a compact value.
+  const viewedMonthCell = page.getByTestId('balance-strip').locator(':scope > span').last();
+  await expect(viewedMonthCell).toContainText('▼');
+  await expect(viewedMonthCell).toContainText('−50');
 
   await page.getByRole('button', { name: 'Confirmar Internet' }).click();
   await expect(page.getByText('“Internet” confirmado')).toBeVisible();
