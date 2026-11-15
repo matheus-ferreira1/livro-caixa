@@ -14,7 +14,7 @@ _Last updated: 2026-11-15, after the Visão geral chart's balance strip (PR #44)
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PRs #19, #44) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
-| 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done |
+| 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done (PRs #38, #39, #40, #41) |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
@@ -59,6 +59,8 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#8](https://github.com/matheus-ferreira1/livro-caixa/pull/8) | `feat/session-expiry-redirect` | A 401 on any data request sends the user to `/entrar` and back after sign-in |
 | [#9](https://github.com/matheus-ferreira1/livro-caixa/pull/9) | `feat/login-ip-rate-limit` | Per-IP login limit on top of the per-account lock |
 | [#10](https://github.com/matheus-ferreira1/livro-caixa/pull/10) | `chore/bundle-size` | Lazy routes and a long-cached `framework` chunk |
+| [#11](https://github.com/matheus-ferreira1/livro-caixa/pull/11) | `feat/trust-proxy` | Express `trust proxy` comes from the `TRUST_PROXY` env var (default `loopback`), parsed and validated at boot in `config.ts` and passed to `createApp`; documented in `docker-compose.yml`, `.env.example` and the env table |
+| [#12](https://github.com/matheus-ferreira1/livro-caixa/pull/12) | `chore/login-bundle` | Smaller initial JS on `/entrar`: `packages/domain` is `"sideEffects": false`, `loginRequestSchema` moved to `auth/login-request.ts` so zod leaves the login page, and production builds alias `react-router` to its `dist/production` entry |
 | [#13](https://github.com/matheus-ferreira1/livro-caixa/pull/13) | `feat/settings` | Category and partner split rules; category CRUD and settings endpoints; Configurações page; restored nav item, user-menu item and "Gerenciar categorias" |
 | [#14](https://github.com/matheus-ferreira1/livro-caixa/pull/14) | `feat/settlement` | `buildShareText` and `settlementEntry`; themed shadcn `Dialog`; Acerto de contas dialog; restored "Gerar acerto" on Lançamentos |
 | [#15](https://github.com/matheus-ferreira1/livro-caixa/pull/15) | `feat/recurring` | Recurring candidate rules; candidates and generate endpoints (one SQLite transaction); Gerar recorrentes dialog; recurring banner with "Agora não"; restored "Gerar recorrentes" |
@@ -79,6 +81,10 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#35](https://github.com/matheus-ferreira1/livro-caixa/pull/35) | `fix/sticky-header-height` | The header takes its minimum height from `--sticky-header-height`, the variable `scroll-padding-top` reads, so the two cannot drift; e2e guard at 1440px and 768px |
 | [#36](https://github.com/matheus-ferreira1/livro-caixa/pull/36) | `chore/e2e-shared-helpers` | The e2e specs share one `signIn` in `e2e/helpers.ts`; the sticky header spec seeds its entries once and checks every response |
 | [#37](https://github.com/matheus-ferreira1/livro-caixa/pull/37) | `feat/project-site` | The project site (`apps/site`): one static page with real screenshots, a screenshot capture script, the Pages workflow, `CONTRIBUTING.md`, and the site built in CI |
+| [#38](https://github.com/matheus-ferreira1/livro-caixa/pull/38) | `feat/language-currency` | Language (pt-BR, en) and currency (BRL, USD, EUR, GBP) chosen in the Configurações "Idioma e moeda" section; migration `005_language_and_currency`; `PUT /api/settings` takes any subset of fields; public `GET /api/preferences`; typed message catalogs, `translator` and `moneyFormat`; every screen translated and formatted by the currency; site screenshots retaken in English with dollars |
+| [#39](https://github.com/matheus-ferreira1/livro-caixa/pull/39) | `fix/preferences-load-and-save` | `PreferencesProvider` renders nothing until the preferences load, with a bilingual error and retry on failure; `useSaveSettings` takes the preferences from the server response instead of the values it sent |
+| [#40](https://github.com/matheus-ferreira1/livro-caixa/pull/40) | `fix/settings-save-order-and-error-screen` | Settings saves share a mutation scope so a late answer cannot overwrite a newer one; the preferences request is aborted after 10 s; the error screen uses `AlertBanner` and `Button`, marks each language with `lang` and keeps focus on the retry button |
+| [#41](https://github.com/matheus-ferreira1/livro-caixa/pull/41) | `fix/preferences-follow-ups` | A timed-out preferences request is not retried, with `MAX_PREFERENCES_RETRIES` and a labelled spinner after `SPINNER_DELAY_MS`; a save made offline fails promptly with the unreachable-server toast; the language and currency selects show the picked value while saving and revert on failure |
 | [#42](https://github.com/matheus-ferreira1/livro-caixa/pull/42) | `fix/static-under-dot-directory` | The SPA fallback sends `index.html` with `root`, so a checkout under a dot-directory (such as `.claude/worktrees`) is served instead of failing with a 500 |
 | [#43](https://github.com/matheus-ferreira1/livro-caixa/pull/43) | `fix/api-error-and-fallback-statuses` | The error handler keeps the 4xx status of framework errors (400, 413, 415, 404) instead of answering 500; the SPA fallback serves `index.html` only for navigations, so a missing asset or file answers the JSON 404 |
 | [#44](https://github.com/matheus-ferreira1/livro-caixa/pull/44) | `feat/dashboard-chart-balance` | "Receitas e despesas" chart: acerto stacked on the income bar, a balance strip (▲ / ▼ / ·) under the bars, the viewed month tinted, legend (Acertos, Sobrou, Faltou) and aria label with sobrou / faltou; the signed amount shows from 1024px up; the existing `dashboard.chartHint` is rewritten and the existing `dashboard.monthAria` gains a sobrou / faltou suffix in both catalogs; no API or schema change |
@@ -477,7 +483,7 @@ Follow-ups found during Phase 6:
 - [x] The closing's copy said automatic quotes were current even when they were not. It now follows each quote's status (PR #26).
 - [x] `parseMoney` read `1.234` (a dot with no comma) as R$ 3,34 instead of R$ 1.234,00. This predated Phase 6 and affected every money field (PR #23).
 
-### Phase 7 — Language and currency (US-12) (done)
+### Phase 7 — Language and currency (US-12) (done, PRs #38, #39, #40, #41)
 
 - [x] Migration `005_language_and_currency`, `PUT /api/settings` with optional fields, public `GET /api/preferences`.
 - [x] Domain: message catalogs, translator, `moneyFormat`, localized dates and domain copy.
