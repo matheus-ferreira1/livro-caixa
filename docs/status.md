@@ -81,7 +81,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#37](https://github.com/matheus-ferreira1/livro-caixa/pull/37) | `feat/project-site` | The project site (`apps/site`): one static page with real screenshots, a screenshot capture script, the Pages workflow, `CONTRIBUTING.md`, and the site built in CI |
 | [#42](https://github.com/matheus-ferreira1/livro-caixa/pull/42) | `fix/static-under-dot-directory` | The SPA fallback sends `index.html` with `root`, so a checkout under a dot-directory (such as `.claude/worktrees`) is served instead of failing with a 500 |
 | [#43](https://github.com/matheus-ferreira1/livro-caixa/pull/43) | `fix/api-error-and-fallback-statuses` | The error handler keeps the 4xx status of framework errors (400, 413, 415, 404) instead of answering 500; the SPA fallback serves `index.html` only for navigations, so a missing asset or file answers the JSON 404 |
-| [#44](https://github.com/matheus-ferreira1/livro-caixa/pull/44) | `feat/dashboard-chart-balance` | "Receitas e despesas" chart: acerto stacked on the income bar, a balance strip (▲ / ▼ / ·) under the bars, the viewed month tinted, legend and aria label with sobrou / faltou; no API, domain or schema change |
+| [#44](https://github.com/matheus-ferreira1/livro-caixa/pull/44) | `feat/dashboard-chart-balance` | "Receitas e despesas" chart: acerto stacked on the income bar, a balance strip (▲ / ▼ / ·) under the bars, the viewed month tinted, legend and aria label with sobrou / faltou; the signed amount shows from 1024px up; the chart hint and the aria suffix are new in the message catalog; no API or schema change |
 
 ### Project site (`apps/site`)
 
