@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-15, after the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-15, after the security hardening that followed an audit of the code and of a live instance (branch `fix/security-hardening`). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -20,6 +20,12 @@ _Last updated: 2026-11-15, after the Visão geral chart's balance strip (PR #44)
 ## What comes next
 
 No phase is planned. What is left:
+
+- **Left open by the security audit of 2026-11-15**, most useful first:
+  - changing the password from the app, with the other sessions signed out (today only the CLI does it), and a second factor
+  - zod 3 has a published advisory (GHSA-mrhx-c7xc-m3w5, fixed in zod 4); the 100 KB body limit and the `.max()` on arrays limit the exposure. Moving to zod 4 is a breaking upgrade, and `bun audit` is not yet a CI step
+  - the compose file does not run the container with a read-only root filesystem (untested: Bun's caches may need a writable path), and base images and GitHub Actions are pinned by tag, not by digest
+  - a login body is parsed up to the general 100 KB limit before its fields are bounded
 
 - **Not-found shape without a static root** (development, or a `STATIC_DIR` that does not exist, such as a mistyped one): a non-API miss still gets Express's HTML "Cannot GET" page, not the JSON 404, so the shape differs by configuration. Not blocking.
 - **Follow-ups of language and currency (US-12)**, none of them blocking:
@@ -42,7 +48,6 @@ No phase is planned. What is left:
    - a closing cannot be corrected or undone
    - pages show nothing when a query fails
    - the password can only be changed from the CLI
-   - security headers (CSP, `frame-ancestors`, `nosniff`, HSTS) and a boot warning when cookies are not secure
    - no handler for `SIGTERM` closes the server and the database
 
 Phases are ordered by dependency. Configurações comes first because acerto, recorrentes and the dashboard need editable categories and partner settings. US-09 links into US-06, US-07 and US-08, so it comes after them.
@@ -115,7 +120,7 @@ Not to be confused with Visão geral, the app's landing page after sign-in. This
 
 ### API
 
-All routes except `/api/health` and `/api/auth/login` require the `lc_session` cookie. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Errors raised by the framework keep their own 4xx status: malformed JSON is 400, an oversized body 413, an unsupported charset 415, and a static root with no `index.html` is not one of them: it is a server fault, logged and answered 500 `internal_error`. Messages follow the instance language: the pt-BR copy from the design, or its English translation.
+All routes except `/api/health`, `/api/preferences` and `/api/auth/login` require the session cookie: `lc_session`, or `__Host-lc_session` when `SECURE_COOKIES=true`. Every response carries a Content-Security-Policy that allows only the app's own origin, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer` and, with `SECURE_COOKIES=true`, HSTS; `/api` responses are `Cache-Control: no-store`. A write (anything but GET, HEAD, OPTIONS) whose `Sec-Fetch-Site` is neither `same-origin` nor `none` is refused. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `forbidden` (403), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Errors raised by the framework keep their own 4xx status: malformed JSON is 400, an oversized body 413, an unsupported charset 415, and a static root with no `index.html` is not one of them: it is a server fault, logged and answered 500 `internal_error`. Messages follow the instance language: the pt-BR copy from the design, or its English translation.
 
 | Method & path | Use case | Notes |
 |---|---|---|
@@ -195,8 +200,8 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 392 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 281 | `bun run --filter '@livro-caixa/api' test` |
+| Domain unit | 394 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 296 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 279 | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
 | E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
@@ -342,6 +347,18 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - Clients that share an IP share the queue, as they already share the per-IP lock: behind a reverse proxy in another container with `TRUST_PROXY` left at `loopback`, every sign-in waits its turn. At most 20 password checks stand ahead before the IP lock ends the rest. The answer is the same as for the lock: set `TRUST_PROXY`.
 - The queue has no length limit. A flood from one IP keeps its requests waiting until the 20th failure locks the IP, and then they end at once. A limit would need a new answer for "too many at once", and the per-IP lock already bounds the password checks.
 - `createContainer` takes an optional `hasher`, so the HTTP test counts the passwords checked with a fake one (`CountingHasher` in `test/harness.ts`).
+
+### Decisions taken for the security hardening (2026-11-15)
+
+- The e-mail check (`isEmailAddress`) tests the length (254) before the pattern, and the login password is capped at 1024 characters. The pattern backtracks quadratically: one unauthenticated 100 KB request held the event loop for about 3 s, before any throttle counted it. The pattern itself is unchanged, so the same addresses are accepted.
+- Login has a third limit, per e-mail whatever the IP: 50 failures in an hour lock the e-mail for 5 minutes, and a successful sign-in clears the count. It caps guessing one account from many addresses. Anyone who knows the e-mail can trigger the lock, so the threshold is high and the lock short.
+- The per-account (e-mail + IP) count now forgets failures after 15 minutes; before, four failures counted forever. With every policy windowed, `LoginThrottle` drops finished keys at most once per window, when a failure is registered, so its map no longer grows for the life of the process.
+- Security headers are set by the app, not left to the proxy, so every instance has them. `style-src` allows inline styles because components size bars and charts with `style`. HSTS is tied to `SECURE_COOKIES=true`, the one setting that says the instance is behind HTTPS, and does not include subdomains.
+- With `SECURE_COOKIES=true` the cookie is named `__Host-lc_session`, which a sibling subdomain cannot set. Sessions opened under the old name end at the first deploy of this change: users sign in once more.
+- The cross-site check trusts `Sec-Fetch-Site` and lets requests without it through. Only browsers attach a victim's cookie, and every current browser sends the header; the CLI and scripts do not.
+- A request with `X-Forwarded-Proto: https` while `SECURE_COOKIES` is off logs one warning. The header is read raw, whatever `TRUST_PROXY` says, because a forged one costs a log line.
+- Passwords need 12 characters (`MIN_PASSWORD_LENGTH`) when created or reset. Existing passwords are not rechecked.
+- `docker-compose.yml` publishes the port on `127.0.0.1` unless `BIND_ADDRESS` says otherwise, because Docker's port rules bypass `ufw`. `ADMIN_PASSWORD` is no longer required by the file, so it can be removed after the first boot; a first boot without it logs the "No users yet" hint. The container drops all capabilities and sets `no-new-privileges`.
 
 ### Decisions taken for the sticky header (PR #34)
 
