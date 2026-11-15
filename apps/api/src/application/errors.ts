@@ -3,6 +3,7 @@ export type ApplicationErrorCode =
   | 'invalid_credentials'
   | 'too_many_attempts'
   | 'unauthenticated'
+  | 'forbidden'
   | 'not_found'
   | 'conflict';
 

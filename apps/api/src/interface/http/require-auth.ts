@@ -16,7 +16,7 @@ declare global {
 export const requireAuth =
   (container: Container): RequestHandler =>
   (req, _res, next) => {
-    const user = container.authenticate.execute(readSessionCookie(req));
+    const user = container.authenticate.execute(readSessionCookie(req, container.secureCookies));
     if (!user) {
       next(new ApplicationError('unauthenticated', container.translate()('api.sessionExpired')));
       return;

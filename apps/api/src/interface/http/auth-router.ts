@@ -15,7 +15,7 @@ export function authRouter(container: Container): Router {
   });
 
   router.post('/logout', (req, res) => {
-    container.logout.execute(readSessionCookie(req));
+    container.logout.execute(readSessionCookie(req, container.secureCookies));
     clearSessionCookie(res, container.secureCookies);
     res.status(204).end();
   });

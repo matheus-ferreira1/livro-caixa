@@ -41,13 +41,19 @@ export async function buildTestApp({
   trustProxy = DEFAULT_TRUST_PROXY,
   quotes = null,
   hasher,
-}: { trustProxy?: TrustProxy; quotes?: QuoteProvider | null; hasher?: PasswordHasher } = {}) {
+  secureCookies = false,
+}: {
+  trustProxy?: TrustProxy;
+  quotes?: QuoteProvider | null;
+  hasher?: PasswordHasher;
+  secureCookies?: boolean;
+} = {}) {
   const clock = new FakeClock();
   const container: Container = createContainer({
     db: openDatabase(':memory:'),
     clock,
     hasher,
-    secureCookies: false,
+    secureCookies,
     quoteProvider: quotes,
   });
   await container.createUser.execute(TEST_USER);
