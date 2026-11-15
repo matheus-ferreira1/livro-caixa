@@ -178,6 +178,25 @@ describe('DashboardPage', () => {
     expect(within(empty).getByText('Sem lançamentos')).toBeInTheDocument();
   });
 
+  test('draws the settlement segment only on months that received an acerto', async () => {
+    setup(`/visao-geral?mes=${MONTH}`, {
+      entries: [entry({ type: 'receita', valueCents: 100_000 })],
+    });
+    const march = await screen.findByRole('img', { name: /^Março 2026: receitas/ });
+    expect(within(march).queryByTestId('settlement-segment')).not.toBeInTheDocument();
+  });
+
+  test('stacks a settlement segment on the income bar of a month with an acerto', async () => {
+    setup(`/visao-geral?mes=${MONTH}`, {
+      entries: [
+        entry({ type: 'receita', valueCents: 100_000 }),
+        entry({ type: 'acerto', valueCents: 20_000 }),
+      ],
+    });
+    const march = await screen.findByRole('img', { name: /^Março 2026: receitas/ });
+    expect(within(march).getByTestId('settlement-segment')).toBeInTheDocument();
+  });
+
   test('the strip under the bars shows each month balance, signed, and nothing for empty months', async () => {
     setup(`/visao-geral?mes=${MONTH}`, {
       entries: [entry({ type: 'receita', valueCents: 100_000 }), entry({ valueCents: 40_000 })],

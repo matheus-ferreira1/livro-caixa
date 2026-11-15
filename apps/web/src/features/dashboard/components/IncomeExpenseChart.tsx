@@ -7,6 +7,8 @@ import type { ChartGroup, ChartTick } from '../view-model';
 // Below 640px the chart shrinks to the screen instead of scrolling, so its columns are narrow.
 const MONTH_GRID = 'grid grid-cols-[repeat(12,minmax(0,1fr))] gap-0.5 sm:gap-1.5';
 const PLOT_HEIGHT = 'h-[260px]';
+// What the view model gives a month without a settlement.
+const NO_SETTLEMENT_HEIGHT = '0px';
 
 const TOOLTIP_ALIGN: Record<ChartGroup['tooltipAlign'], string> = {
   start: 'left-0',
@@ -171,6 +173,7 @@ function MonthBars({
   onEnter: () => void;
   onLeave: () => void;
 }) {
+  const hasSettlement = group.settlementShare !== NO_SETTLEMENT_HEIGHT;
   return (
     <div
       role="img"
@@ -187,14 +190,15 @@ function MonthBars({
       )}
     >
       <div className="flex max-w-[22px] flex-1 flex-col justify-end" style={{ height: group.incomeHeight }}>
-        {/* The top border is a cue that does not rely on color to tell the settlement from the income. */}
-        <div
-          className="rounded-t border-t-2 border-ink bg-settlement"
-          style={{ height: group.settlementShare }}
-        />
-        <div
-          className={cn('min-h-0 flex-1 bg-chart-income', group.settlementShare === '0px' && 'rounded-t')}
-        />
+        {hasSettlement && (
+          // The top border is a cue that does not rely on color to tell the settlement from the income.
+          <div
+            data-testid="settlement-segment"
+            className="rounded-t border-t-2 border-ink bg-settlement"
+            style={{ height: group.settlementShare }}
+          />
+        )}
+        <div className={cn('min-h-0 flex-1 bg-chart-income', !hasSettlement && 'rounded-t')} />
       </div>
       <div
         className="max-w-[22px] flex-1 rounded-t bg-chart-expense"
