@@ -67,7 +67,7 @@ Environment variables (`apps/api/src/config.ts`):
 | `PORT` | `3000` | HTTP port |
 | `DATABASE_PATH` | `./data/livro-caixa.sqlite` (`/data/livro-caixa.sqlite` in Docker) | SQLite file; `:memory:` for tests |
 | `STATIC_DIR` | unset (`/app/apps/web/dist` in Docker) | Built SPA to serve; may be relative |
-| `SECURE_COOKIES` | `false` | Set `true` behind HTTPS |
+| `SECURE_COOKIES` | `false` | Set `true` behind HTTPS: the session cookie becomes `Secure` and host-bound (`__Host-lc_session`), and HSTS is sent |
 | `TRUST_PROXY` | `loopback` | Proxies allowed to set `X-Forwarded-For`, which decides the client IP for the per-IP login limit: `true`, `false`, a hop count, or a comma-separated list of IPs, CIDRs and `loopback` / `linklocal` / `uniquelocal`. Behind a reverse proxy in another container use `1` or `uniquelocal`. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | unset | First user, created only while the database has no users |
 | `BRAPI_TOKEN` | unset | Token for [brapi.dev](https://brapi.dev) quotes of ETFs and FIIs. Unset, the instance makes no outbound request and prices stay as typed. |

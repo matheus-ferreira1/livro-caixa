@@ -3,13 +3,18 @@ services:
     build: .
     image: livro-caixa
     ports:
-      - '3000:3000'
+      # Published on this machine only, so a reverse proxy on the host is the one way in. Docker's
+      # port rules bypass ufw, so 0.0.0.0 here is reachable from the network even behind a firewall.
+      # Set BIND_ADDRESS=0.0.0.0 to reach the app from other devices without a proxy.
+      - '${BIND_ADDRESS:-127.0.0.1}:3000:3000'
     environment:
-      # Creates the first account on an empty database. Remove after the first boot.
+      # Creates the first account on an empty database (password: min. 12 characters). Remove
+      # ADMIN_PASSWORD from .env after the first boot: it is ignored once a user exists.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@livro-caixa.local}
       ADMIN_NAME: ${ADMIN_NAME:-Admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD (min. 8 characters)}
-      # Set to true when serving over HTTPS behind a reverse proxy.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Set to true when serving over HTTPS behind a reverse proxy. Required there: without it
+      # the session cookie is also sent over plain HTTP.
       SECURE_COOKIES: ${SECURE_COOKIES:-false}
       # Which proxies may set X-Forwarded-For (the client IP for the login limit).
       # Behind a reverse proxy in another container, use 1 (one hop) or uniquelocal (Docker's private ranges).
@@ -18,6 +23,11 @@ services:
     volumes:
       - livro-caixa-data:/data
     restart: unless-stopped
+    # The server runs as a non-root user on an unprivileged port, so it needs no capability.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   livro-caixa-data:
