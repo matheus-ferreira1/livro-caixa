@@ -13,6 +13,9 @@ export function isEmailAddress(value: string): boolean {
   return value.length <= MAX_EMAIL_LENGTH && EMAIL_PATTERN.test(value);
 }
 
+/** Far above any real password, and it bounds what the hasher is asked to process. */
+export const MAX_PASSWORD_LENGTH = 1024;
+
 export interface LoginInput {
   email: string;
   password: string;

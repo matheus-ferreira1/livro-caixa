@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import { isEmailAddress } from './credentials';
-
-/** Far above any real password, and it bounds what the hasher is asked to process. */
-const MAX_PASSWORD_LENGTH = 1024;
+import { isEmailAddress, MAX_PASSWORD_LENGTH } from './credentials';
 
 // Kept apart from credentials.ts so the login page, which only validates the form, does not pull zod in.
 export const loginRequestSchema = z.object({

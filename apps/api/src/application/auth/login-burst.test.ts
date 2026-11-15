@@ -42,6 +42,18 @@ function buildLogin() {
 }
 
 describe('Login under a burst of simultaneous attempts', () => {
+  test('checks no more passwords than the e-mail limit allows when every guess has its own IP', async () => {
+    const { attempt, hasher } = buildLogin();
+    const addresses = EMAIL_THROTTLE_POLICY.maxFailures + BURST_SIZE;
+
+    const results = await Promise.allSettled(
+      Array.from({ length: addresses }, (_, i) => attempt(`errada-${i}`, `203.0.113.${i}`)),
+    );
+
+    expect(hasher.verifications).toBe(EMAIL_THROTTLE_POLICY.maxFailures);
+    expect(results.every((result) => result.status === 'rejected')).toBe(true);
+  });
+
   test('checks no more passwords than the account limit allows', async () => {
     const { attempt, hasher } = buildLogin();
 

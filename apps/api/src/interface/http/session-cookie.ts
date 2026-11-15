@@ -31,6 +31,20 @@ export function clearSessionCookie(res: Response, secure: boolean): void {
   res.clearCookie(sessionCookieName(secure), baseOptions(secure));
 }
 
+/**
+ * A session opened over HTTPS before the cookie got its `__Host-` prefix still sits in the browser
+ * under the bare name. Nothing reads it to authenticate; it is only found so it can be revoked.
+ */
+export const readLegacySessionCookie = (req: Request, secure: boolean): string | undefined => {
+  if (!secure) return undefined;
+  const value: unknown = req.cookies?.[SESSION_COOKIE];
+  return typeof value === 'string' ? value : undefined;
+};
+
+export function clearLegacySessionCookie(res: Response): void {
+  res.clearCookie(SESSION_COOKIE, baseOptions(true));
+}
+
 export const readSessionCookie = (req: Request, secure: boolean): string | undefined => {
   const value: unknown = req.cookies?.[sessionCookieName(secure)];
   return typeof value === 'string' ? value : undefined;

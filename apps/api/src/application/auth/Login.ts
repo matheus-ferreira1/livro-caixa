@@ -31,6 +31,7 @@ export interface LoginThrottles {
 
 export class Login {
   private readonly attemptsByClient = new KeyedQueue();
+  private readonly checksInFlightByEmail = new Map<string, number>();
 
   constructor(
     private readonly users: UserRepository,
@@ -54,7 +55,11 @@ export class Login {
     this.assertNotLocked(accountKey, clientKey, input.email);
 
     const user = this.users.findByEmail(input.email);
-    const valid = await this.hasher.verify(input.password, user?.passwordHash ?? DUMMY_HASH);
+    const valid = await this.verifyWithinEmailLimit(
+      input.email,
+      input.password,
+      user?.passwordHash ?? DUMMY_HASH,
+    );
     if (!user || !valid) {
       this.throttles.account.registerFailure(accountKey);
       this.throttles.ip.registerFailure(clientKey);
@@ -68,6 +73,30 @@ export class Login {
     this.throttles.account.reset(accountKey);
     this.throttles.email.reset(input.email);
     return this.openSession({ id: user.id, email: user.email, name: user.name }, input.remember);
+  }
+
+  /**
+   * Attempts are queued per client, so guesses for one e-mail sent together from many addresses
+   * are checked at the same time, all before any of them counts as a failure. Each check in
+   * flight therefore takes one of the failures the e-mail has left. The e-mail is not queued
+   * instead, because the owner would then wait behind an attacker's guesses.
+   */
+  private async verifyWithinEmailLimit(email: string, password: string, hash: string): Promise<boolean> {
+    const inFlight = this.checksInFlightByEmail.get(email) ?? 0;
+    if (inFlight >= this.throttles.email.failuresLeft(email)) {
+      throw new ApplicationError(
+        'too_many_attempts',
+        this.translate()('login.lockedOut', this.throttles.email.lockSeconds),
+      );
+    }
+    this.checksInFlightByEmail.set(email, inFlight + 1);
+    try {
+      return await this.hasher.verify(password, hash);
+    } finally {
+      const remaining = (this.checksInFlightByEmail.get(email) ?? 1) - 1;
+      if (remaining > 0) this.checksInFlightByEmail.set(email, remaining);
+      else this.checksInFlightByEmail.delete(email);
+    }
   }
 
   private assertNotLocked(accountKey: string, clientKey: string, email: string): void {

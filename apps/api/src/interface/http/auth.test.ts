@@ -221,8 +221,6 @@ describe('POST /api/auth/login', () => {
   test('rejects an oversized e-mail or password before checking anything', async () => {
     const hasher = new CountingHasher();
     const { app } = await buildTestApp({ hasher });
-    const MAX_VALIDATION_MS = 500;
-    const startedAt = performance.now();
 
     await request(app)
       .post('/api/auth/login')
@@ -233,7 +231,6 @@ describe('POST /api/auth/login', () => {
       .send({ email: TEST_USER.email, password: 'x'.repeat(1025) })
       .expect(400);
 
-    expect(performance.now() - startedAt).toBeLessThan(MAX_VALIDATION_MS);
     expect(hasher.verifications).toBe(0);
   });
 

@@ -99,6 +99,42 @@ describe('session cookie over HTTPS', () => {
   });
 });
 
+describe('a session opened before the cookie was bound to the host', () => {
+  const LEGACY_COOKIE = 'lc_session';
+
+  async function legacySession() {
+    const built = await buildTestApp({ secureCookies: true });
+    const res = await request(built.app)
+      .post('/api/auth/login')
+      .send({ email: TEST_USER.email, password: TEST_USER.password })
+      .expect(200);
+    const [cookie = ''] = ([] as string[]).concat(res.headers['set-cookie'] ?? []);
+    const token = (cookie.split(';')[0] ?? '').split('=')[1] ?? '';
+    return { ...built, token };
+  }
+
+  test('is revoked and its cookie cleared at the next sign-in', async () => {
+    const { app, token } = await legacySession();
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Cookie', `${LEGACY_COOKIE}=${token}`)
+      .send({ email: TEST_USER.email, password: TEST_USER.password })
+      .expect(200);
+
+    expect(String(res.headers['set-cookie'])).toContain(`${LEGACY_COOKIE}=;`);
+    await request(app).get('/api/auth/me').set('Cookie', `__Host-${LEGACY_COOKIE}=${token}`).expect(401);
+  });
+
+  test('is revoked at sign-out too', async () => {
+    const { app, token } = await legacySession();
+
+    await request(app).post('/api/auth/logout').set('Cookie', `${LEGACY_COOKIE}=${token}`).expect(204);
+
+    await request(app).get('/api/auth/me').set('Cookie', `__Host-${LEGACY_COOKIE}=${token}`).expect(401);
+  });
+});
+
 describe('an instance behind HTTPS with SECURE_COOKIES left off', () => {
   test('warns once, because the session cookie would also travel over plain HTTP', async () => {
     const consoleWarn = spyOn(console, 'warn').mockImplementation(() => {});

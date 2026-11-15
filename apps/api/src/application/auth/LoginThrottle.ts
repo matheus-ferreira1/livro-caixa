@@ -7,14 +7,14 @@ export interface ThrottlePolicy {
   windowMs?: number;
 }
 
-const IP_WINDOW_MS = 15 * 60_000;
-
 /** Per e-mail + client IP: a short lock that stops guessing one account's password. */
 export const ACCOUNT_THROTTLE_POLICY: ThrottlePolicy = {
   maxFailures: 5,
   lockDurationMs: 60_000,
-  windowMs: IP_WINDOW_MS,
+  windowMs: 15 * 60_000,
 };
+
+const IP_WINDOW_MS = 15 * 60_000;
 
 /**
  * Per client IP: a coarse cap that stops one address spraying many e-mails, which the
@@ -63,6 +63,17 @@ export class LoginThrottle {
   /** How many keys are being counted or are locked. */
   get trackedKeys(): number {
     return this.attempts.size;
+  }
+
+  /** How long a lock lasts, in seconds. */
+  get lockSeconds(): number {
+    return Math.ceil(this.policy.lockDurationMs / MS_PER_SECOND);
+  }
+
+  /** How many more failures the key can take before it locks. */
+  failuresLeft(key: string): number {
+    const state = this.currentWindow(this.attempts.get(key), this.clock.now());
+    return this.policy.maxFailures - state.failures;
   }
 
   /** Seconds left on the lock, or 0 when the key may try again. */
