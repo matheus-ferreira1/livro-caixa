@@ -233,9 +233,12 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - **"Acumulado no ano"**, hint "Janeiro a {Mês} de {AAAA}".
     - Delta: "Média de {x} por mês".
 - "Receitas e despesas · últimos 12 meses":
-  - paired bars, receitas `#1A6E4E` and despesas `#E8894A`
-  - "nice" y-axis ticks
+  - paired bars, receitas `#1A6E4E` and despesas `#E8894A`, with the acerto stacked on the receitas bar as a blue segment (`#2A4FB8`, with a dark line above it as a non-color cue); this departs from the prototype and was approved
+  - "nice" y-axis ticks, up to the larger of receitas + acertos and despesas
+  - a strip under the bars with ▲ / ▼ / · and the signed compact balance of each month with data (only the glyph below 1024px; a balance that rounds to zero in the compact text shows · and 0); the viewed month's column is tinted, translucent so the gridlines show through
+  - legend: Receitas, Despesas, Acertos, Sobrou, Faltou; hint "Barra azul: acerto recebido. Abaixo de cada mês, o balanço do mês (receitas + acertos − despesas)."
   - hover tooltip with Receitas, Despesas, Acertos and Balanço; "Sem lançamentos" for an empty month
+  - each month's aria label ends with "sobrou" or "faltou" (nothing when the balance is zero)
   - the button "Ver tabela" opens US-08 for that year
 - "Despesas por categoria":
   - donut (top 6 plus "Outras (n)"), comparing {Mês} with the average of the previous 12 months

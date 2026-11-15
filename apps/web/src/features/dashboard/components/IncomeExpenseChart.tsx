@@ -17,7 +17,24 @@ const TOOLTIP_ALIGN: Record<ChartGroup['tooltipAlign'], string> = {
 const LEGEND = [
   { label: 'dashboard.income', background: 'bg-chart-income' },
   { label: 'dashboard.expense', background: 'bg-chart-expense' },
+  { label: 'dashboard.settlement', background: 'bg-settlement' },
 ] as const;
+
+const SIGN_LEGEND = [
+  { label: 'summary.legendSurplus', glyph: '▲', color: 'text-income' },
+  { label: 'summary.legendDeficit', glyph: '▼', color: 'text-expense' },
+] as const;
+
+const SIGN_COLORS: Record<ChartGroup['balanceSign'], string> = {
+  positive: 'text-income',
+  negative: 'text-expense',
+  zero: 'text-muted-foreground',
+};
+
+// Month columns share the viewed month's tint across the bars, the balance strip and the labels.
+// It is translucent so the gridlines drawn behind the columns stay visible through it.
+const CURRENT_TINT = 'bg-ink/5';
+const CURRENT_HOVER_TINT = 'bg-ink/10';
 
 interface IncomeExpenseChartProps {
   ticks: ChartTick[];
@@ -45,6 +62,14 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
           {LEGEND.map(({ label, background }) => (
             <span key={label} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={cn('size-3 rounded-[3px]', background)} />
+              {t(label)}
+            </span>
+          ))}
+          {SIGN_LEGEND.map(({ label, glyph, color }) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span aria-hidden="true" className={cn('text-[11px]', color)}>
+                {glyph}
+              </span>
               {t(label)}
             </span>
           ))}
@@ -92,13 +117,20 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
                 ))}
               </div>
             </div>
+            <div data-testid="balance-strip" aria-hidden="true" className={MONTH_GRID}>
+              {groups.map((group) => (
+                <BalanceCell key={group.month} group={group} />
+              ))}
+            </div>
             <div className={MONTH_GRID}>
               {groups.map((group) => (
                 <span
                   key={group.month}
                   className={cn(
-                    'text-center text-[11px] leading-tight sm:text-[12.5px] sm:leading-[inherit] sm:whitespace-nowrap',
-                    group.current ? 'font-bold text-ink' : 'font-medium text-muted-foreground',
+                    'rounded-sm text-center text-[11px] leading-tight sm:text-[12.5px] sm:leading-[inherit] sm:whitespace-nowrap',
+                    group.current
+                      ? `${CURRENT_TINT} font-bold text-ink`
+                      : 'font-medium text-muted-foreground',
                   )}
                 >
                   {group.label}
@@ -109,6 +141,23 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
         </div>
       </div>
     </section>
+  );
+}
+
+function BalanceCell({ group }: { group: ChartGroup }) {
+  if (!group.hasData) return <span className={cn('rounded-sm', group.current && CURRENT_TINT)} />;
+  return (
+    <span
+      className={cn(
+        'flex min-w-0 flex-col items-center rounded-sm font-mono text-[10px] leading-tight font-medium sm:text-[11.5px]',
+        SIGN_COLORS[group.balanceSign],
+        group.current && CURRENT_TINT,
+      )}
+    >
+      <span>{group.balanceGlyph}</span>
+      {/* Below 1024px a column is narrower than the widest amount ("+12,3 mil"), so only the glyph stays. */}
+      <span className="hidden whitespace-nowrap lg:inline">{group.balanceCompact}</span>
+    </span>
   );
 }
 
@@ -134,10 +183,22 @@ function MonthBars({
       className={cn(
         // Below 640px a column is narrower than its tooltip, which is then placed against the whole plot.
         'flex h-full items-end justify-center sm:relative gap-0.5 rounded-sm px-[8%] sm:rounded-lg sm:px-[14%]',
-        hovered && 'bg-hover-track',
+        group.current && CURRENT_TINT,
+        hovered && (group.current ? CURRENT_HOVER_TINT : 'bg-hover-track'),
       )}
     >
-      <div className="max-w-[22px] flex-1 rounded-t bg-chart-income" style={{ height: group.incomeHeight }} />
+      <div className="flex max-w-[22px] flex-1 flex-col justify-end" style={{ height: group.incomeHeight }}>
+        {group.hasSettlement && (
+          // The dark line above the segment is a cue that does not rely on color. It is a shadow, so it
+          // takes no height from the blue.
+          <div
+            data-testid="settlement-segment"
+            className="rounded-t bg-settlement shadow-[0_-2px_0_var(--ink)]"
+            style={{ height: group.settlementShare }}
+          />
+        )}
+        <div className={cn('min-h-0 flex-1 bg-chart-income', !group.hasSettlement && 'rounded-t')} />
+      </div>
       <div
         className="max-w-[22px] flex-1 rounded-t bg-chart-expense"
         style={{ height: group.expenseHeight }}
@@ -164,6 +225,7 @@ function Tooltip({ group }: { group: ChartGroup }) {
           <TooltipRow
             label={t('dashboard.settlement')}
             value={group.settlement}
+            swatch="bg-settlement ring-1 ring-on-dark-muted"
             className="text-on-dark-muted"
           />
           <TooltipRow

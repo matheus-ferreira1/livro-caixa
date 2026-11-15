@@ -29,7 +29,8 @@ export const dashboardPtBR = {
   'dashboard.yearAverage': (amount: string) => `Média de ${amount} por mês`,
 
   'dashboard.chartTitle': 'Receitas e despesas · últimos 12 meses',
-  'dashboard.chartHint': 'Passe o mouse sobre um mês para ver acertos e balanço.',
+  'dashboard.chartHint':
+    'Barra azul: acerto recebido. Abaixo de cada mês, o balanço do mês (receitas + acertos − despesas).',
   'dashboard.income': 'Receitas',
   'dashboard.expense': 'Despesas',
   'dashboard.settlement': 'Acertos',
@@ -42,7 +43,9 @@ export const dashboardPtBR = {
     expense: string,
     settlement: string,
     balance: string,
-  ) => `${title}: receitas ${income}, despesas ${expense}, acertos ${settlement}, balanço ${balance}`,
+    signWord: string,
+  ) =>
+    `${title}: receitas ${income}, despesas ${expense}, acertos ${settlement}, balanço ${balance}${signWord && `, ${signWord}`}`,
 
   'dashboard.donutTitle': 'Despesas por categoria',
   'dashboard.donutSubtitle': (month: string) => `${month} · comparado à média dos 12 meses anteriores`,

@@ -30,15 +30,16 @@ export const dashboardEn: typeof dashboardPtBR = {
   'dashboard.yearAverage': (amount) => `Average of ${amount} per month`,
 
   'dashboard.chartTitle': 'Income and expenses · last 12 months',
-  'dashboard.chartHint': 'Hover over a month to see settlements and balance.',
+  'dashboard.chartHint':
+    'Blue bar: settlement received. Below each month, the month’s balance (income + settlements − expenses).',
   'dashboard.income': 'Income',
   'dashboard.expense': 'Expenses',
   'dashboard.settlement': 'Settlements',
   'dashboard.balance': 'Balance',
   'dashboard.viewTable': 'View table',
   'dashboard.noEntries': 'No entries',
-  'dashboard.monthAria': (title, income, expense, settlement, balance) =>
-    `${title}: income ${income}, expenses ${expense}, settlements ${settlement}, balance ${balance}`,
+  'dashboard.monthAria': (title, income, expense, settlement, balance, signWord) =>
+    `${title}: income ${income}, expenses ${expense}, settlements ${settlement}, balance ${balance}${signWord && `, ${signWord}`}`,
 
   'dashboard.donutTitle': 'Expenses by category',
   'dashboard.donutSubtitle': (month) => `${month} · compared with the average of the previous 12 months`,
