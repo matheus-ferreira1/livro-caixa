@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-13, after the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-13, after the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -21,6 +21,7 @@ _Last updated: 2026-11-13, after the static serving fix for a path under a dot-d
 
 No phase is planned. What is left:
 
+- **Not-found shape without a static root** (development, or a `STATIC_DIR` that does not exist, such as a mistyped one): a non-API miss still gets Express's HTML "Cannot GET" page, not the JSON 404, so the shape differs by configuration. Not blocking.
 - **Follow-ups of language and currency (US-12)**, none of them blocking:
    - the demo seed (`seed-demo.ts`) and the 12 seeded categories stay in Portuguese, so the site's English screenshots show Portuguese descriptions and category names
    - `nameFromEmail` still falls back to "Usuário" for the name of a user created from the CLI, since it is stored data
@@ -79,6 +80,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#36](https://github.com/matheus-ferreira1/livro-caixa/pull/36) | `chore/e2e-shared-helpers` | The e2e specs share one `signIn` in `e2e/helpers.ts`; the sticky header spec seeds its entries once and checks every response |
 | [#37](https://github.com/matheus-ferreira1/livro-caixa/pull/37) | `feat/project-site` | The project site (`apps/site`): one static page with real screenshots, a screenshot capture script, the Pages workflow, `CONTRIBUTING.md`, and the site built in CI |
 | [#42](https://github.com/matheus-ferreira1/livro-caixa/pull/42) | `fix/static-under-dot-directory` | The SPA fallback sends `index.html` with `root`, so a checkout under a dot-directory (such as `.claude/worktrees`) is served instead of failing with a 500 |
+| [#43](https://github.com/matheus-ferreira1/livro-caixa/pull/43) | `fix/api-error-and-fallback-statuses` | The error handler keeps the 4xx status of framework errors (400, 413, 415, 404) instead of answering 500; the SPA fallback serves `index.html` only for navigations, so a missing asset or file answers the JSON 404 |
 
 ### Project site (`apps/site`)
 
@@ -102,11 +104,11 @@ Not to be confused with Visão geral, the app's landing page after sign-in. This
 | `/patrimonio` | Patrimônio (US-10) | Grouping and "Modo tranquilo" are local state, and calm mode starts on at each visit. |
 | `/resumo` | Resumo mensal (US-08) | State lives in the URL: `ano` and `modo` (`proj`). Defaults (the current year, `real`) are left out of the URL. |
 | `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
-| any other path | — | Redirects to `/visao-geral`; every route except `/entrar` requires a session |
+| any other path | — | Redirects to `/visao-geral`; every route except `/entrar` requires a session. Paths with a file extension or under `/assets/` are not routes: the API answers them with the JSON 404 |
 
 ### API
 
-All routes except `/api/health` and `/api/auth/login` require the `lc_session` cookie. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Messages follow the instance language: the pt-BR copy from the design, or its English translation.
+All routes except `/api/health` and `/api/auth/login` require the `lc_session` cookie. Errors look like `{ error: { code, message } }`; the codes are `validation_error` (400), `invalid_credentials` / `unauthenticated` (401), `not_found` (404), `conflict` (409) and `too_many_attempts` (429). Errors raised by the framework keep their own 4xx status: malformed JSON is 400, an oversized body 413, an unsupported charset 415, and a static root with no `index.html` is not one of them: it is a server fault, logged and answered 500 `internal_error`. Messages follow the instance language: the pt-BR copy from the design, or its English translation.
 
 | Method & path | Use case | Notes |
 |---|---|---|
@@ -187,7 +189,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 | Suite | Count | Command |
 |---|---|---|
 | Domain unit | 392 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 243 | `bun run --filter '@livro-caixa/api' test` |
+| API integration | 281 | `bun run --filter '@livro-caixa/api' test` |
 | Web component | 270 | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
 | E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → "Confirmar") | `bun run test:e2e` |
@@ -351,6 +353,14 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 - `send` (1.2.1, under Express 5.3.0) applies its `dotfiles: 'ignore'` policy to every segment of an absolute path, so `sendFile(join(root, 'index.html'))` answered 500 (the error handler maps send's `NotFoundError` to `internal_error`) when the checkout sat under a dot-directory such as `.claude/worktrees`. The SPA fallback now calls `sendFile('index.html', { root })`, so only the path below the static root is checked.
 - `express.static` was not affected: it already takes the root as an option. `dotfiles` is not set to `'allow'`; a request for `/.env` or `/.git/config` still never returns the file, and falls through to the SPA fallback, which answers with `index.html`.
+
+### Decisions taken for error statuses and the SPA fallback (PR #43)
+
+- The error handler answers an error carrying an integer `status` from 400 to 499 with that status: 404 as `not_found` (`api.routeNotFound`), every other 4xx as `validation_error` (`api.invalidData`). The raw message is never sent, since a framework message can name internals, and a 4xx is not logged. Anything else is still logged and answered 500 `internal_error`. Before, malformed JSON, an oversized body and an unsupported charset all answered 500.
+- The SPA fallback serves `index.html` only when the URL path has no file extension and is not under `/assets/` (`isNavigation`). Anything else falls through to the shared JSON 404, also registered after the fallback for non-API paths, so a missing hashed asset is a 404 instead of an HTML page that the browser fails to parse as a script or stylesheet. The `/api` 404 is unchanged.
+- Only extensionless dotfile requests (`/.env`, `/.git/config`) still fall back to the app, because Node reads no extension in them. One with an extension (`/.env.production`, `/.well-known/security.txt`) gets the JSON 404. No file is served either way.
+- A missing `index.html` (an empty or partial `STATIC_DIR`, that is, a broken deploy) is a server fault: `sendFile` has a callback that passes the failure on as an error without send's 404 status, so it is logged and answered 500 `internal_error`, as before PR #43. If the headers already went out (a client aborting mid-download) nothing is logged or sent. The generic rule that a 4xx from the framework keeps its status is unchanged. The `sendFile` callback mirrors what Express's own default skips (`isServerFault` in `send-file-error.ts`): no error, headers already sent, `ECONNABORTED` (the client left while `send` was still stat-ing the file, before any header) and a `write` syscall error are not faults and are neither logged nor answered. Anything else, including `ENOENT`, an unreadable file and `EISDIR`, becomes the logged 500.
+- A bare trailing dot (`/lancamentos.`, a link pasted from chat) is still a navigation: only a dot followed by at least one character is an extension. The error handler calls `next(err)` when headers were already sent, and the JSON body limit is the exported `JSON_BODY_LIMIT_BYTES`.
 
 ### Decisions taken for language and currency (US-12)
 
