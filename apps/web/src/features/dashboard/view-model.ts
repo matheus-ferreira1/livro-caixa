@@ -251,7 +251,8 @@ const MIN_SETTLEMENT_STACK_PX = MIN_SETTLEMENT_PX + 1;
 /** What the strip shows: a balance that rounds to zero in the compact text has no sign to show. */
 function displayedBalance(cents: number, language: Language) {
   const zero = formatCompactAmount(0, language);
-  if (formatCompactAmount(Math.abs(cents), language) === zero) return { sign: 'zero' as const, compact: zero };
+  if (formatCompactAmount(Math.abs(cents), language) === zero)
+    return { sign: 'zero' as const, compact: zero };
   const compact = formatCompactAmount(cents, language);
   return { sign: balanceSignOf(cents), compact: cents > 0 ? `+${compact}` : compact };
 }
