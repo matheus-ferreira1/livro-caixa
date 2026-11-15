@@ -1,6 +1,17 @@
 import type { Translate } from '../i18n/translate';
 
-export const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+
+/** The longest address the mail standards allow (RFC 5321 path limit). */
+export const MAX_EMAIL_LENGTH = 254;
+
+/**
+ * The length is checked first because the pattern backtracks quadratically: on a body-sized
+ * input it would block the server for seconds, and the login is open to anyone.
+ */
+export function isEmailAddress(value: string): boolean {
+  return value.length <= MAX_EMAIL_LENGTH && EMAIL_PATTERN.test(value);
+}
 
 export interface LoginInput {
   email: string;
@@ -11,6 +22,6 @@ export interface LoginInput {
 export function validateLoginInput({ email, password }: LoginInput, t: Translate): string | null {
   const trimmed = email.trim();
   if (!trimmed || !password) return t('login.missingFields');
-  if (!EMAIL_PATTERN.test(trimmed)) return t('login.invalidEmail');
+  if (!isEmailAddress(trimmed)) return t('login.invalidEmail');
   return null;
 }
