@@ -145,7 +145,7 @@ export function IncomeExpenseChart({ ticks, groups, tableHref }: IncomeExpenseCh
 }
 
 function BalanceCell({ group }: { group: ChartGroup }) {
-  if (!group.hasData) return <span />;
+  if (!group.hasData) return <span className={cn('rounded-sm', group.current && CURRENT_TINT)} />;
   return (
     <span
       className={cn(
@@ -155,8 +155,8 @@ function BalanceCell({ group }: { group: ChartGroup }) {
       )}
     >
       <span>{group.balanceGlyph}</span>
-      {/* Below 640px a column is too narrow for the amount, so only the glyph stays. */}
-      <span className="hidden whitespace-nowrap sm:inline">{group.balanceCompact}</span>
+      {/* Below 1024px a column is narrower than the widest amount ("+12,3 mil"), so only the glyph stays. */}
+      <span className="hidden whitespace-nowrap lg:inline">{group.balanceCompact}</span>
     </span>
   );
 }
