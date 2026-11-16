@@ -42,6 +42,30 @@ describe('LoginThrottle', () => {
     expect(throttle.registerFailure(KEY)).toBe(true);
   });
 
+  test('forgets keys whose window and lock are over, so the map does not grow forever', () => {
+    const clock = new FakeClock();
+    const throttle = new LoginThrottle(clock, POLICY);
+
+    throttle.registerFailure('198.51.100.1');
+    failTimes(throttle, POLICY.maxFailures);
+    expect(throttle.trackedKeys).toBe(2);
+
+    clock.advance(POLICY.lockDurationMs);
+    throttle.registerFailure('198.51.100.2');
+    expect(throttle.trackedKeys).toBe(1);
+  });
+
+  test('keeps a key that is still locked after its window ended', () => {
+    const clock = new FakeClock();
+    const throttle = new LoginThrottle(clock, POLICY);
+
+    failTimes(throttle, POLICY.maxFailures);
+    clock.advance(WINDOW_MS);
+    throttle.registerFailure('198.51.100.2');
+
+    expect(throttle.secondsLocked(KEY)).toBe(5);
+  });
+
   test('unlocks the key after the lock duration', () => {
     const clock = new FakeClock();
     const throttle = new LoginThrottle(clock, POLICY);

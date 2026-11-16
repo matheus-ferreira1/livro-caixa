@@ -11,7 +11,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Set `ADMIN_PASSWORD` in `.env` first. The app is then on http://localhost:3000.
+Set `ADMIN_PASSWORD` (12 characters or more) in `.env` first, and remove it after the first boot. The app is then on http://localhost:3000, published on that machine only; set `BIND_ADDRESS=0.0.0.0` to reach it from other devices.
+
+To put it on the internet, serve it over HTTPS from a reverse proxy and set `SECURE_COOKIES=true` and `TRUST_PROXY=1` (one proxy in front). Without the first the session cookie also travels over plain HTTP; without the second every visitor shares one login limit.
 
 Quotes for ETFs and FIIs are optional and need a [brapi.dev](https://brapi.dev) token in `BRAPI_TOKEN`. Without one, the instance makes no outbound request and prices stay as you type them. Crypto and currency are kept by hand: use the manual mode, or type the price, because brapi's free plan does not quote them.
 

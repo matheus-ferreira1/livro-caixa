@@ -1,5 +1,6 @@
 import { nameFromEmail } from '@livro-caixa/domain';
 import { bootstrap } from './bootstrap';
+import { MIN_PASSWORD_LENGTH } from './application/auth/user-admin';
 import { loadConfig } from './config';
 
 const USAGE = `Usage:
@@ -9,7 +10,7 @@ const USAGE = `Usage:
 async function readPassword(): Promise<string> {
   const fromEnv = process.env.NEW_PASSWORD;
   if (fromEnv) return fromEnv;
-  const answer = prompt('Password (min. 8 characters):');
+  const answer = prompt(`Password (min. ${MIN_PASSWORD_LENGTH} characters):`);
   return answer ?? '';
 }
 

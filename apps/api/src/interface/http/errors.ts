@@ -7,6 +7,7 @@ const STATUS_BY_CODE: Record<ApplicationErrorCode, number> = {
   validation_error: 400,
   invalid_credentials: 401,
   unauthenticated: 401,
+  forbidden: 403,
   not_found: 404,
   conflict: 409,
   too_many_attempts: 429,

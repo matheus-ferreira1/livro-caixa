@@ -7,6 +7,7 @@ import type { Container } from '../../container';
 import { authRouter } from './auth-router';
 import { errorHandler } from './errors';
 import { ledgerRouter } from './ledger-router';
+import { noStore, rejectCrossSiteWrites, securityHeaders, warnWhenCookiesAreInsecure } from './security';
 import { isServerFault } from './send-file-error';
 
 /** Largest JSON request body accepted; a bigger one answers 413. */
@@ -41,6 +42,9 @@ export function createApp(container: Container, { staticDir, trustProxy }: AppOp
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', trustProxy);
+  app.use(securityHeaders({ https: container.secureCookies }));
+  app.use(warnWhenCookiesAreInsecure(container));
+  app.use('/api', noStore, rejectCrossSiteWrites(container.translate));
   app.use(express.json({ limit: JSON_BODY_LIMIT_BYTES }));
   app.use(cookieParser());
 
