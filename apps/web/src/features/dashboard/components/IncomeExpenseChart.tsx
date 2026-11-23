@@ -189,7 +189,7 @@ function MonthBars({
     >
       <div className="flex max-w-[22px] flex-1 flex-col justify-end" style={{ height: group.incomeHeight }}>
         {group.hasSettlement && (
-          // The dark line above the segment is a cue that does not rely on color. It is a shadow, so it
+          // The line above the segment, in the text color, is a cue that does not rely on color. It is a shadow, so it
           // takes no height from the blue.
           <div
             data-testid="settlement-segment"

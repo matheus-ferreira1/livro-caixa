@@ -46,7 +46,9 @@ export function AppShell() {
                     'group min-h-(--phone-nav-height) flex-1 flex-col items-center justify-start gap-1 px-0.5 pt-2 text-center text-[11px] leading-[1.15] font-semibold no-underline',
                     'md:min-h-11 md:flex-none md:flex-row md:justify-center md:rounded-[10px] md:px-4 md:pt-0 md:text-[15px] md:leading-normal',
                     onPhoneBar ? 'flex' : 'hidden md:flex',
-                    isActive ? 'text-on-strong md:bg-header-active' : 'text-on-dark-muted hover:text-on-strong',
+                    isActive
+                      ? 'text-on-strong md:bg-header-active'
+                      : 'text-on-dark-muted hover:text-on-strong',
                   )
                 }
               >

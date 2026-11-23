@@ -67,7 +67,7 @@ function Tile({ label, value, sub, hint, delta, tone, dark, negative, valueTone 
       className={cn(
         'flex flex-col rounded-[14px] px-5 py-[18px]',
         hint ? 'gap-1' : 'gap-1.5',
-        dark ? 'bg-surface-strong text-on-strong' : 'border bg-card',
+        dark ? 'border border-surface-strong-border bg-surface-strong text-on-strong' : 'border bg-card',
       )}
     >
       <span

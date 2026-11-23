@@ -1,4 +1,5 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
+import { toast } from 'sonner';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { THEME_STORAGE_KEY } from '@/shared/theme/theme';
 import { mockApi, renderRoutes } from '@/test/render';
@@ -86,7 +87,7 @@ describe('Aparência', () => {
     setup();
     await screen.findByLabelText('Tema');
     expect(isDark()).toBe(false);
-    system.change(true);
+    act(() => system.change(true));
     expect(isDark()).toBe(true);
   });
 
@@ -96,5 +97,30 @@ describe('Aparência', () => {
     setup();
     expect(await screen.findByLabelText('Tema')).toHaveValue('dark');
     expect(isDark()).toBe(true);
+  });
+});
+
+describe('the theme beyond this page', () => {
+  test('follows a choice made in another tab', async () => {
+    stubSystemScheme(false);
+    setup();
+    await screen.findByLabelText('Tema');
+    act(() => {
+      localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+      window.dispatchEvent(new StorageEvent('storage', { key: THEME_STORAGE_KEY, newValue: 'dark' }));
+    });
+    expect(screen.getByLabelText('Tema')).toHaveValue('dark');
+    expect(isDark()).toBe(true);
+  });
+
+  test('gives toasts the dark theme too', async () => {
+    stubSystemScheme(true);
+    setup();
+    await screen.findByLabelText('Tema');
+    act(() => {
+      toast('Salvo');
+    });
+    expect(await screen.findByText('Salvo')).toBeInTheDocument();
+    expect(document.querySelector('[data-sonner-toaster]')).toHaveAttribute('data-sonner-theme', 'dark');
   });
 });
