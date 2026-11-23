@@ -28,6 +28,11 @@ export const settingsPtBR = {
   'settings.categoryCreated': (name: string) => `Categoria “${name}” criada`,
   'settings.categoryUpdated': 'Categoria atualizada',
   'settings.categoryDeleted': (name: string) => `Categoria “${name}” excluída`,
+  'settings.searchCategories': 'Buscar categorias',
+  'settings.searchCategoriesPlaceholder': 'Buscar pelo nome',
+  'settings.noCategoryMatch': (query: string) => `Nenhuma categoria encontrada para “${query}”`,
+  'settings.listRegionIncome': 'Lista de receitas',
+  'settings.listRegionExpense': 'Lista de despesas',
 
   'settings.splitTitle': 'Divisão de contas',
   'settings.splitIntro':

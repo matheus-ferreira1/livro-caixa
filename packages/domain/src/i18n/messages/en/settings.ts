@@ -30,6 +30,11 @@ export const settingsEn: typeof settingsPtBR = {
   'settings.categoryCreated': (name) => `Category “${name}” created`,
   'settings.categoryUpdated': 'Category updated',
   'settings.categoryDeleted': (name) => `Category “${name}” deleted`,
+  'settings.searchCategories': 'Search categories',
+  'settings.searchCategoriesPlaceholder': 'Search by name',
+  'settings.noCategoryMatch': (query) => `No category matches “${query}”`,
+  'settings.listRegionIncome': 'Income list',
+  'settings.listRegionExpense': 'Expense list',
 
   'settings.splitTitle': 'Bill splitting',
   'settings.splitIntro':
