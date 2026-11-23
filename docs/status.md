@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-23, after dark mode in the app (US-13, PR #DARK). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-23, after dark mode in the app (US-13, PR #51). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -15,7 +15,7 @@ _Last updated: 2026-11-23, after dark mode in the app (US-13, PR #DARK). Before 
 | 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PRs #19, #44) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 | 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done (PRs #38, #39, #40, #41) |
-| 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | 🟡 App done (PR #DARK); site in progress |
+| 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | 🟡 App done (PR #51); site in progress |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
@@ -445,7 +445,7 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 ## Roadmap
 
-### Phase 8 — Dark mode (US-13) (app done, PR #DARK)
+### Phase 8 — Dark mode (US-13) (app done, PR #51)
 
 - [x] Ink split into text, strong surface and primary tokens; raw colors replaced by tokens, with a test that keeps them out.
 - [x] Dark token values, with a contrast test over both themes.
