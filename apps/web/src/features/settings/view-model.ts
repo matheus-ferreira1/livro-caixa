@@ -1,7 +1,18 @@
-import { splitExample, type Localization } from '@livro-caixa/domain';
+import { CATEGORY_TYPES, splitExample, type Category, type Localization } from '@livro-caixa/domain';
 
 /** Keeps the share label beside the slider from wrapping, as in the design. */
 const SHARE_LABEL_NAME_LENGTH = 12;
+
+/** Rows a category list shows before it scrolls inside its card, so the page never grows with the catalog. */
+export const CATEGORY_LIST_ROWS = 8;
+
+/** Search is noise on a short catalog; once shown, it stays while a query is typed. */
+export function showCategorySearch(categories: readonly Pick<Category, 'type'>[], query: string): boolean {
+  if (query) return true;
+  return CATEGORY_TYPES.some(
+    (type) => categories.filter((category) => category.type === type).length > CATEGORY_LIST_ROWS,
+  );
+}
 
 export const usageLabel = (count: number, { t }: Pick<Localization, 't'>): string =>
   count ? t('settings.entryCount', count) : t('settings.noEntries');
