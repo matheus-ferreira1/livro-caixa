@@ -11,7 +11,7 @@ The source design is the Design canvas "Livro-caixa — Lançamentos e acerto": 
 Read these when the task needs them; they are not loaded automatically.
 
 - [docs/status.md](docs/status.md): status by phase, what comes next, web routes, API endpoints, database schema, domain modules, test counts, the decisions taken in each phase, and the roadmap. Read it before changing behavior a past decision may cover.
-- [docs/user-stories.md](docs/user-stories.md): the user stories (US-01 to US-11) with the exact pt-BR UI copy. Read it before touching a screen or its strings.
+- [docs/user-stories.md](docs/user-stories.md): the user stories (US-01 to US-13) with the exact pt-BR UI copy. Read it before touching a screen or its strings.
 - `apps/site`: the public project site (static HTML + Tailwind, no framework, English copy) at https://matheus-ferreira1.github.io/livro-caixa/, deployed by `.github/workflows/pages.yml`. It is not part of the Docker image.
 - [apps/web/CLAUDE.md](apps/web/CLAUDE.md): the design system (fonts, color tokens, radii, shadcn mapping, accessibility rules). It loads on its own when working under `apps/web`.
 

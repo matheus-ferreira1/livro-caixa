@@ -345,3 +345,20 @@ As the instance owner, I want to choose the language and the currency, so the ap
   - "Sets the interface language and how amounts are shown. Amounts are not converted."
   - labels "Language" (options "Português (Brasil)", "English") and "Currency" (options "Brazilian real (R$)", "US dollar ($)", "Euro (€)", "Pound sterling (£)")
 - English names of the screens: Overview, Entries, Net worth, Monthly summary, Settings. Also Settlement, Recurring, Confirmed / Pending, Income / Expense / Settlement, Split.
+
+### US-13 Dark mode — 🟡 App done (Phase 8)
+As someone who keeps the books at night, I want a dark theme, so the bright page does not hurt my eyes.
+
+- The app follows the device's light or dark setting by default. Configurações gets a section "Aparência" after "Idioma e moeda", a card with one labelled native `<select>` at least 44px tall. The choice applies at once, without a save, and is kept on this device only (each partner picks their own).
+- The ink band (header, phone nav, Saldo tile, chart tooltips, acerto header, login panel) keeps its color in both themes; in dark the page and the cards are lighter than it. Primary buttons turn mint in dark. Category colors are user data and do not change.
+- The sign-in page follows the theme too, and the page never shows light before turning dark.
+- The project site follows the device's setting, with no control, and shows dark screenshots in dark mode.
+- The prototype has no dark mode, so this copy is new:
+- Copy, pt-BR:
+  - section title "Aparência"
+  - text "Escolha entre claro e escuro, ou siga o sistema. Vale só para este aparelho."
+  - label "Tema" (options "Sistema", "Claro", "Escuro")
+- Copy, en:
+  - "Appearance"
+  - "Choose light or dark, or follow the system. Applies to this device only."
+  - label "Theme" (options "System", "Light", "Dark")

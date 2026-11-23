@@ -26,7 +26,7 @@ export function AppShell() {
 
   return (
     <>
-      <header className="border-b border-surface-strong-border bg-surface-strong text-on-strong md:top-0 md:z-40 md:tall:sticky">
+      <header className="shadow-[inset_0_-1px_0_var(--surface-strong-border)] bg-surface-strong text-on-strong md:top-0 md:z-40 md:tall:sticky">
         <div className="mx-auto flex min-h-14 max-w-[1280px] flex-wrap items-center gap-x-4 px-4 sm:px-6 md:min-h-(--sticky-header-height) md:gap-y-1 md:py-2 lg:py-0">
           <div className="mr-auto flex items-center gap-2.5">
             <LedgerIcon />

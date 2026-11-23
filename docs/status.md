@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-23, after the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-23, after dark mode in the app (US-13, PR #DARK). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -15,11 +15,17 @@ _Last updated: 2026-11-23, after the Configurações category lists stopped grow
 | 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PRs #19, #44) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 | 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done (PRs #38, #39, #40, #41) |
+| 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | 🟡 App done (PR #DARK); site in progress |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
 
 No phase is planned. What is left:
+
+- **Dark mode on the project site (US-13, second half).** `apps/site` follows `prefers-color-scheme` with the same palette, and `capture:site` takes a dark set of screenshots served through `<picture>`. Planned as its own PR (`feat/site-dark-mode`), independent of the app's.
+- **Follow-ups of dark mode (US-13)**, none of them blocking:
+  - two category colors, `#008300` and `#6250D6`, are under 3:1 on the dark card (2.9 and 2.5). Every swatch sits next to the category name, so color is never the only cue; an outline in dark mode is the fix if that changes
+  - the light Despesas chart color `#E8894A` is 2.6:1 on white, as in the design; the contrast test checks it only in dark mode
 
 - **Left open by the security audit of 2026-11-15**, most useful first:
   - changing the password from the app, with the other sessions signed out (today only the CLI does it), and a second factor
@@ -117,7 +123,7 @@ Not to be confused with Visão geral, the app's landing page after sign-in. This
 | `/lancamentos` | Lançamentos (US-03 to US-07) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
 | `/patrimonio` | Patrimônio (US-10) | Grouping and "Modo tranquilo" are local state, and calm mode starts on at each visit. |
 | `/resumo` | Resumo mensal (US-08) | State lives in the URL: `ano` and `modo` (`proj`). Defaults (the current year, `real`) are left out of the URL. |
-| `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete, search once a list has more than 8) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
+| `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete, search once a list has more than 8), Divisão de contas, Idioma e moeda, and Aparência (the theme, kept on the device). Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
 | any other path | — | Redirects to `/visao-geral`; every route except `/entrar` requires a session. Paths with a file extension or under `/assets/` are not routes: the API answers them with the JSON 404 |
 
 ### API
@@ -204,9 +210,9 @@ Migrations are append-only and tracked in `schema_migrations`.
 |---|---|---|
 | Domain unit | 398 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 300 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 287 | `bun run --filter '@livro-caixa/web' test` |
+| Web component | 445 (of them 80 check that no component uses a raw color and 59 check token contrast in both themes) | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
-| E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
+| E2E | 19 tests: the theme (a dark system from the first paint, on the sign-in page too; Claro kept across a reload while the system is dark, and back to Sistema) and language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck`, `build` and `build:site`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -400,6 +406,15 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - A missing `index.html` (an empty or partial `STATIC_DIR`, that is, a broken deploy) is a server fault: `sendFile` has a callback that passes the failure on as an error without send's 404 status, so it is logged and answered 500 `internal_error`, as before PR #43. If the headers already went out (a client aborting mid-download) nothing is logged or sent. The generic rule that a 4xx from the framework keeps its status is unchanged. The `sendFile` callback mirrors what Express's own default skips (`isServerFault` in `send-file-error.ts`): no error, headers already sent, `ECONNABORTED` (the client left while `send` was still stat-ing the file, before any header) and a `write` syscall error are not faults and are neither logged nor answered. Anything else, including `ENOENT`, an unreadable file and `EISDIR`, becomes the logged 500.
 - A bare trailing dot (`/lancamentos.`, a link pasted from chat) is still a navigation: only a dot followed by at least one character is an extension. The error handler calls `next(err)` when headers were already sent, and the JSON body limit is the exported `JSON_BODY_LIMIT_BYTES`.
 
+### Decisions taken for dark mode (US-13)
+
+- The theme is per device (`localStorage['lc-theme']`: `system`, `light` or `dark`; default `system`), not a setting: language and currency belong to the instance, but each partner may want their own theme. No API, schema or migration change.
+- `public/theme-init.js` sets `.dark` on `<html>` before the app loads, so a dark device never flashes the light page. It is a classic script from `'self'` because the CSP forbids inline scripts. `ThemeProvider` takes over after mount and follows the system only while the choice is Sistema.
+- `--ink` was both text and the dark surfaces. Text keeps `--ink`, which flips. Surfaces that stay dark (header, phone nav, Saldo tile, tooltips, acerto header, avatar, login panel) use `--surface-strong` / `--on-strong`, the same in both themes. Action buttons and checked controls use `--primary`, which turns mint in dark. Filled settlement and expense buttons use `--on-accent`, which turns ink in dark.
+- In dark the page (`#1B241F`) and cards (`#222C27`) rise above the unchanged ink band, which keeps a 1px line (an inset shadow, so the header's height and its scroll padding still match).
+- Shadows and overlays are tokens (`shadow-segment`, `shadow-popover`, `shadow-sheet`, `shadow-tooltip`, `shadow-dialog`, `bg-overlay`). A test fails if a component uses `bg-ink`, `text-white`, `text-background`, a hex color or `rgba(`; only `NEUTRAL_SWATCH` is allowed. shadcn's own `dark:` utilities were removed, since the tokens carry the theme.
+- The theme has its own "Aparência" section after "Idioma e moeda", saying it applies to this device only, instead of a third select under a title about the instance.
+
 ### Decisions taken for language and currency (US-12)
 
 - Both are instance-wide, in the single `settings` row, and default to pt-BR and BRL. Currency is display-only: stored cents never change and nothing is converted.
@@ -429,6 +444,14 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - On phones the bottom bar's labels may wrap in English ("Monthly summary"), so its items align to the top.
 
 ## Roadmap
+
+### Phase 8 — Dark mode (US-13) (app done, PR #DARK)
+
+- [x] Ink split into text, strong surface and primary tokens; raw colors replaced by tokens, with a test that keeps them out.
+- [x] Dark token values, with a contrast test over both themes.
+- [x] Per-device theme: `theme-init.js`, `ThemeProvider`, the "Aparência" section, copy in both languages.
+- [x] Component and e2e tests.
+- [ ] Project site follows the system, with dark screenshots.
 
 Every item below gets its own branch and PR, following the Git workflow in `CLAUDE.md`.
 
