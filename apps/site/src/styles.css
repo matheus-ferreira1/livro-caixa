@@ -13,6 +13,11 @@
 
   --color-paper: #f4f5f1;
   --color-ink: #17201c;
+  --color-card: #ffffff;
+  /* The ink band (header, hero, footer, terminal blocks): dark in both themes, unlike ink. */
+  --color-surface-strong: #17201c;
+  --color-on-strong: #ffffff;
+  --color-on-mint: #17201c;
   --color-mint: #9fd8be;
   --color-header-active: #2c3832;
   --color-on-dark-muted: #c9d3cd;
@@ -28,13 +33,43 @@
   --color-settlement: #2a4fb8;
   --color-settlement-bg: #e5ebfa;
   --color-info-text: #1f3c8f;
+  --color-focus: #2a4fb8;
 
   --radius-control: 10px;
   --radius-banner: 12px;
   --radius-card: 14px;
 }
 
+/*
+ * The site follows the OS scheme only. In dark the page rises to meet the ink band, which stays put,
+ * the same palette as the app's dark theme.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #1b241f;
+    --color-ink: #e4eae6;
+    --color-card: #222c27;
+    --color-band: #1f2924;
+    --color-muted: #a3ada8;
+    --color-border: #33403a;
+    --color-divider: #2a3530;
+    --color-track: #2a3530;
+    --color-income: #7dd3a8;
+    --color-income-bg: #18382b;
+    --color-expense: #f2a27e;
+    --color-expense-bg: #3b231a;
+    --color-settlement: #9db4f5;
+    --color-settlement-bg: #1f2a4a;
+    --color-info-text: #b8c8f7;
+    --color-focus: #8fa9f2;
+  }
+}
+
 @layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
   html {
     background: var(--color-paper);
     color: var(--color-ink);
@@ -53,7 +88,7 @@
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-settlement);
+    outline: 3px solid var(--color-focus);
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -80,7 +115,7 @@
 @layer components {
   /* The faint ruled lines of a cash book, as on the app's sign-in panel. */
   .ledger-ruling {
-    background-color: var(--color-ink);
+    background-color: var(--color-surface-strong);
     background-image: repeating-linear-gradient(
       to bottom,
       transparent 0 43px,
@@ -91,7 +126,7 @@
   .shot {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
-    background: #fff;
+    background: var(--color-card);
     box-shadow: 0 24px 48px -28px rgb(23 32 28 / 0.35);
   }
 }
