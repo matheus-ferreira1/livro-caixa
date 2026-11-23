@@ -1,6 +1,16 @@
 import { DEFAULT_LOCALIZATION, localization } from '@livro-caixa/domain';
 import { describe, expect, test } from 'vitest';
-import { categoryCountLabel, shareExampleText, shareLabel, usageLabel } from './view-model';
+import {
+  CATEGORY_LIST_ROWS,
+  categoryCountLabel,
+  shareExampleText,
+  shareLabel,
+  showCategorySearch,
+  usageLabel,
+} from './view-model';
+
+const categoriesOf = (type: 'receita' | 'despesa', count: number) =>
+  Array.from({ length: count }, (_, index) => ({ type, id: `${type}-${index}` }));
 
 describe('settings view model', () => {
   test('labels category usage', () => {
@@ -12,6 +22,16 @@ describe('settings view model', () => {
   test('counts categories', () => {
     expect(categoryCountLabel(1, DEFAULT_LOCALIZATION)).toBe('1 categoria');
     expect(categoryCountLabel(3, DEFAULT_LOCALIZATION)).toBe('3 categorias');
+  });
+
+  test('offers search only once a list outgrows its visible rows', () => {
+    const atLimit = [...categoriesOf('receita', CATEGORY_LIST_ROWS), ...categoriesOf('despesa', 3)];
+    expect(showCategorySearch(atLimit, '')).toBe(false);
+    expect(showCategorySearch([...atLimit, ...categoriesOf('despesa', CATEGORY_LIST_ROWS)], '')).toBe(true);
+  });
+
+  test('keeps the search while a query is typed, even under the limit', () => {
+    expect(showCategorySearch(categoriesOf('despesa', 2), 'merc')).toBe(true);
   });
 
   test('shortens long partner names in the share label', () => {

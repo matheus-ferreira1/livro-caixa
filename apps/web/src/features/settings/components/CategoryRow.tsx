@@ -5,7 +5,7 @@ import { isUnauthorized } from '@/shared/api/query-client';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
 import { useDeleteCategory, useUpdateCategory } from '../api';
-import { usageLabel } from '../view-model';
+import { CATEGORY_ROW_MIN_HEIGHT_PX, usageLabel } from '../view-model';
 import { ColorSwatches } from './ColorSwatches';
 
 interface CategoryRowProps {
@@ -26,7 +26,11 @@ export function CategoryRow({
   onDoneEditing,
 }: CategoryRowProps) {
   return (
-    <div className="flex min-h-[60px] flex-col justify-center border-b border-divider px-5 py-2.5 last:border-b-0">
+    <div
+      data-category-id={category.id}
+      style={{ minHeight: CATEGORY_ROW_MIN_HEIGHT_PX }}
+      className="flex flex-col justify-center border-b border-divider px-5 py-2.5 last:border-b-0"
+    >
       {editing ? (
         <CategoryEditor category={category} categories={categories} onDone={onDoneEditing} />
       ) : (

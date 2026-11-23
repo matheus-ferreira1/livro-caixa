@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
 import { SettingsPage } from './SettingsPage';
+import { CATEGORY_LIST_ROWS } from './view-model';
 
 const CATEGORIES = [
   { id: 'c-salario', name: 'Salário', type: 'receita', color: '#2A78D6' },
@@ -14,10 +15,12 @@ type Write = { method: string; url: string; body: unknown };
 
 interface SetupOptions {
   preferences?: Preferences;
+  categories?: { id: string; name: string; type: string; color: string }[];
 }
 
-function setup({ preferences }: SetupOptions = {}) {
+function setup({ preferences, categories = CATEGORIES }: SetupOptions = {}) {
   const writes: Write[] = [];
+  const catalog = [...categories];
   let stored: Record<string, unknown> = {
     partnerName: 'Bia',
     partnerShare: 40,
@@ -28,13 +31,21 @@ function setup({ preferences }: SetupOptions = {}) {
     const method = init.method ?? 'GET';
     const body: unknown = init.body ? JSON.parse(String(init.body)) : undefined;
     if (method === 'GET' && url === '/api/categories')
-      return { status: 200, body: { categories: CATEGORIES, usage: { 'c-mercado': 3, 'c-salario': 1 } } };
+      return { status: 200, body: { categories: catalog, usage: { 'c-mercado': 3, 'c-salario': 1 } } };
     if (method === 'GET' && url === '/api/settings') return { status: 200, body: { settings: stored } };
     writes.push({ method, url, body });
-    if (method === 'POST') return { status: 201, body: { category: { id: 'new', ...(body as object) } } };
+    if (method === 'POST') {
+      const category = { id: 'new', ...(body as { name: string; type: string; color: string }) };
+      catalog.push(category);
+      return { status: 201, body: { category } };
+    }
     if (method === 'PATCH')
       return { status: 200, body: { category: { id: 'c-mercado', ...(body as object) } } };
-    if (method === 'DELETE') return { status: 204 };
+    if (method === 'DELETE') {
+      const index = catalog.findIndex((category) => url.endsWith(`/${category.id}`));
+      if (index >= 0) catalog.splice(index, 1);
+      return { status: 204 };
+    }
     if (method === 'PUT') {
       stored = { ...stored, ...(body as object) };
       return { status: 200, body: { settings: stored } };
@@ -46,6 +57,22 @@ function setup({ preferences }: SetupOptions = {}) {
   });
   return { ...view, writes };
 }
+
+const manyCategories = (type: 'receita' | 'despesa', count: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${type}-${index}`,
+    name: `${type === 'receita' ? 'Receita' : 'Despesa'} ${String(index).padStart(3, '0')}`,
+    type,
+    color: '#2A78D6',
+  }));
+
+const LARGE_CATALOG = [
+  ...manyCategories('receita', 250),
+  { id: 'c-saude', name: 'Saúde', type: 'despesa', color: '#1BAF7A' },
+  ...manyCategories('despesa', 249),
+];
+
+const listRegion = (name: string) => screen.getByRole('region', { name });
 
 const listCard = (title: string) =>
   screen.getByRole('heading', { name: title }).closest('section') as HTMLElement;
@@ -245,5 +272,65 @@ describe('Configurações', () => {
       expect(queryClient.getQueryData(['preferences'])).toEqual({ language: 'en', currency: 'EUR' }),
     );
     expect(await screen.findByLabelText('Currency')).toHaveValue('EUR');
+  });
+
+  describe('with a large catalog', () => {
+    test('keeps both lists and the sections after them in bounded, focusable regions', async () => {
+      setup({ categories: LARGE_CATALOG });
+      await screen.findByText('Saúde');
+      expect(screen.getByRole('heading', { name: 'Despesas' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Divisão de contas' })).toBeInTheDocument();
+      for (const name of ['Lista de receitas', 'Lista de despesas']) {
+        expect(listRegion(name)).toHaveAttribute('tabindex', '0');
+        expect(listRegion(name).style.maxHeight).toBe('480px');
+      }
+    });
+
+    test('finds a category ignoring accents and counts the matches', async () => {
+      const { user } = setup({ categories: LARGE_CATALOG });
+      await screen.findByText('Saúde');
+      await user.type(screen.getByRole('searchbox', { name: 'Buscar categorias' }), 'saude');
+      expect(within(listRegion('Lista de despesas')).getByText('Saúde')).toBeInTheDocument();
+      expect(within(listCard('Despesas')).getByText('1 categoria')).toBeInTheDocument();
+      expect(within(listCard('Receitas')).getByText('0 categorias')).toBeInTheDocument();
+      expect(
+        within(listRegion('Lista de receitas')).getByText('Nenhuma categoria encontrada para “saude”'),
+      ).toBeInTheDocument();
+    });
+
+    test('clears the search after creating a category so the new row shows', async () => {
+      const { user } = setup({ categories: LARGE_CATALOG });
+      await screen.findByText('Saúde');
+      await user.type(screen.getByRole('searchbox', { name: 'Buscar categorias' }), 'saude');
+      await user.type(screen.getByLabelText('Nova categoria'), 'Pets');
+      await user.click(screen.getByRole('button', { name: 'Adicionar' }));
+      expect(screen.getByRole('searchbox', { name: 'Buscar categorias' })).toHaveValue('');
+      expect(await within(listRegion('Lista de despesas')).findByText('Pets')).toBeInTheDocument();
+    });
+
+    test('keeps the row being edited while the search changes', async () => {
+      const { user } = setup({ categories: LARGE_CATALOG });
+      await user.click(await screen.findByRole('button', { name: 'Editar Saúde' }));
+      await user.type(screen.getByRole('searchbox', { name: 'Buscar categorias' }), 'despesa 001');
+      expect(screen.getByLabelText('Nome')).toHaveValue('Saúde');
+      expect(within(listRegion('Lista de despesas')).getByText('Despesa 001')).toBeInTheDocument();
+      expect(within(listCard('Despesas')).getByText('1 categoria')).toBeInTheDocument();
+    });
+
+    test('keeps the search in place when deletes bring the lists under the limit', async () => {
+      const { user } = setup({ categories: manyCategories('despesa', CATEGORY_LIST_ROWS + 1) });
+      const search = await screen.findByRole('searchbox', { name: 'Buscar categorias' });
+      await user.type(search, 'despesa 008');
+      await user.click(screen.getByRole('button', { name: 'Excluir Despesa 008' }));
+      await waitFor(() => expect(screen.queryByText('Despesa 008')).not.toBeInTheDocument());
+      await user.clear(search);
+      expect(screen.getByRole('searchbox', { name: 'Buscar categorias' })).toHaveFocus();
+    });
+  });
+
+  test('hides the search while every list fits', async () => {
+    setup();
+    await screen.findByText('Mercado');
+    expect(screen.queryByRole('searchbox', { name: 'Buscar categorias' })).not.toBeInTheDocument();
   });
 });

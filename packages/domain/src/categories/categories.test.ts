@@ -7,6 +7,7 @@ import {
   categoryInputSchema,
   categoryPatchSchema,
   categoryUsageCounts,
+  searchCategories,
   toPaletteColor,
   validateCategoryName,
 } from './categories';
@@ -83,5 +84,27 @@ describe('toPaletteColor', () => {
   test('keeps a palette color and replaces any other with the first one', () => {
     expect(toPaletteColor('#EDA100')).toBe('#EDA100');
     expect(toPaletteColor('#123456')).toBe(CATEGORY_PALETTE[0]);
+  });
+});
+
+describe('searchCategories', () => {
+  test('returns every category for a blank query', () => {
+    expect(searchCategories(categories, '   ')).toEqual(categories);
+  });
+
+  test('matches names ignoring case, accents and surrounding spaces', () => {
+    expect(searchCategories(categories, '  agua ').map((c) => c.id)).toEqual(['c-agua']);
+    expect(searchCategories(categories, 'SALÁ').map((c) => c.id)).toEqual(['c-salario']);
+  });
+
+  test('matches a fragment anywhere in the name', () => {
+    expect(searchCategories(categories, 'cad').map((c) => c.id)).toEqual(['c-mercado']);
+  });
+
+  test('always keeps the category whose id is given', () => {
+    expect(searchCategories(categories, 'agua', 'c-mercado').map((c) => c.id)).toEqual([
+      'c-mercado',
+      'c-agua',
+    ]);
   });
 });

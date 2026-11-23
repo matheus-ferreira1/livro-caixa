@@ -85,3 +85,20 @@ const collator = new Intl.Collator('pt-BR');
 
 export const categoriesOfType = (categories: readonly Category[], type: CategoryType): Category[] =>
   categories.filter((c) => c.type === type).sort((a, b) => collator.compare(a.name, b.name));
+
+const foldForSearch = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+
+/** Filters by name ignoring case and accents, so "saude" finds "Saúde". `keepId` survives any query. */
+export function searchCategories<T extends Pick<Category, 'id' | 'name'>>(
+  categories: readonly T[],
+  query: string,
+  keepId?: string | null,
+): T[] {
+  const needle = foldForSearch(query.trim());
+  if (!needle) return [...categories];
+  return categories.filter((c) => c.id === keepId || foldForSearch(c.name).includes(needle));
+}

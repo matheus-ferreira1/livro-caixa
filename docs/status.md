@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-15, after the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-23, after the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -9,7 +9,7 @@ _Last updated: 2026-11-15, after the security hardening that followed an audit o
 | 0 — Bootstrap | Repo, CLAUDE.md, tooling (Bun workspaces, TS strict, ESLint, Prettier) | ✅ Done (commit `13b93f3`) |
 | 1 — Core ledger | US-01 Sign in, US-02 Sign out & shell, US-03 Month list, US-04 "Todos" list, US-05 Create/edit | ✅ Done (PRs #1, #2, #3) |
 | 1.5 — Hardening | CI, Docker verification, small follow-ups from phase 1 | ✅ Done (PRs #6–#12) |
-| 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PR #13) |
+| 2 — Configurações | US-11 Categories and partner split settings | ✅ Done (PRs #13, #49) |
 | 3 — Acerto & recorrentes | US-06 Gerar acerto, US-07 Gerar recorrentes | ✅ Done (PRs #14, #15) |
 | 4 — Resumo mensal | US-08 | ✅ Done (PR #17) |
 | 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PRs #19, #44) |
@@ -94,6 +94,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#43](https://github.com/matheus-ferreira1/livro-caixa/pull/43) | `fix/api-error-and-fallback-statuses` | The error handler keeps the 4xx status of framework errors (400, 413, 415, 404) instead of answering 500; the SPA fallback serves `index.html` only for navigations, so a missing asset or file answers the JSON 404 |
 | [#44](https://github.com/matheus-ferreira1/livro-caixa/pull/44) | `feat/dashboard-chart-balance` | "Receitas e despesas" chart: acerto stacked on the income bar, a balance strip (▲ / ▼ / ·) under the bars, the viewed month tinted, legend (Acertos, Sobrou, Faltou) and aria label with sobrou / faltou; the signed amount shows from 1024px up; the existing `dashboard.chartHint` is rewritten and the existing `dashboard.monthAria` gains a sobrou / faltou suffix in both catalogs; no API or schema change |
 | [#48](https://github.com/matheus-ferreira1/livro-caixa/pull/48) | `fix/security-hardening` | Login e-mail and password lengths bounded before the e-mail pattern runs; a per-e-mail login limit and throttle keys dropped when finished; CSP, anti-framing, `nosniff`, referrer and HSTS headers; `no-store` on `/api`; cross-site writes refused; `__Host-lc_session` over HTTPS; 12-character passwords; the compose port on `127.0.0.1` with capabilities dropped |
+| [#49](https://github.com/matheus-ferreira1/livro-caixa/pull/49) | `feat/settings-category-search` | Each Configurações category list scrolls inside its card (8 rows), and one search above both lists filters them by name, ignoring case and accents; `searchCategories` in the domain; five new catalog keys in both languages; no API or schema change |
 
 ### Project site (`apps/site`)
 
@@ -116,7 +117,7 @@ Not to be confused with Visão geral, the app's landing page after sign-in. This
 | `/lancamentos` | Lançamentos (US-03 to US-07) | State lives in the URL: `modo` (`all`), `mes`, `tipo`, `status`, `busca`, `periodo`, `de`, `ate`, `categoria`, `ordem`, `direcao`, `pagina`, `itens`. Defaults are left out of the URL. |
 | `/patrimonio` | Patrimônio (US-10) | Grouping and "Modo tranquilo" are local state, and calm mode starts on at each visit. |
 | `/resumo` | Resumo mensal (US-08) | State lives in the URL: `ano` and `modo` (`proj`). Defaults (the current year, `real`) are left out of the URL. |
-| `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
+| `/configuracoes` | Configurações (US-11) | Categories (create, inline edit, delete, search once a list has more than 8) and Divisão de contas. Reached from the nav, the user menu and the form's "Gerenciar categorias" link. |
 | any other path | — | Redirects to `/visao-geral`; every route except `/entrar` requires a session. Paths with a file extension or under `/assets/` are not routes: the API answers them with the JSON 404 |
 
 ### API
@@ -187,7 +188,7 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `dashboard/category-breakdown.ts`: `categoryBreakdown` (top 6 plus "Outras (n)", compared with the history)
 - `dashboard/open-items.ts`: `openItems`, `relativeDue`
 - `dashboard/dashboard.ts`: `buildDashboard`, `niceAxis`, `settlementCard`
-- `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `toPaletteColor`
+- `categories/`: `CATEGORY_PALETTE`, `CATEGORY_MESSAGES`, `validateCategoryName`, `categoryInputSchema`, `categoryPatchSchema`, `categoryUsageCounts`, `categoriesOfType`, `searchCategories`, `toPaletteColor`
 - `settings/`: `LANGUAGES`, `CURRENCIES`, defaults, `Preferences`, `settingsInputSchema`, `PARTNER_SHARE_STEP`, `splitExample`
 - `wealth/asset.ts`: the `Asset` and `Snapshot` types, `ASSET_CLASSES`, `assetValue`, `assetCost`, `valueAssets`, `institutionsOf`
 - `wealth/quote-status.ts`: `quoteStatus` (updated, or unavailable with the last quote's time), `unavailableQuoteCount`
@@ -201,9 +202,9 @@ Migrations are append-only and tracked in `schema_migrations`.
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 394 | `bun run --filter '@livro-caixa/domain' test` |
+| Domain unit | 398 | `bun run --filter '@livro-caixa/domain' test` |
 | API integration | 300 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 279 | `bun run --filter '@livro-caixa/web' test` |
+| Web component | 287 | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 19: the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
 | E2E | 17 tests: language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
 
@@ -232,6 +233,15 @@ CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck`, `bu
 - New and edited categories take a color from the 8-color palette; the API rejects any other color. The type is fixed after creation.
 - Deleting an unused category needs no confirmation, as in the prototype.
 - `useCategories` and `useSettings` now live in `features/settings/api.ts`; `useCategoryCatalog` adds the usage counts for Configurações.
+
+### Decisions taken for the category lists (PR #49)
+
+- No state of the page grows with the number of categories. Each list scrolls inside its card, capped at `CATEGORY_LIST_ROWS` (8) rows of 60px, so the other list and the sections after it (Divisão de contas, Idioma e moeda) stay a short scroll away. With 500 categories the page is about 1,600px tall at 1440px and 2,700px at 375px, against about 28,000px before.
+- Rejected: a "Mostrar todas" button (opening it brings the long page back), a Receitas / Despesas toggle (it drops the design's two cards and hides a list behind a click) and pagination (heavy for a settings list; search plus scroll reaches any row sooner).
+- One search above both cards filters by name, ignoring case and accents (`searchCategories`: "saude" finds "Saúde"). It shows only once a list has more than 8 categories, so a small instance looks exactly as designed, and it stays while a query is typed. Each card's count shows its matches, and a card with none says "Nenhuma categoria encontrada para “{busca}”".
+- Creating a category clears the search and scrolls the new row into view, so the toast never confirms a row the user cannot see. The row being edited stays in the list whatever the query, so unsaved input never disappears.
+- Once shown, the search stays for the visit, even if deletes bring every list back under the limit, so it never disappears under the caret. A new query also cancels the scroll to a just-created row.
+- Each list is a labelled, focusable region ("Lista de receitas", "Lista de despesas") with a focus ring, so it scrolls from the keyboard.
 
 ### Decisions taken in Phase 3
 

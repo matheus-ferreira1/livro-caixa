@@ -138,7 +138,7 @@ As a user, I want to see one month of entries with totals, so I know where the m
 
 ## Phase 2 — done
 
-### US-11 Settings (Configurações) — ✅ Done (Phase 2, PR #13)
+### US-11 Settings (Configurações) — ✅ Done (Phase 2, PRs #13, #49)
 - Eyebrow "Preferências", h1 "Configurações".
 - **Categorias**
   - Intro: "Categorias organizam receitas e despesas. Acertos não usam categoria. Uma categoria em uso não pode ser excluída, só renomeada."
@@ -150,6 +150,8 @@ As a user, I want to see one month of entries with totals, so I know where the m
   - Errors: "Dê um nome para a categoria." and, for a case-insensitive duplicate within the type, "Já existe uma categoria com esse nome nesse tipo."
   - Toast on create: "Categoria “{nome}” criada"
   - Lists: one card each for "Receitas" and "Despesas", with "{n} categorias" and per-item usage ("{n} lançamentos" or "Sem lançamentos").
+  - Each list scrolls inside its card after 8 rows (region aria "Lista de receitas" / "Lista de despesas"), so the page never grows with the catalog.
+  - Once a list has more than 8 categories, a search field (label "Buscar categorias", placeholder "Buscar pelo nome") above both cards filters them by name, ignoring case and accents. Each card's count shows its matches; a card with none shows "Nenhuma categoria encontrada para “{busca}”". Creating a category clears the search, and the row being edited stays in the list whatever the query.
   - Inline edit changes the name and color; the type cannot be changed. Toast: "Categoria atualizada".
   - Deleting is blocked while the category is in use, with the title "{nome} está em uso e não pode ser excluída". Otherwise it deletes immediately, with the toast "Categoria “{nome}” excluída".
 - **Divisão de contas**
