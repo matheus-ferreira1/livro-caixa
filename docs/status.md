@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-23, after the project site's dark screenshots (PR #SHOTS). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-23, after the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -15,7 +15,7 @@ _Last updated: 2026-11-23, after the project site's dark screenshots (PR #SHOTS)
 | 5 — Visão geral | US-09 (the app's landing page after sign-in, not the project site) | ✅ Done (PRs #19, #44) |
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 | 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done (PRs #38, #39, #40, #41) |
-| 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | ✅ Done (PRs #50, #51, #SHOTS) |
+| 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | ✅ Done (PRs #50, #51, #52) |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
@@ -102,7 +102,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#49](https://github.com/matheus-ferreira1/livro-caixa/pull/49) | `feat/settings-category-search` | Each Configurações category list scrolls inside its card (8 rows), and one search above both lists filters them by name, ignoring case and accents; `searchCategories` in the domain; five new catalog keys in both languages; no API or schema change |
 | [#50](https://github.com/matheus-ferreira1/livro-caixa/pull/50) | `feat/site-dark-mode` | The project site follows the OS color scheme: the app's dark palette in `@media (prefers-color-scheme: dark)`, `surface-strong` / `on-strong` split from ink, Tailwind white replaced by tokens, WCAG contrast tests for both themes, and `capture:site` shooting every screen in dark too (dark screenshots wait for the app's dark mode) |
 | [#51](https://github.com/matheus-ferreira1/livro-caixa/pull/51) | `feat/dark-mode` | Dark mode in the app (US-13): a light, dark or system theme per device in Configurações › Aparência, applied before the app loads by `theme-init.js`; ink split into text, `surface-strong` and `primary` tokens; raw colors replaced by tokens, with a guard test and a contrast test over both themes |
-| [#SHOTS](https://github.com/matheus-ferreira1/livro-caixa/pull/SHOTS) | `chore/site-dark-screenshots` | The project site's dark screenshots: every screenshot retaken in both schemes, and each wrapped in a `<picture>` whose dark source comes first |
+| [#52](https://github.com/matheus-ferreira1/livro-caixa/pull/52) | `chore/site-dark-screenshots` | The project site's dark screenshots: every screenshot retaken in both schemes, and each wrapped in a `<picture>` whose dark source comes first |
 
 ### Project site (`apps/site`)
 
@@ -402,7 +402,7 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - "The page rises to meet the ink": the header, hero and footer keep #17201C, and the paper darkens toward it (#1B241F, cards #222C27, bands #1F2924). The same palette as the app's dark theme, so the screenshots will sit on a page of their own colors.
 - `--color-ink` was both text and a dark surface. The surfaces moved to `surface-strong` / `on-strong`, which never flip, the same split as in the app. Tailwind's `text-white` (×11) and `bg-white` (×3) went to `on-strong` and `card`.
 - The rule that ink-filled primary actions turn mint in dark has no target on the site: its only filled buttons are already mint, on the ink band.
-- Dark screenshots came in a follow-up (PR #SHOTS), once the app's dark mode was on `main`, since a capture before it gave light images and a `<source>` with a missing file shows a broken image. Every screenshot is a `<picture>` whose `(prefers-color-scheme: dark)` source comes before any light one, because the browser takes the first match; the hero's order is phone dark, desktop dark, phone light, then the `<img>`. A test checks that order.
+- Dark screenshots came in a follow-up (PR #52), once the app's dark mode was on `main`, since a capture before it gave light images and a `<source>` with a missing file shows a broken image. Every screenshot is a `<picture>` whose `(prefers-color-scheme: dark)` source comes before any light one, because the browser takes the first match; the hero's order is phone dark, desktop dark, phone light, then the `<img>`. A test checks that order.
 - A vitest test reads both token sets from `styles.css` and checks WCAG 2.2 contrast for the pairs the page draws: 4.5:1 for text, 3:1 for the focus ring. Borders and dividers are decorative and not checked.
 
 ### Decisions taken for serving under a dot-directory (PR #42)
@@ -464,7 +464,7 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - [x] Per-device theme: `theme-init.js`, `ThemeProvider`, the "Aparência" section, copy in both languages.
 - [x] Component and e2e tests.
 - [x] Project site follows the system (PR #50).
-- [x] The site's dark screenshots (PR #SHOTS).
+- [x] The site's dark screenshots (PR #52).
 
 Every item below gets its own branch and PR, following the Git workflow in `CLAUDE.md`.
 
