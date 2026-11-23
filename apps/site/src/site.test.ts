@@ -139,6 +139,39 @@ describe('project site', () => {
     expect(source?.parentElement?.querySelector('img')?.getAttribute('loading')).not.toBe('lazy');
   });
 
+  it('gives every screenshot a dark version in dark mode, chosen before any light source', () => {
+    for (const image of all('img[src^="/screenshots/"]')) {
+      const src = image.getAttribute('src') ?? '';
+      const sources = [...(image.parentElement?.querySelectorAll('source') ?? [])];
+      const dark = sources.filter((source) =>
+        source.getAttribute('media')?.includes('(prefers-color-scheme: dark)'),
+      );
+      expect(
+        dark.map((source) => source.getAttribute('srcset')),
+        src,
+      ).toContain(src.replace('.webp', '-dark.webp'));
+      // A browser takes the first source that matches, so a light source before a dark one would win.
+      const firstLight = sources.findIndex((source) => !dark.includes(source));
+      const firstDark = sources.findIndex((source) => dark.includes(source));
+      if (firstLight >= 0) expect(firstDark, src).toBeLessThan(firstLight);
+    }
+  });
+
+  it('gives each phone-sized source a dark twin for the same width, placed before it', () => {
+    for (const phone of all('picture source[srcset$="-phone.webp"]')) {
+      const media = phone.getAttribute('media') ?? '';
+      const sources = [...(phone.parentElement?.querySelectorAll('source') ?? [])];
+      const twin = sources.find(
+        (source) =>
+          source.getAttribute('srcset') === phone.getAttribute('srcset')?.replace('.webp', '-dark.webp') &&
+          source.getAttribute('media') === `${media} and (prefers-color-scheme: dark)`,
+      );
+      expect(twin, media).toBeDefined();
+      const position = (target: Element | undefined) => sources.findIndex((source) => source === target);
+      expect(position(twin)).toBeLessThan(position(phone));
+    }
+  });
+
   it('points every picture source at a file that exists, since a missing one shows a broken image', () => {
     const sources = all('picture source');
     expect(sources).not.toHaveLength(0);
