@@ -41,11 +41,11 @@
   <body class="antialiased">
     <a
       href="#main"
-      class="sr-only z-50 rounded-control bg-mint font-semibold text-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:px-4 focus:py-3 focus-visible:outline-mint"
+      class="sr-only z-50 rounded-control bg-mint font-semibold text-on-mint focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:px-4 focus:py-3 focus-visible:outline-mint"
       >Skip to content</a
     >
 
-    <header class="on-dark z-40 bg-ink text-white sm:sticky sm:top-0">
+    <header class="on-dark z-40 bg-surface-strong text-on-strong sm:sticky sm:top-0">
       <div
         class="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-2 sm:px-6"
       >
@@ -62,21 +62,21 @@
             <li>
               <a
                 href="#features"
-                class="flex min-h-[44px] items-center rounded-control px-3 font-medium text-on-dark-muted hover:bg-header-active hover:text-white"
+                class="flex min-h-[44px] items-center rounded-control px-3 font-medium text-on-dark-muted hover:bg-header-active hover:text-on-strong"
                 >Features</a
               >
             </li>
             <li>
               <a
                 href="#self-host"
-                class="flex min-h-[44px] items-center rounded-control px-3 font-medium text-on-dark-muted hover:bg-header-active hover:text-white"
+                class="flex min-h-[44px] items-center rounded-control px-3 font-medium text-on-dark-muted hover:bg-header-active hover:text-on-strong"
                 >Self-host</a
               >
             </li>
             <li>
               <a
                 href="#contribute"
-                class="flex min-h-[44px] items-center rounded-control px-3 font-medium text-on-dark-muted hover:bg-header-active hover:text-white"
+                class="flex min-h-[44px] items-center rounded-control px-3 font-medium text-on-dark-muted hover:bg-header-active hover:text-on-strong"
                 >Contribute</a
               >
             </li>
@@ -97,7 +97,7 @@
     </header>
 
     <main id="main" tabindex="-1">
-      <section aria-labelledby="hero-title" class="ledger-ruling on-dark text-white">
+      <section aria-labelledby="hero-title" class="ledger-ruling on-dark text-on-strong">
         <div class="mx-auto max-w-[1280px] px-4 pt-16 sm:px-6 sm:pt-24">
           <div class="max-w-3xl">
             <h1
@@ -114,12 +114,12 @@
             <div class="mt-9 flex flex-wrap gap-3">
               <a
                 href="#quick-start"
-                class="inline-flex min-h-[48px] items-center rounded-control bg-mint px-6 text-base font-semibold text-ink hover:bg-white"
+                class="inline-flex min-h-[48px] items-center rounded-control bg-mint px-6 text-base font-semibold text-on-mint hover:bg-on-strong"
                 >Run it yourself</a
               >
               <a
                 href="https://github.com/matheus-ferreira1/livro-caixa"
-                class="inline-flex min-h-[48px] items-center rounded-control border border-on-dark-muted/50 px-6 text-base font-semibold text-white hover:bg-header-active"
+                class="inline-flex min-h-[48px] items-center rounded-control border border-on-dark-muted/50 px-6 text-base font-semibold text-on-strong hover:bg-header-active"
                 >View on GitHub</a
               >
             </div>
@@ -329,11 +329,7 @@
         </div>
       </section>
 
-      <section
-        id="self-host"
-        aria-labelledby="self-host-title"
-        class="mt-28 bg-white py-20 sm:mt-36 sm:py-28"
-      >
+      <section id="self-host" aria-labelledby="self-host-title" class="mt-28 bg-card py-20 sm:mt-36 sm:py-28">
         <div
           class="mx-auto grid max-w-[1280px] [&>*]:min-w-0 gap-14 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-20"
         >
@@ -387,7 +383,9 @@
               >
                 <li>
                   Clone the repository, then copy the example environment file from inside it.
-                  <div class="on-dark bg-ink text-white mt-3 flex items-center overflow-hidden rounded-card">
+                  <div
+                    class="on-dark bg-surface-strong text-on-strong mt-3 flex items-center overflow-hidden rounded-card"
+                  >
                     <pre
                       class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
                     ><code id="quick-start-env">cp .env.example .env</code></pre>
@@ -415,7 +413,9 @@
                 </li>
                 <li>
                   Build and start the container.
-                  <div class="on-dark bg-ink text-white mt-3 flex items-center overflow-hidden rounded-card">
+                  <div
+                    class="on-dark bg-surface-strong text-on-strong mt-3 flex items-center overflow-hidden rounded-card"
+                  >
                     <pre
                       class="min-w-0 flex-1 overflow-x-auto px-5 py-3 font-mono text-[14px] leading-7"
                     ><code id="quick-start-up">docker compose up --build</code></pre>
@@ -530,7 +530,7 @@
       <section
         id="contribute"
         aria-labelledby="contribute-title"
-        class="ledger-ruling on-dark py-20 text-white sm:py-28"
+        class="ledger-ruling on-dark py-20 text-on-strong sm:py-28"
       >
         <div class="mx-auto grid max-w-[1280px] [&>*]:min-w-0 gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:gap-20">
           <div>
@@ -574,7 +574,7 @@
               <li>
                 <a
                   href="https://github.com/matheus-ferreira1/livro-caixa/blob/main/docs/status.md#what-comes-next"
-                  class="inline-flex min-h-[48px] items-center rounded-control bg-mint px-5 font-semibold text-ink hover:bg-white"
+                  class="inline-flex min-h-[48px] items-center rounded-control bg-mint px-5 font-semibold text-on-mint hover:bg-on-strong"
                   >See what comes next</a
                 >
               </li>
@@ -720,7 +720,7 @@ bun run seed:demo</code></pre>
       </section>
     </main>
 
-    <footer class="on-dark bg-ink text-on-dark-muted">
+    <footer class="on-dark bg-surface-strong text-on-dark-muted">
       <div
         class="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 border-t border-header-active px-4 py-8 sm:px-6"
       >
@@ -730,14 +730,14 @@ bun run seed:demo</code></pre>
             >Livro-caixa is free software under the
             <a
               href="https://github.com/matheus-ferreira1/livro-caixa/blob/main/LICENSE"
-              class="font-medium text-white underline underline-offset-2"
+              class="font-medium text-on-strong underline underline-offset-2"
               >MIT license</a
             >.</span
           >
         </p>
         <a
           href="https://github.com/matheus-ferreira1/livro-caixa"
-          class="inline-flex min-h-[44px] items-center font-medium text-white underline underline-offset-2"
+          class="inline-flex min-h-[44px] items-center font-medium text-on-strong underline underline-offset-2"
           >Source on GitHub</a
         >
       </div>

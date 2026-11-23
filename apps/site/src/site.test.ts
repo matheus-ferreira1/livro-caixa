@@ -130,13 +130,22 @@ describe('project site', () => {
   });
 
   it('serves the hero a phone-sized dashboard on narrow screens, sized to avoid layout shift', () => {
-    const source = page.querySelector('picture source');
-    expect(source?.getAttribute('media')).toMatch(/max-width/);
+    const source = page.querySelector('picture source[media="(max-width: 639px)"]');
+    expect(source).not.toBeNull();
     const srcset = source?.getAttribute('srcset') ?? '';
     expect(existsSync(publicFile(srcset)), srcset).toBe(true);
     expect(Number(source?.getAttribute('width'))).toBeGreaterThan(0);
     expect(Number(source?.getAttribute('height'))).toBeGreaterThan(0);
     expect(source?.parentElement?.querySelector('img')?.getAttribute('loading')).not.toBe('lazy');
+  });
+
+  it('points every picture source at a file that exists, since a missing one shows a broken image', () => {
+    const sources = all('picture source');
+    expect(sources).not.toHaveLength(0);
+    for (const source of sources) {
+      const srcset = source.getAttribute('srcset') ?? '';
+      expect(existsSync(publicFile(srcset)), srcset).toBe(true);
+    }
   });
 
   it('describes every screenshot and lazy-loads all but the hero one', () => {
