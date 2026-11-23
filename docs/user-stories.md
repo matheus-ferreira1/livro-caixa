@@ -346,7 +346,7 @@ As the instance owner, I want to choose the language and the currency, so the ap
   - labels "Language" (options "Português (Brasil)", "English") and "Currency" (options "Brazilian real (R$)", "US dollar ($)", "Euro (€)", "Pound sterling (£)")
 - English names of the screens: Overview, Entries, Net worth, Monthly summary, Settings. Also Settlement, Recurring, Confirmed / Pending, Income / Expense / Settlement, Split.
 
-### US-13 Dark mode — 🟡 App done (Phase 8)
+### US-13 Dark mode — ✅ Done (Phase 8, PRs #50, #51)
 As someone who keeps the books at night, I want a dark theme, so the bright page does not hurt my eyes.
 
 - The app follows the device's light or dark setting by default. Configurações gets a section "Aparência" after "Idioma e moeda", a card with one labelled native `<select>` at least 44px tall. The choice applies at once, without a save, and is kept on this device only (each partner picks their own).
