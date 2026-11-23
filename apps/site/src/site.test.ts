@@ -157,6 +157,20 @@ describe('project site', () => {
     }
   });
 
+  it('gives each phone-sized source a dark twin for the same width, placed before it', () => {
+    for (const phone of all('picture source[srcset$="-phone.webp"]')) {
+      const media = phone.getAttribute('media') ?? '';
+      const sources = [...(phone.parentElement?.querySelectorAll('source') ?? [])];
+      const twin = sources.find(
+        (source) =>
+          source.getAttribute('srcset') === phone.getAttribute('srcset')?.replace('.webp', '-dark.webp') &&
+          source.getAttribute('media') === `${media} and (prefers-color-scheme: dark)`,
+      );
+      expect(twin, media).toBeDefined();
+      expect(sources.indexOf(twin as HTMLSourceElement)).toBeLessThan(sources.indexOf(phone));
+    }
+  });
+
   it('points every picture source at a file that exists, since a missing one shows a broken image', () => {
     const sources = all('picture source');
     expect(sources).not.toHaveLength(0);
