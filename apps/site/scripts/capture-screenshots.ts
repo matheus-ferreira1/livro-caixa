@@ -12,6 +12,15 @@ const PHONE = { width: 375, height: 812 };
 const WEBP_QUALITY = 0.82;
 const OG_JPEG_QUALITY = 85;
 
+/**
+ * Every screen is shot once per OS color scheme; the site picks one with `prefers-color-scheme`.
+ * Dark shots get a `-dark` suffix. The Open Graph image stays light, since link previews have no scheme.
+ */
+const COLOR_SCHEMES = [
+  { colorScheme: 'light', suffix: '' },
+  { colorScheme: 'dark', suffix: '-dark' },
+] as const;
+
 /** Re-encodes a PNG as WebP in the browser, so the capture needs no image library. */
 async function toWebp(page: Page, png: Buffer): Promise<Buffer> {
   const dataUrl = await page.evaluate(
@@ -56,9 +65,9 @@ async function snapshot(page: Page, options: Parameters<Page['screenshot']>[0] =
   return page.screenshot({ ...options, animations: 'disabled', caret: 'hide' });
 }
 
-async function save(page: Page, name: string) {
+async function save(page: Page, name: string, suffix: string) {
   const png = await snapshot(page);
-  writeFileSync(resolve(OUTPUT_DIR, `${name}.webp`), await toWebp(page, png));
+  writeFileSync(resolve(OUTPUT_DIR, `${name}${suffix}.webp`), await toWebp(page, png));
 }
 
 test.beforeAll(() => mkdirSync(OUTPUT_DIR, { recursive: true }));
@@ -67,55 +76,63 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(DEMO_TODAY);
 });
 
-test('desktop screens at 1440px', async ({ page }) => {
-  await page.setViewportSize(DESKTOP);
-  await signInInEnglishWithDollars(page);
-  await page.goto('/visao-geral');
+for (const { colorScheme, suffix } of COLOR_SCHEMES) {
+  test.describe(`${colorScheme} scheme`, () => {
+    test.use({ colorScheme });
 
-  await settle(page, 'October 2026');
-  await save(page, 'visao-geral');
-  // Link previews crop to 1.91:1, so the app is laid out at that size rather than cropped.
-  await page.setViewportSize(OPEN_GRAPH);
-  await settle(page, 'October 2026');
-  await snapshot(page, {
-    path: resolve(OUTPUT_DIR, '../og-image.jpg'),
-    type: 'jpeg',
-    quality: OG_JPEG_QUALITY,
+    test('desktop screens at 1440px', async ({ page }) => {
+      await page.setViewportSize(DESKTOP);
+      await signInInEnglishWithDollars(page);
+      await page.goto('/visao-geral');
+
+      await settle(page, 'October 2026');
+      await save(page, 'visao-geral', suffix);
+      if (colorScheme === 'light') {
+        // Link previews crop to 1.91:1, so the app is laid out at that size rather than cropped.
+        await page.setViewportSize(OPEN_GRAPH);
+        await settle(page, 'October 2026');
+        await snapshot(page, {
+          path: resolve(OUTPUT_DIR, '../og-image.jpg'),
+          type: 'jpeg',
+          quality: OG_JPEG_QUALITY,
+        });
+        await page.setViewportSize(DESKTOP);
+      }
+
+      await page.goto('/lancamentos');
+      await settle(page, 'October 2026');
+      await save(page, 'lancamentos', suffix);
+
+      await page.getByRole('button', { name: 'Generate settlement' }).click();
+      await expect(page.getByRole('dialog', { name: 'Bill settlement' })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await save(page, 'acerto', suffix);
+      await page.keyboard.press('Escape');
+
+      await page.goto('/resumo');
+      await settle(page, '2026');
+      await save(page, 'resumo', suffix);
+
+      await page.goto('/patrimonio');
+      await expect(page.getByRole('heading', { name: 'Month by month' })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForLoadState('networkidle');
+      await save(page, 'patrimonio', suffix);
+    });
+
+    test.describe('phone', () => {
+      // A phone shot is shown at its CSS size, so it needs the pixel density of a phone to stay sharp.
+      test.use({ viewport: PHONE, deviceScaleFactor: 2 });
+
+      test('phone screens at 375px', async ({ page }) => {
+        await signInInEnglishWithDollars(page);
+        await page.goto('/visao-geral');
+        await settle(page, 'October 2026');
+        await save(page, 'visao-geral-phone', suffix);
+        await page.goto('/lancamentos');
+        await settle(page, 'October 2026');
+        await save(page, 'lancamentos-phone', suffix);
+      });
+    });
   });
-  await page.setViewportSize(DESKTOP);
-
-  await page.goto('/lancamentos');
-  await settle(page, 'October 2026');
-  await save(page, 'lancamentos');
-
-  await page.getByRole('button', { name: 'Generate settlement' }).click();
-  await expect(page.getByRole('dialog', { name: 'Bill settlement' })).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  await save(page, 'acerto');
-  await page.keyboard.press('Escape');
-
-  await page.goto('/resumo');
-  await settle(page, '2026');
-  await save(page, 'resumo');
-
-  await page.goto('/patrimonio');
-  await expect(page.getByRole('heading', { name: 'Month by month' })).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForLoadState('networkidle');
-  await save(page, 'patrimonio');
-});
-
-test.describe('phone', () => {
-  // A phone shot is shown at its CSS size, so it needs the pixel density of a phone to stay sharp.
-  test.use({ viewport: PHONE, deviceScaleFactor: 2 });
-
-  test('phone screens at 375px', async ({ page }) => {
-    await signInInEnglishWithDollars(page);
-    await page.goto('/visao-geral');
-    await settle(page, 'October 2026');
-    await save(page, 'visao-geral-phone');
-    await page.goto('/lancamentos');
-    await settle(page, 'October 2026');
-    await save(page, 'lancamentos-phone');
-  });
-});
+}
