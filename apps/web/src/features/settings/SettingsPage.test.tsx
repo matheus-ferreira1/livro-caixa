@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
 import { SettingsPage } from './SettingsPage';
+import { CATEGORY_LIST_ROWS } from './view-model';
 
 const CATEGORIES = [
   { id: 'c-salario', name: 'Salário', type: 'receita', color: '#2A78D6' },
@@ -40,7 +41,11 @@ function setup({ preferences, categories = CATEGORIES }: SetupOptions = {}) {
     }
     if (method === 'PATCH')
       return { status: 200, body: { category: { id: 'c-mercado', ...(body as object) } } };
-    if (method === 'DELETE') return { status: 204 };
+    if (method === 'DELETE') {
+      const index = catalog.findIndex((category) => url.endsWith(`/${category.id}`));
+      if (index >= 0) catalog.splice(index, 1);
+      return { status: 204 };
+    }
     if (method === 'PUT') {
       stored = { ...stored, ...(body as object) };
       return { status: 200, body: { settings: stored } };
@@ -309,6 +314,17 @@ describe('Configurações', () => {
       await user.type(screen.getByRole('searchbox', { name: 'Buscar categorias' }), 'despesa 001');
       expect(screen.getByLabelText('Nome')).toHaveValue('Saúde');
       expect(within(listRegion('Lista de despesas')).getByText('Despesa 001')).toBeInTheDocument();
+      expect(within(listCard('Despesas')).getByText('1 categoria')).toBeInTheDocument();
+    });
+
+    test('keeps the search in place when deletes bring the lists under the limit', async () => {
+      const { user } = setup({ categories: manyCategories('despesa', CATEGORY_LIST_ROWS + 1) });
+      const search = await screen.findByRole('searchbox', { name: 'Buscar categorias' });
+      await user.type(search, 'despesa 008');
+      await user.click(screen.getByRole('button', { name: 'Excluir Despesa 008' }));
+      await waitFor(() => expect(screen.queryByText('Despesa 008')).not.toBeInTheDocument());
+      await user.clear(search);
+      expect(screen.getByRole('searchbox', { name: 'Buscar categorias' })).toHaveFocus();
     });
   });
 

@@ -6,6 +6,9 @@ const SHARE_LABEL_NAME_LENGTH = 12;
 /** Rows a category list shows before it scrolls inside its card, so the page never grows with the catalog. */
 export const CATEGORY_LIST_ROWS = 8;
 
+/** A category row's minimum height; the list cap is a whole number of these rows. */
+export const CATEGORY_ROW_MIN_HEIGHT_PX = 60;
+
 /** Search is noise on a short catalog; once shown, it stays while a query is typed. */
 export function showCategorySearch(categories: readonly Pick<Category, 'type'>[], query: string): boolean {
   if (query) return true;

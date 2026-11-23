@@ -17,7 +17,12 @@ import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { isUnauthorized } from '@/shared/api/query-client';
 import { cn } from '@/shared/lib/utils';
 import { useCreateCategory } from '../api';
-import { CATEGORY_LIST_ROWS, categoryCountLabel, showCategorySearch } from '../view-model';
+import {
+  CATEGORY_LIST_ROWS,
+  CATEGORY_ROW_MIN_HEIGHT_PX,
+  categoryCountLabel,
+  showCategorySearch,
+} from '../view-model';
 import { CategoryRow } from './CategoryRow';
 import { ColorSwatches } from './ColorSwatches';
 
@@ -30,9 +35,6 @@ const LIST_META: Record<CategoryType, { title: MessageKey; region: MessageKey; d
   receita: { title: 'settings.listIncome', region: 'settings.listRegionIncome', dot: 'bg-income' },
   despesa: { title: 'settings.listExpense', region: 'settings.listRegionExpense', dot: 'bg-expense' },
 };
-
-/** Matches the `min-h-[60px]` of a `CategoryRow`. */
-const CATEGORY_ROW_MIN_HEIGHT_PX = 60;
 
 export const settingsInputClass =
   'h-11 rounded-[10px] border border-input bg-card px-3 font-normal text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
@@ -48,9 +50,19 @@ export function CategoriesSection({ categories, usage }: CategoriesSectionProps)
   const [query, setQuery] = useState('');
   const [createdId, setCreatedId] = useState<string | null>(null);
 
+  const [searchShown, setSearchShown] = useState(false);
+  // Once shown, the search stays: hiding it under the caret after a delete would drop keyboard focus.
+  if (!searchShown && showCategorySearch(categories, query)) setSearchShown(true);
+
   const onCreated = (category: Category) => {
     setQuery('');
     setCreatedId(category.id);
+  };
+
+  // A new query means the user moved on; never scroll to a row they created earlier.
+  const onQueryChange = (next: string) => {
+    setQuery(next);
+    setCreatedId(null);
   };
 
   return (
@@ -62,7 +74,7 @@ export function CategoriesSection({ categories, usage }: CategoriesSectionProps)
         <p className="m-0 max-w-[640px] text-muted-foreground">{t('settings.categoriesIntro')}</p>
       </div>
       <NewCategoryForm categories={categories} onCreated={onCreated} />
-      {showCategorySearch(categories, query) && <CategorySearch value={query} onChange={setQuery} />}
+      {searchShown && <CategorySearch value={query} onChange={onQueryChange} />}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(460px,100%),1fr))] items-start gap-4">
         {CATEGORY_TYPES.map((type) => (
           <CategoryListCard
@@ -130,13 +142,17 @@ function CategoryListCard({
   const l10n = usePreferences();
   const { t } = l10n;
   const listRef = useRef<HTMLDivElement>(null);
-  const items = searchCategories(categoriesOfType(categories, type), query, editingId);
+  const ofType = categoriesOfType(categories, type);
+  const items = searchCategories(ofType, query, editingId);
+  const matchCount = searchCategories(ofType, query).length;
   const titleId = `categories-${type}`;
   const hasCreated = createdId !== null && items.some((category) => category.id === createdId);
 
   useEffect(() => {
     if (!hasCreated) return;
-    listRef.current?.querySelector(`[data-category-id="${createdId}"]`)?.scrollIntoView({ block: 'nearest' });
+    listRef.current
+      ?.querySelector(`[data-category-id="${CSS.escape(createdId)}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
     onCreatedShown();
   }, [hasCreated, createdId, onCreatedShown]);
 
@@ -147,7 +163,7 @@ function CategoryListCard({
           <span aria-hidden="true" className={cn('size-2 rounded-full', LIST_META[type].dot)} />
           {t(LIST_META[type].title)}
         </h3>
-        <span className="text-[13px] text-muted-foreground">{categoryCountLabel(items.length, l10n)}</span>
+        <span className="text-[13px] text-muted-foreground">{categoryCountLabel(matchCount, l10n)}</span>
       </div>
       {/* Focusable so keyboard users can scroll a long list; the card height never grows with it. */}
       <div
