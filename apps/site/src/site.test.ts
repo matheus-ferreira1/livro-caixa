@@ -167,7 +167,8 @@ describe('project site', () => {
           source.getAttribute('media') === `${media} and (prefers-color-scheme: dark)`,
       );
       expect(twin, media).toBeDefined();
-      expect(sources.indexOf(twin as HTMLSourceElement)).toBeLessThan(sources.indexOf(phone));
+      const position = (target: Element | undefined) => sources.findIndex((source) => source === target);
+      expect(position(twin)).toBeLessThan(position(phone));
     }
   });
 
