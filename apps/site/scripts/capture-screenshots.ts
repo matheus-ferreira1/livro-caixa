@@ -15,6 +15,8 @@ const OG_JPEG_QUALITY = 85;
 /**
  * Every screen is shot once per OS color scheme; the site picks one with `prefers-color-scheme`.
  * Dark shots get a `-dark` suffix. The Open Graph image stays light, since link previews have no scheme.
+ * The dark shots are only dark once the app has a dark theme (`feat/dark-mode`); before that they
+ * come out light, so do not commit them.
  */
 const COLOR_SCHEMES = [
   { colorScheme: 'light', suffix: '' },

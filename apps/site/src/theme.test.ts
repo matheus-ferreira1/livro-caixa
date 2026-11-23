@@ -10,9 +10,20 @@ const html = readFileSync(resolve(SITE_ROOT, 'index.html'), 'utf8');
 const TEXT_CONTRAST = 4.5;
 const NON_TEXT_CONTRAST = 3;
 
+/** sRGB linearisation and luminance weights from the WCAG 2.2 relative luminance definition. */
+const SRGB_LINEAR_THRESHOLD = 0.03928;
+const SRGB_LINEAR_SLOPE = 12.92;
+const SRGB_GAMMA_OFFSET = 0.055;
+const SRGB_GAMMA = 2.4;
+const LUMINANCE_WEIGHTS = { red: 0.2126, green: 0.7152, blue: 0.0722 };
+const CONTRAST_FLARE = 0.05;
+
 type Tokens = Record<string, string>;
 
 function colorTokensIn(block: string): Tokens {
+  // Only 6-digit hex is parsed, so any other notation must fail loudly rather than be skipped.
+  for (const [declaration] of block.matchAll(/--color-[\w-]+:[^;]*;/g))
+    expect(declaration, 'color tokens must be 6-digit hex').toMatch(/:\s*#[0-9a-f]{6}\s*;$/i);
   const tokens: Tokens = {};
   for (const [, name, value] of block.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6})\s*;/gi))
     if (name && value) tokens[name] = value.toLowerCase();
@@ -31,16 +42,18 @@ const dark: Tokens = { ...light, ...colorTokensIn(blockAfter('@media (prefers-co
 function relativeLuminance(hex: string): number {
   const channels = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255);
   const [red = 0, green = 0, blue = 0] = channels.map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+    channel <= SRGB_LINEAR_THRESHOLD
+      ? channel / SRGB_LINEAR_SLOPE
+      : ((channel + SRGB_GAMMA_OFFSET) / (1 + SRGB_GAMMA_OFFSET)) ** SRGB_GAMMA,
   );
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  return LUMINANCE_WEIGHTS.red * red + LUMINANCE_WEIGHTS.green * green + LUMINANCE_WEIGHTS.blue * blue;
 }
 
 function contrast(foreground: string, background: string): number {
   const [lighter, darker] = [relativeLuminance(foreground), relativeLuminance(background)].sort(
     (a, b) => b - a,
   );
-  return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
+  return ((lighter ?? 0) + CONTRAST_FLARE) / ((darker ?? 0) + CONTRAST_FLARE);
 }
 
 /** Pairs the page actually draws: [text token, background token, minimum ratio]. */

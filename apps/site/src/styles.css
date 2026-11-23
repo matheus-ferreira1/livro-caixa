@@ -14,7 +14,8 @@
   --color-paper: #f4f5f1;
   --color-ink: #17201c;
   --color-card: #ffffff;
-  /* The ink band (header, hero, footer, terminal blocks): dark in both themes, unlike ink. */
+  /* The ink band (header, hero, footer, terminal blocks): dark in both themes, unlike ink. on-strong
+     also fills the mint buttons on hover, so it must stay white. */
   --color-surface-strong: #17201c;
   --color-on-strong: #ffffff;
   --color-on-mint: #17201c;
