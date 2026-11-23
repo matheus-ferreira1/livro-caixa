@@ -127,6 +127,18 @@
           <figure class="relative mt-14 -mb-24 sm:mt-16 sm:-mb-40">
             <picture>
               <source
+                media="(max-width: 639px) and (prefers-color-scheme: dark)"
+                srcset="/screenshots/visao-geral-phone-dark.webp"
+                width="750"
+                height="1624"
+              />
+              <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/screenshots/visao-geral-dark.webp"
+                width="1440"
+                height="900"
+              />
+              <source
                 media="(max-width: 639px)"
                 srcset="/screenshots/visao-geral-phone.webp"
                 width="750"
@@ -205,29 +217,45 @@
                   </li>
                 </ul>
               </div>
-              <img
-                src="/screenshots/lancamentos.webp"
-                width="1440"
-                height="900"
-                loading="lazy"
-                decoding="async"
-                alt="Entries for October 2026: tiles for income, expenses, the settlement to receive and the realised balance, then a table of entries with date, description, category, type, split, status and amount, such as Condomínio, − $690.00, split and confirmed."
-                class="shot h-auto w-full"
-              />
+              <picture class="block">
+                <source
+                  media="(prefers-color-scheme: dark)"
+                  srcset="/screenshots/lancamentos-dark.webp"
+                  width="1440"
+                  height="900"
+                />
+                <img
+                  src="/screenshots/lancamentos.webp"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                  decoding="async"
+                  alt="Entries for October 2026: tiles for income, expenses, the settlement to receive and the realised balance, then a table of entries with date, description, category, type, split, status and amount, such as Condomínio, − $690.00, split and confirmed."
+                  class="shot block h-auto w-full"
+                />
+              </picture>
             </article>
 
             <article
               class="grid items-center gap-8 [&>*]:min-w-0 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-14"
             >
-              <img
-                src="/screenshots/acerto.webp"
-                width="1440"
-                height="900"
-                loading="lazy"
-                decoding="async"
-                alt="The Bill settlement dialog for October 2026: six split bills with each total and the partner's half, $1,096.99 to settle, a ready-to-send text message, and buttons to copy it, send it on WhatsApp or register the settlement."
-                class="shot h-auto w-full lg:order-none"
-              />
+              <picture class="block">
+                <source
+                  media="(prefers-color-scheme: dark)"
+                  srcset="/screenshots/acerto-dark.webp"
+                  width="1440"
+                  height="900"
+                />
+                <img
+                  src="/screenshots/acerto.webp"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                  decoding="async"
+                  alt="The Bill settlement dialog for October 2026: six split bills with each total and the partner's half, $1,096.99 to settle, a ready-to-send text message, and buttons to copy it, send it on WhatsApp or register the settlement."
+                  class="shot block h-auto w-full lg:order-none"
+                />
+              </picture>
               <div class="row-start-1 lg:row-start-auto">
                 <h3 class="text-2xl font-bold">
                   Split bills and settlement
@@ -271,29 +299,45 @@
                   added.
                 </p>
               </div>
-              <img
-                src="/screenshots/resumo.webp"
-                width="1440"
-                height="900"
-                loading="lazy"
-                decoding="async"
-                alt="Monthly summary for 2026: yearly totals for income, expenses, average monthly balance and the year-to-date total, a bar chart of each month's balance with July below zero, and the start of the month-by-month table."
-                class="shot h-auto w-full"
-              />
+              <picture class="block">
+                <source
+                  media="(prefers-color-scheme: dark)"
+                  srcset="/screenshots/resumo-dark.webp"
+                  width="1440"
+                  height="900"
+                />
+                <img
+                  src="/screenshots/resumo.webp"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                  decoding="async"
+                  alt="Monthly summary for 2026: yearly totals for income, expenses, average monthly balance and the year-to-date total, a bar chart of each month's balance with July below zero, and the start of the month-by-month table."
+                  class="shot block h-auto w-full"
+                />
+              </picture>
             </article>
 
             <article
               class="grid items-center gap-8 [&>*]:min-w-0 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-14"
             >
-              <img
-                src="/screenshots/patrimonio.webp"
-                width="1440"
-                height="900"
-                loading="lazy"
-                decoding="async"
-                alt="Net worth: a total of $26,685.13 across 16 assets in 9 institutions, a banner saying the October 2026 closing is available, result tiles and a bar chart of net worth at each monthly closing."
-                class="shot h-auto w-full"
-              />
+              <picture class="block">
+                <source
+                  media="(prefers-color-scheme: dark)"
+                  srcset="/screenshots/patrimonio-dark.webp"
+                  width="1440"
+                  height="900"
+                />
+                <img
+                  src="/screenshots/patrimonio.webp"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                  decoding="async"
+                  alt="Net worth: a total of $26,685.13 across 16 assets in 9 institutions, a banner saying the October 2026 closing is available, result tiles and a bar chart of net worth at each monthly closing."
+                  class="shot block h-auto w-full"
+                />
+              </picture>
               <div class="row-start-1 lg:row-start-auto">
                 <h3 class="text-2xl font-bold">
                   Net worth
@@ -451,15 +495,23 @@
           </div>
 
           <figure class="mx-auto w-full max-w-[22rem] self-start lg:sticky lg:top-24">
-            <img
-              src="/screenshots/lancamentos-phone.webp"
-              width="750"
-              height="1624"
-              loading="lazy"
-              decoding="async"
-              alt="Entries on a 375-pixel phone screen: the October 2026 month view with buttons to generate recurring entries and the settlement, tiles for income, expenses and the settlement to receive, and a bottom navigation bar."
-              class="shot h-auto w-full"
-            />
+            <picture class="block">
+              <source
+                media="(prefers-color-scheme: dark)"
+                srcset="/screenshots/lancamentos-phone-dark.webp"
+                width="750"
+                height="1624"
+              />
+              <img
+                src="/screenshots/lancamentos-phone.webp"
+                width="750"
+                height="1624"
+                loading="lazy"
+                decoding="async"
+                alt="Entries on a 375-pixel phone screen: the October 2026 month view with buttons to generate recurring entries and the settlement, tiles for income, expenses and the settlement to receive, and a bottom navigation bar."
+                class="shot block h-auto w-full"
+              />
+            </picture>
             <figcaption class="mt-4 text-sm text-muted">
               The same app on a phone, with a bottom navigation bar and rows that stack instead of scrolling
               sideways.
