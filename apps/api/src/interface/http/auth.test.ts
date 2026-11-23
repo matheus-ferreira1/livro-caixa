@@ -180,6 +180,10 @@ describe('POST /api/auth/login', () => {
         .set('X-Forwarded-For', ip)
         .send({ email: TEST_USER.email, password });
 
+    // Each test makes about 50 logins. With real argon2id checks they ran past bun's 5 s timeout on
+    // CI runners, and only the throttle's counting is under test, so passwords compare in plain text.
+    const buildApp = () => buildTestApp({ hasher: new CountingHasher() });
+
     // Few failures per address, so neither the per-account nor the per-IP lock is what answers.
     const guessFromManyAddresses = async (app: App, count: number) => {
       for (let i = 0; i < count; i++) {
@@ -188,7 +192,7 @@ describe('POST /api/auth/login', () => {
     };
 
     test('locks one e-mail for 5 min after 50 failures spread over many IPs', async () => {
-      const { app, clock } = await buildTestApp();
+      const { app, clock } = await buildApp();
       await guessFromManyAddresses(app, EMAIL_FAILURE_LIMIT);
 
       expect((await attemptFrom(app, FRESH_IP, TEST_USER.password)).status).toBe(429);
@@ -198,7 +202,7 @@ describe('POST /api/auth/login', () => {
     });
 
     test('a successful login clears the count', async () => {
-      const { app } = await buildTestApp();
+      const { app } = await buildApp();
       await guessFromManyAddresses(app, EMAIL_FAILURE_LIMIT - 1);
       expect((await attemptFrom(app, FRESH_IP, TEST_USER.password)).status).toBe(200);
 
