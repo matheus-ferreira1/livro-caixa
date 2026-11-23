@@ -35,7 +35,7 @@ export function Segmented<T extends string>({
           value={key}
           className={cn(
             'flex-none rounded-[9px]! border-0 px-3.5 text-sm font-semibold text-icon shadow-none hover:bg-transparent hover:text-ink',
-            'data-[state=on]:bg-card data-[state=on]:text-ink data-[state=on]:shadow-[0_1px_2px_rgba(23,32,28,0.14)]',
+            'data-[state=on]:bg-card data-[state=on]:text-ink data-[state=on]:shadow-segment',
             size === 'sm' ? 'h-9 min-w-10 px-3' : 'h-10',
           )}
         >

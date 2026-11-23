@@ -51,7 +51,7 @@ export function OpenItemsCard({ open, month, monthLabel, onReviewRecurring }: Op
           <button
             type="button"
             onClick={onReviewRecurring}
-            className="min-h-11 rounded-lg bg-settlement px-3 text-[13px] font-semibold text-white hover:bg-settlement/90"
+            className="min-h-11 rounded-lg bg-settlement px-3 text-[13px] font-semibold text-on-accent hover:bg-settlement/90"
           >
             {t('dashboard.recurringReview')}
           </button>

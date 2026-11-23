@@ -14,7 +14,7 @@ export function BrandPanel() {
   return (
     <section
       aria-label={t('auth.brandLabel')}
-      className="ruled-panel flex flex-col justify-between gap-5 px-[clamp(24px,5vw,72px)] py-6 text-background sm:min-h-[360px] sm:flex-[1_1_440px] sm:gap-12 sm:py-10"
+      className="ruled-panel flex flex-col justify-between gap-5 px-[clamp(24px,5vw,72px)] py-6 text-on-strong sm:min-h-[360px] sm:flex-[1_1_440px] sm:gap-12 sm:py-10"
     >
       <div className="flex items-center gap-2.5">
         <LedgerIcon size={28} />

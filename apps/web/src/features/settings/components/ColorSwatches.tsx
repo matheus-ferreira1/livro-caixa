@@ -24,7 +24,7 @@ export function ColorSwatches({ label, value, onChange, size = 'md' }: ColorSwat
           className={cn(
             'cursor-pointer border-0',
             size === 'md' ? 'size-[30px] rounded-lg' : 'size-[26px] rounded-[7px]',
-            color === value && 'shadow-[0_0_0_2px_#FFFFFF,0_0_0_4px_#17201C]',
+            color === value && 'shadow-[0_0_0_2px_var(--card),0_0_0_4px_var(--ink)]',
           )}
         />
       ))}

@@ -26,7 +26,7 @@ export function AppShell() {
 
   return (
     <>
-      <header className="bg-ink text-background md:top-0 md:z-40 md:tall:sticky">
+      <header className="border-b border-surface-strong-border bg-surface-strong text-on-strong md:top-0 md:z-40 md:tall:sticky">
         <div className="mx-auto flex min-h-14 max-w-[1280px] flex-wrap items-center gap-x-4 px-4 sm:px-6 md:min-h-(--sticky-header-height) md:gap-y-1 md:py-2 lg:py-0">
           <div className="mr-auto flex items-center gap-2.5">
             <LedgerIcon />
@@ -35,7 +35,7 @@ export function AppShell() {
           {/* A bar along the bottom on phones, its own header row on tablets, inline from 1024px. The header sticks to the top from 768px on tall screens, so the nav is always in reach; on phones, upright or sideways, it scrolls away. */}
           <nav
             aria-label={t('nav.main')}
-            className="fixed inset-x-0 bottom-0 z-40 flex border-t border-header-active bg-ink pb-[env(safe-area-inset-bottom)] md:static md:z-auto md:order-last md:basis-full md:gap-1 md:border-0 md:pb-0 lg:order-none lg:basis-auto"
+            className="fixed inset-x-0 bottom-0 z-40 flex border-t border-header-active bg-surface-strong pb-[env(safe-area-inset-bottom)] md:static md:z-auto md:order-last md:basis-full md:gap-1 md:border-0 md:pb-0 lg:order-none lg:basis-auto"
           >
             {NAV_ITEMS.map(({ to, label, icon: Icon, onPhoneBar }) => (
               <NavLink
@@ -46,7 +46,7 @@ export function AppShell() {
                     'group min-h-(--phone-nav-height) flex-1 flex-col items-center justify-start gap-1 px-0.5 pt-2 text-center text-[11px] leading-[1.15] font-semibold no-underline',
                     'md:min-h-11 md:flex-none md:flex-row md:justify-center md:rounded-[10px] md:px-4 md:pt-0 md:text-[15px] md:leading-normal',
                     onPhoneBar ? 'flex' : 'hidden md:flex',
-                    isActive ? 'text-white md:bg-header-active' : 'text-on-dark-muted hover:text-white',
+                    isActive ? 'text-on-strong md:bg-header-active' : 'text-on-dark-muted hover:text-on-strong',
                   )
                 }
               >

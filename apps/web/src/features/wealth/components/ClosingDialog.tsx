@@ -175,7 +175,7 @@ function ClosingForm({ wealth, today, onClose }: Omit<ClosingDialogProps, 'open'
               type="button"
               onClick={submit}
               disabled={register.isPending}
-              className="min-h-11 rounded-[10px] bg-ink px-5 font-semibold text-white hover:bg-ink/90 disabled:bg-icon"
+              className="min-h-11 rounded-[10px] bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-icon"
             >
               {view.submitLabel}
             </button>

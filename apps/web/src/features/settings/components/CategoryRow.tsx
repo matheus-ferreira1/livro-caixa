@@ -152,7 +152,7 @@ function CategoryEditor({ category, categories, onDone }: CategoryEditorProps) {
         <button
           type="submit"
           disabled={update.isPending}
-          className="min-h-10 rounded-lg bg-ink px-3 text-sm font-semibold text-white disabled:bg-icon"
+          className="min-h-10 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:bg-icon"
         >
           {t('settings.save')}
         </button>

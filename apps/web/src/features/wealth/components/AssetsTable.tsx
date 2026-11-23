@@ -60,7 +60,7 @@ export function AssetsTable({
           <button
             type="button"
             onClick={onNew}
-            className="min-h-11 rounded-[10px] bg-ink px-[18px] font-semibold text-white"
+            className="min-h-11 rounded-[10px] bg-primary px-[18px] font-semibold text-primary-foreground"
           >
             {t('wealth.newAsset')}
           </button>
@@ -269,7 +269,7 @@ function Row({
           <button
             type="button"
             onClick={onDelete}
-            className="min-h-11 rounded-lg bg-expense px-3.5 text-sm font-semibold text-white"
+            className="min-h-11 rounded-lg bg-expense px-3.5 text-sm font-semibold text-on-accent"
           >
             {t('wealth.removeConfirm')}
           </button>

@@ -213,7 +213,7 @@ function Tooltip({ group }: { group: ChartGroup }) {
   return (
     <div
       className={cn(
-        'pointer-events-none absolute top-1.5 z-5 flex w-[210px] flex-col gap-1.5 rounded-[10px] bg-ink px-3.5 py-3 text-[13px] text-background shadow-[0_10px_28px_rgba(23,32,28,0.28)]',
+        'pointer-events-none absolute top-1.5 z-5 flex w-[210px] flex-col gap-1.5 rounded-[10px] bg-surface-strong px-3.5 py-3 text-[13px] text-on-strong shadow-tooltip',
         TOOLTIP_ALIGN[group.tooltipAlign],
       )}
     >

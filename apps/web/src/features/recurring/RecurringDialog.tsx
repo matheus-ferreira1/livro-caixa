@@ -28,7 +28,7 @@ import {
 const ROW_GRID =
   'grid grid-cols-[28px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 gap-y-2 px-3 md:grid-cols-[36px_minmax(220px,1fr)_96px_168px_148px_150px] md:gap-3 md:px-4';
 
-const checkboxClass = 'size-[18px] border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink';
+const checkboxClass = 'size-[18px] border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary';
 
 interface RecurringDialogProps {
   month: MonthKey;
@@ -171,7 +171,7 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
             type="button"
             onClick={submit}
             disabled={!summary.canGenerate || generate.isPending}
-            className="min-h-11 rounded-[10px] bg-ink px-5 font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-neutral-swatch"
+            className="min-h-11 rounded-[10px] bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-neutral-swatch"
           >
             {summary.generateLabel}
           </button>

@@ -26,7 +26,7 @@ export function UserMenu({ user }: { user: PublicUser }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={t('shell.account', user.name)}
-        className="flex min-h-11 items-center gap-2 rounded-full border-0 bg-transparent py-0 pr-2.5 pl-[5px] text-background outline-none hover:bg-header-active focus-visible:ring-2 focus-visible:ring-mint data-[state=open]:bg-header-active"
+        className="flex min-h-11 items-center gap-2 rounded-full border-0 bg-transparent py-0 pr-2.5 pl-[5px] text-on-strong outline-none hover:bg-header-active focus-visible:ring-2 focus-visible:ring-mint data-[state=open]:bg-header-active"
       >
         <span
           aria-hidden="true"
@@ -39,12 +39,12 @@ export function UserMenu({ user }: { user: PublicUser }) {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[264px] overflow-hidden rounded-xl border-border p-0 shadow-[0_16px_40px_rgba(23,32,28,0.22)]"
+        className="w-[264px] overflow-hidden rounded-xl border-border p-0 shadow-popover"
       >
         <DropdownMenuLabel className="flex items-center gap-3 border-b border-divider px-4 py-3.5 font-normal">
           <span
             aria-hidden="true"
-            className="flex size-[38px] flex-none items-center justify-center rounded-full bg-ink text-sm font-bold text-mint"
+            className="flex size-[38px] flex-none items-center justify-center rounded-full bg-surface-strong text-sm font-bold text-mint"
           >
             {initials}
           </span>

@@ -64,7 +64,7 @@ export function Pager({ page, totalPages, start, end, total, pageSize, onPage, o
               aria-current={p === page ? 'page' : undefined}
               className={cn(
                 'h-11 min-w-11 rounded-lg border px-2 font-mono text-sm font-semibold md:h-10 md:min-w-10',
-                p === page ? 'border-ink bg-ink text-white' : 'bg-card text-ink',
+                p === page ? 'border-primary bg-primary text-primary-foreground' : 'bg-card text-ink',
               )}
             >
               {p}

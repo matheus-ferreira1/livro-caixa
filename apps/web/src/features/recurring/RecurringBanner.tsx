@@ -27,14 +27,14 @@ export function RecurringBanner({ month, onReview }: { month: MonthKey; onReview
         <button
           type="button"
           onClick={dismiss}
-          className="min-h-11 rounded-[10px] px-3.5 font-semibold hover:bg-white/50"
+          className="min-h-11 rounded-[10px] px-3.5 font-semibold hover:bg-card/50"
         >
           {t('recurring.dismiss')}
         </button>
         <button
           type="button"
           onClick={onReview}
-          className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-white hover:bg-settlement/90"
+          className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-on-accent hover:bg-settlement/90"
         >
           {t('recurring.reviewAndGenerate')}
         </button>

@@ -56,7 +56,7 @@ const VALUE_TEXT: Record<TileDelta['tone'], string> = {
 const VALUE_TEXT_ON_DARK: Record<TileDelta['tone'], string> = {
   good: 'text-mint',
   bad: 'text-negative-on-dark',
-  neutral: 'text-white',
+  neutral: 'text-on-strong',
 };
 
 function Tile({ label, value, sub, hint, delta, tone, dark, negative, valueTone }: TileSpec) {
@@ -67,7 +67,7 @@ function Tile({ label, value, sub, hint, delta, tone, dark, negative, valueTone 
       className={cn(
         'flex flex-col rounded-[14px] px-5 py-[18px]',
         hint ? 'gap-1' : 'gap-1.5',
-        dark ? 'bg-ink text-background' : 'border bg-card',
+        dark ? 'bg-surface-strong text-on-strong' : 'border bg-card',
       )}
     >
       <span
@@ -88,7 +88,7 @@ function Tile({ label, value, sub, hint, delta, tone, dark, negative, valueTone 
         className={cn(
           'font-mono font-semibold tracking-[-0.02em]',
           hint ? 'mt-1.5 text-[28px]' : 'text-[26px]',
-          dark && (negative ? 'text-negative-on-dark' : 'text-white'),
+          dark && (negative ? 'text-negative-on-dark' : 'text-on-strong'),
           !dark && negative && 'text-expense',
           valueTone && (dark ? VALUE_TEXT_ON_DARK : VALUE_TEXT)[valueTone],
         )}

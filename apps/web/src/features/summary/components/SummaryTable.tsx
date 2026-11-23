@@ -156,7 +156,7 @@ function MonthRow({ month: m }: { month: SummaryMonthRow }) {
         <span className="flex items-center gap-2">
           {m.name}
           {m.isCurrent && (
-            <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-white uppercase">
+            <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-primary-foreground uppercase">
               {t('summary.current')}
             </span>
           )}

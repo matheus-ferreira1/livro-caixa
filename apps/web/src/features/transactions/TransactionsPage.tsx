@@ -415,7 +415,7 @@ function NewEntryButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90',
+        'flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-primary px-[18px] font-semibold text-primary-foreground hover:bg-primary/90',
         className,
       )}
     >
