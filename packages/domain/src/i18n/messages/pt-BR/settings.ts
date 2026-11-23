@@ -51,4 +51,11 @@ export const settingsPtBR = {
   'settings.currencyUSD': 'Dólar americano ($)',
   'settings.currencyEUR': 'Euro (€)',
   'settings.currencyGBP': 'Libra esterlina (£)',
+
+  'settings.appearanceTitle': 'Aparência',
+  'settings.appearanceIntro': 'Escolha entre claro e escuro, ou siga o sistema. Vale só para este aparelho.',
+  'settings.theme': 'Tema',
+  'settings.themeSystem': 'Sistema',
+  'settings.themeLight': 'Claro',
+  'settings.themeDark': 'Escuro',
 };

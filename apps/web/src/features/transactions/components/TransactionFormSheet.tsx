@@ -40,7 +40,7 @@ export function TransactionFormSheet({ target, onClose, ...rest }: TransactionFo
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full gap-0 border-l-0 bg-card shadow-[-12px_0_40px_rgba(23,32,28,0.18)] sm:max-w-[480px]"
+        className="w-full gap-0 border-l-0 bg-card shadow-sheet sm:max-w-[480px]"
       >
         {/* Remount per target so the form starts from that entry's values. */}
         {target && <TransactionForm key={target.id ?? 'new'} target={target} onClose={onClose} {...rest} />}
@@ -265,7 +265,7 @@ function TransactionForm({
         <button
           type="submit"
           disabled={save.isPending}
-          className="min-h-11 rounded-[10px] bg-ink px-5 font-semibold text-white disabled:bg-icon"
+          className="min-h-11 rounded-[10px] bg-primary px-5 font-semibold text-primary-foreground disabled:bg-icon"
         >
           {t(isEdit ? 'transactions.formSaveEdit' : 'transactions.formSaveNew')}
         </button>
@@ -312,7 +312,7 @@ function Option({
             onCheckedChange={(checked) => field.onChange(checked === true)}
             aria-labelledby={`${id}-title`}
             aria-describedby={`${id}-description`}
-            className="mt-0.5 size-5 flex-none border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink"
+            className="mt-0.5 size-5 flex-none border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary"
           />
         )}
       />

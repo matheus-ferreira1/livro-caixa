@@ -53,4 +53,11 @@ export const settingsEn: typeof settingsPtBR = {
   'settings.currencyUSD': 'US dollar ($)',
   'settings.currencyEUR': 'Euro (€)',
   'settings.currencyGBP': 'Pound sterling (£)',
+
+  'settings.appearanceTitle': 'Appearance',
+  'settings.appearanceIntro': 'Choose light or dark, or follow the system. Applies to this device only.',
+  'settings.theme': 'Theme',
+  'settings.themeSystem': 'System',
+  'settings.themeLight': 'Light',
+  'settings.themeDark': 'Dark',
 };

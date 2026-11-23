@@ -189,7 +189,7 @@ function MonthBars({
     >
       <div className="flex max-w-[22px] flex-1 flex-col justify-end" style={{ height: group.incomeHeight }}>
         {group.hasSettlement && (
-          // The dark line above the segment is a cue that does not rely on color. It is a shadow, so it
+          // The line above the segment, in the text color, is a cue that does not rely on color. It is a shadow, so it
           // takes no height from the blue.
           <div
             data-testid="settlement-segment"
@@ -213,7 +213,7 @@ function Tooltip({ group }: { group: ChartGroup }) {
   return (
     <div
       className={cn(
-        'pointer-events-none absolute top-1.5 z-5 flex w-[210px] flex-col gap-1.5 rounded-[10px] bg-ink px-3.5 py-3 text-[13px] text-background shadow-[0_10px_28px_rgba(23,32,28,0.28)]',
+        'pointer-events-none absolute top-1.5 z-5 flex w-[210px] flex-col gap-1.5 rounded-[10px] bg-surface-strong px-3.5 py-3 text-[13px] text-on-strong shadow-tooltip',
         TOOLTIP_ALIGN[group.tooltipAlign],
       )}
     >

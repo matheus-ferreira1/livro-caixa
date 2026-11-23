@@ -53,7 +53,7 @@ export function WealthPage() {
                 type="button"
                 onClick={() => setClosingOpen(true)}
                 disabled={!data.closingAvailable}
-                className="min-h-11 rounded-[10px] bg-ink px-[18px] font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-neutral-swatch"
+                className="min-h-11 rounded-[10px] bg-primary px-[18px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-neutral-swatch"
               >
                 {data.closingAvailable ? t('wealth.doClosing') : t('wealth.closingUpToDate')}
               </button>
@@ -111,7 +111,7 @@ function ClosingBanner({ banner, onOpen }: { banner: ClosingBannerView; onOpen: 
       <button
         type="button"
         onClick={onOpen}
-        className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-white hover:bg-settlement/90"
+        className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-on-accent hover:bg-settlement/90"
       >
         {t('wealth.doClosing')}
       </button>

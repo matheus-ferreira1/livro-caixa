@@ -271,7 +271,7 @@ function NewCategoryForm({ categories, onCreated }: NewCategoryFormProps) {
       <button
         type="submit"
         disabled={create.isPending}
-        className="flex min-h-11 items-center gap-2 rounded-[10px] bg-ink px-[18px] font-semibold text-white disabled:bg-icon"
+        className="flex min-h-11 items-center gap-2 rounded-[10px] bg-primary px-[18px] font-semibold text-primary-foreground disabled:bg-icon"
       >
         <Plus className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
         {t('settings.add')}

@@ -330,7 +330,7 @@ function TransactionRow({
           <button
             type="button"
             onClick={() => onDelete(row)}
-            className="min-h-11 rounded-lg bg-expense px-3.5 text-sm font-semibold text-white md:min-h-9"
+            className="min-h-11 rounded-lg bg-expense px-3.5 text-sm font-semibold text-on-accent md:min-h-9"
           >
             {t('transactions.deleteConfirm')}
           </button>

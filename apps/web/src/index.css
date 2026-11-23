@@ -68,6 +68,16 @@
   --tooltip-divider: #3a4640;
   --hover-track: #f1f2ee;
 
+  /* Ink as a surface (header, dark tiles, tooltips) stays dark in both themes, while --ink as text
+     flips; keeping them apart is what lets the dark theme work. */
+  --surface-strong: #17201c;
+  --on-strong: #f4f5f1;
+  --surface-strong-border: transparent;
+  /* Text on filled settlement, expense and destructive buttons. */
+  --on-accent: #ffffff;
+  --overlay: rgb(23 32 28 / 0.45);
+  --shadow-rgb: 23 32 28;
+
   /* The phone's bottom nav bar, and the room pages and toasts leave for it. */
   --phone-nav-height: 3.5rem;
   --phone-nav-clearance: calc(var(--phone-nav-height) + env(safe-area-inset-bottom));
@@ -76,6 +86,66 @@
      minimum height from this variable and scroll-padding-top reads it too, so they cannot drift
      apart; the e2e spec fails if the header's content ever outgrows it. */
   --sticky-header-height: 6.75rem;
+}
+
+/* Dark theme: the ink band keeps its color and the page and cards rise above it, so the band is still
+   the deepest layer. Primary actions turn mint, the design's accent on dark. Tokens that sit only on
+   the ink band (mint, on-dark-muted, negative-on-dark, chart-income-on-dark, tooltip-divider) and
+   user-data colors are the same in both themes. */
+.dark {
+  color-scheme: dark;
+  --background: #1b241f;
+  --foreground: #e4eae6;
+  --card: #222c27;
+  --card-foreground: #e4eae6;
+  --popover: #222c27;
+  --popover-foreground: #e4eae6;
+  --primary: #9fd8be;
+  --primary-foreground: #17201c;
+  --secondary: #2a3530;
+  --secondary-foreground: #e4eae6;
+  --muted: #1f2924;
+  --muted-foreground: #a3ada8;
+  --accent: #1b241f;
+  --accent-foreground: #e4eae6;
+  --destructive: #f2a27e;
+  --border: #33403a;
+  --input: #5a6862;
+  --ring: #8fa9f2;
+
+  --ink: #e4eae6;
+  --header-active: #2c3832;
+  --icon: #b4bdb8;
+  --divider: #2a3530;
+  --track: #2a3530;
+  --income: #7dd3a8;
+  --income-bg: #18382b;
+  --income-border: #2c5c47;
+  --income-soft: #3d7a60;
+  --deficit: #e07a45;
+  --deficit-soft: #8a4a2c;
+  --accumulated: #5fbf94;
+  --current-row: #25302a;
+  --expense: #f2a27e;
+  --expense-bg: #3b231a;
+  --expense-row: #2e221d;
+  --settlement: #9db4f5;
+  --settlement-bg: #1f2a4a;
+  --info-text: #b8c8f7;
+  --pending: #e8c26a;
+  --pending-bg: #33290f;
+  --pending-border: #8a6e2e;
+  --disabled-text: #5e6a64;
+  --neutral-swatch: #7f8983;
+  --chart-income: #4fb386;
+  --chart-open-month: #3f7a62;
+  --chart-expense: #e8894a;
+  --hover-track: #2a3530;
+
+  --surface-strong-border: #2c3832;
+  --on-accent: #17201c;
+  --overlay: rgb(5 8 6 / 0.65);
+  --shadow-rgb: 0 0 0;
 }
 
 /* From 768px the nav lives in the header, so nothing has to make room for it. */
@@ -157,6 +227,17 @@
   --color-chart-income-on-dark: var(--chart-income-on-dark);
   --color-tooltip-divider: var(--tooltip-divider);
   --color-hover-track: var(--hover-track);
+  --color-surface-strong: var(--surface-strong);
+  --color-on-strong: var(--on-strong);
+  --color-surface-strong-border: var(--surface-strong-border);
+  --color-on-accent: var(--on-accent);
+  --color-overlay: var(--overlay);
+
+  --shadow-segment: 0 1px 2px rgb(var(--shadow-rgb) / 0.14);
+  --shadow-popover: 0 16px 40px rgb(var(--shadow-rgb) / 0.22);
+  --shadow-sheet: -12px 0 40px rgb(var(--shadow-rgb) / 0.18);
+  --shadow-tooltip: 0 10px 28px rgb(var(--shadow-rgb) / 0.28);
+  --shadow-dialog: 0 24px 64px rgb(var(--shadow-rgb) / 0.28);
 }
 
 @layer base {
@@ -177,7 +258,7 @@
 @layer components {
   /* Ledger-paper lines on the dark login panel. */
   .ruled-panel {
-    background-color: var(--ink);
+    background-color: var(--surface-strong);
     background-image: repeating-linear-gradient(
       to bottom,
       transparent 0 43px,

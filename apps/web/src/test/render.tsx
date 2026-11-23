@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 import { expireSession } from '@/features/auth/api';
 import { createQueryClient } from '@/shared/api/query-client';
 import { PreferencesProvider } from '@/shared/i18n/PreferencesProvider';
+import { ThemeProvider } from '@/shared/theme/ThemeProvider';
 import { PREFERENCES_KEY } from '@/shared/i18n/preferences';
 import { Toaster } from '@/shared/ui/sonner';
 
@@ -33,10 +34,12 @@ export function renderRoutes(
   const user = userEvent.setup();
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <PreferencesProvider>
-        <RouterProvider router={router} />
-        <Toaster />
-      </PreferencesProvider>
+      <ThemeProvider>
+        <PreferencesProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </PreferencesProvider>
+      </ThemeProvider>
     </QueryClientProvider>,
   );
   return { ...view, user, router, queryClient };

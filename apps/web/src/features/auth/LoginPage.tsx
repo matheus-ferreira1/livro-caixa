@@ -149,7 +149,7 @@ export function LoginPage() {
                 id={ids.remember}
                 checked={remember}
                 onCheckedChange={(checked) => setRemember(checked === true)}
-                className="size-[18px] border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink"
+                className="size-[18px] border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary"
               />
               <Label htmlFor={ids.remember} className="cursor-pointer text-sm font-normal">
                 {t('auth.remember')}

@@ -48,7 +48,7 @@ export function AssetFormSheet({ target, onClose, ...rest }: AssetFormSheetProps
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full gap-0 border-l-0 bg-card shadow-[-12px_0_40px_rgba(23,32,28,0.18)] sm:max-w-[480px]"
+        className="w-full gap-0 border-l-0 bg-card shadow-sheet sm:max-w-[480px]"
       >
         {/* Remount per target so the form starts from that asset's values. */}
         {target && <AssetForm key={target.id ?? 'new'} target={target} onClose={onClose} {...rest} />}
@@ -260,7 +260,7 @@ function AssetForm({
         <button
           type="submit"
           disabled={save.isPending}
-          className="min-h-11 rounded-[10px] bg-ink px-5 font-semibold text-white disabled:bg-icon"
+          className="min-h-11 rounded-[10px] bg-primary px-5 font-semibold text-primary-foreground disabled:bg-icon"
         >
           {isEdit ? t('wealth.form.save') : t('wealth.form.add')}
         </button>

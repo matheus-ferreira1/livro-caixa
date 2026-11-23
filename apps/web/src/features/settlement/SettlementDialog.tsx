@@ -95,7 +95,7 @@ function SettlementContent({ month, onClose }: Omit<SettlementDialogProps, 'open
               type="button"
               onClick={register}
               disabled={vm.register.disabled || save.isPending}
-              className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-white hover:bg-settlement/90 disabled:cursor-not-allowed disabled:bg-[#9AA8CF]"
+              className="min-h-11 rounded-[10px] bg-settlement px-4 font-semibold text-on-accent hover:bg-settlement/90 disabled:cursor-not-allowed disabled:bg-settlement/50"
             >
               {vm.register.label}
             </button>
@@ -112,7 +112,7 @@ function PrintSummary({ vm, partnerName }: { vm: SettlementViewModel; partnerNam
     <div className="flex min-w-0 flex-[1_1_460px] flex-col gap-2.5">
       <SectionLabel>{t('settlement.printSummary')}</SectionLabel>
       <div className="overflow-hidden rounded-2xl border bg-card">
-        <div className="flex flex-col gap-1 bg-ink px-4 sm:px-[22px] py-5 text-background">
+        <div className="flex flex-col gap-1 bg-surface-strong px-4 sm:px-[22px] py-5 text-on-strong">
           <span className="text-xs font-semibold tracking-[0.1em] text-mint uppercase">
             {t('settlement.printHeader', vm.monthLabel)}
           </span>
@@ -202,7 +202,7 @@ function IncludePendingOption({
         onCheckedChange={(next) => onChange(next === true)}
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-description`}
-        className="mt-0.5 size-5 flex-none border-input data-[state=checked]:border-ink data-[state=checked]:bg-ink"
+        className="mt-0.5 size-5 flex-none border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary"
       />
       <span className="flex flex-col gap-0.5">
         <span id={`${id}-title`} className="font-semibold">
