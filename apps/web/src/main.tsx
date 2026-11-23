@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { expireSession } from '@/features/auth/api';
 import { createQueryClient } from '@/shared/api/query-client';
 import { PreferencesProvider } from '@/shared/i18n/PreferencesProvider';
+import { ThemeProvider } from '@/shared/theme/ThemeProvider';
 import { Toaster } from '@/shared/ui/sonner';
 import { routes } from './routes';
 import './index.css';
@@ -17,10 +18,12 @@ if (!root) throw new Error('Missing #root element');
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <PreferencesProvider>
-        <RouterProvider router={router} />
-        <Toaster />
-      </PreferencesProvider>
+      <ThemeProvider>
+        <PreferencesProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </PreferencesProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

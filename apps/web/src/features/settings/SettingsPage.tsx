@@ -2,6 +2,7 @@ import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { useCategoryCatalog, useSettings } from './api';
 import { CategoriesSection } from './components/CategoriesSection';
 import { PartnerSplitSection } from './components/PartnerSplitSection';
+import { AppearanceSection } from './components/AppearanceSection';
 import { PreferencesSection } from './components/PreferencesSection';
 
 export function SettingsPage() {
@@ -20,6 +21,7 @@ export function SettingsPage() {
       {catalog && <CategoriesSection categories={catalog.categories} usage={catalog.usage} />}
       {settings && <PartnerSplitSection settings={settings} />}
       <PreferencesSection />
+      <AppearanceSection />
     </div>
   );
 }
