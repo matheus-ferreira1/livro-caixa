@@ -12,6 +12,7 @@ import {
   type Snapshot,
   type Transaction,
   type TransactionType,
+  type Weekday,
   weekdayOf,
   weeklyRecurrence,
 } from '@livro-caixa/domain';
@@ -156,6 +157,9 @@ function history(): Transaction[] {
   });
 }
 
+const OCTOBER_MONTH = '2026-10';
+const LEDGER_MONTHS = [...MONTHS, OCTOBER_MONTH];
+
 const OCTOBER: Transaction[] = [
   tx('o1', '2026-10-01', 'Condomínio', '', 'despesa', 'c-moradia', 690, true, true, 's-condominio'),
   tx('o2', '2026-10-05', 'Salário', 'Valor líquido', 'receita', 'c-salario', 8500, false, true, 's-salario'),
@@ -216,19 +220,14 @@ const OCTOBER: Transaction[] = [
 
 const CLEANER_SERIES_ID = 's-diarista';
 const CLEANER_VISIT_VALUE = 120;
-const CLEANER_WEEKDAYS = [1, 5] as const;
-const CLEANER_FIRST_MONTH = '2025-11';
-const CLEANER_LAST_MONTH = '2026-10';
+const CLEANER_WEEKDAYS: readonly Weekday[] = [1, 5];
 // The last visit before the demo "today" (2026-10-26); later visits are still pending.
 const CLEANER_LAST_CONFIRMED_DATE = '2026-10-23';
 
 function cleanerVisits(): Transaction[] {
-  const months = [...MONTHS, '2026-10'].filter(
-    (month) => month >= CLEANER_FIRST_MONTH && month <= CLEANER_LAST_MONTH,
-  );
-  return months.flatMap((month) =>
+  return LEDGER_MONTHS.flatMap((month) =>
     datesOfMonth(month)
-      .filter((date) => (CLEANER_WEEKDAYS as readonly number[]).includes(weekdayOf(date)))
+      .filter((date) => CLEANER_WEEKDAYS.includes(weekdayOf(date)))
       .map((date): Transaction => ({
         ...tx(
           `d${date}`,
