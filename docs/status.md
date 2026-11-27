@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-27, after weekly recurring entries (US-14, Phase 9, PR #55). Before it: US-14 was written and planned. Before it: the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases (0 to 9) are built. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-27, after the project site's recurring entries card and weekly demo series (PR pending). Before it: weekly recurring entries (US-14, Phase 9, PR #55). Before it: US-14 was written and planned. Before it: the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases (0 to 9) are built. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -27,7 +27,6 @@ No phase is planned. What is left:
   - deleting the last occurrences of a month makes those dates candidates again (the known trade-off in US-14)
   - a weekly date cannot be edited in Gerar recorrentes
   - "every N weeks" and an end date for a series are not built
-  - the demo seed has no weekly series
 
 - **Follow-ups of dark mode (US-13)**, none of them blocking:
   - two category colors, `#008300` and `#6250D6`, are under 3:1 on the dark card (2.9 and 2.5). Every swatch sits next to the category name, so color is never the only cue; an outline in dark mode is the fix if that changes
@@ -49,7 +48,6 @@ No phase is planned. What is left:
 
 0. **Turn on the project site.** After PR #37 merges, the repository owner enables Pages with Source = GitHub Actions (Settings › Pages), and the repository must be public. Then run the "Project site" workflow once (or push a change under `apps/site`). Follow-ups for the site, none of them blocking:
    - retake the screenshots with `bun run capture:site` whenever a captured screen changes, so the site never shows an old UI (the capture sets the instance to English and USD through the API)
-   - no screenshot shows Gerar recorrentes, because the demo seed has no pending recurring entries for October 2026
 1. **Small cleanups left from the review of PR #25**, none of them a bug:
    - the footer's "edite o ativo" also shows during a temporary provider failure
    - `dayAndMonth` could be shared with the closing's date label
@@ -113,6 +111,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#51](https://github.com/matheus-ferreira1/livro-caixa/pull/51) | `feat/dark-mode` | Dark mode in the app (US-13): a light, dark or system theme per device in Configurações › Aparência, applied before the app loads by `theme-init.js`; ink split into text, `surface-strong` and `primary` tokens; raw colors replaced by tokens, with a guard test and a contrast test over both themes |
 | [#52](https://github.com/matheus-ferreira1/livro-caixa/pull/52) | `chore/site-dark-screenshots` | The project site's dark screenshots: every screenshot retaken in both schemes, and each wrapped in a `<picture>` whose dark source comes first |
 | [#55](https://github.com/matheus-ferreira1/livro-caixa/pull/55) | `feat/weekly-recurrence` | Weekly recurrence: `recurrence` on entries, migration `006_weekly_recurrence`, weekly candidates per date, generate matching per series and date, Frequência and weekday chips in the form, weekly rows in Gerar recorrentes, e2e |
+| pending | `chore/site-weekly-recurrence` | Project site: a Recurring entries card covering weekly recurrence, a Gerar recorrentes screenshot with a weekly series, a weekly Diarista series in the demo seed, all screenshots retaken |
 
 ### Project site (`apps/site`)
 
@@ -121,6 +120,7 @@ Not to be confused with Visão geral, the app's landing page after sign-in. This
 - One static `index.html` styled with Tailwind 4 through Vite 7, with the app's tokens and self-hosted `@fontsource` fonts. No framework, no external request of any kind, no analytics. It works with JavaScript off; the only script shows the "Copy commands" buttons when the clipboard API exists.
 - Vite's `base` is `/livro-caixa/`, the Pages path. Canonical, Open Graph and Twitter URLs are absolute, because Vite does not rewrite `<meta>` content.
 - Screenshots in `apps/site/public/screenshots/` (WebP) and `public/og-image.jpg` are real captures of the app. `bun run capture:site` runs `apps/site/scripts/capture-screenshots.ts` with Playwright (`scripts/capture.config.ts`): it builds the SPA, seeds the demo data into a throwaway database in the OS temp directory, starts the API on port 4175 with every variable set explicitly, removes the old database with a small Bun script (no shell `rm`, so it runs on Windows too), signs in with the e2e helper and pins the browser clock to 26 Oct 2026. It never reads `./data` or `.env`.
+- The site has a "Recurring entries" card right after Entries, covering monthly and weekly recurrence. Its Gerar recorrentes screenshot (`recorrentes.webp`, with the weekly Diarista row expanded) is captured in November 2026, so the site shows a pending weekly series.
 - Commands: `bun run dev:site` (port 5174, fixed, because the app's dev server pins 5173), `bun run build:site` (into `apps/site/dist`), `bun run --filter '@livro-caixa/site' preview`, `bun run capture:site`. Root `build` still builds only the app.
 - Deploy: `.github/workflows/pages.yml` runs on pushes to `main` that touch `apps/site/**`, the workflow, or what the site's build and tests read outside it (`bun.lock`, the root `package.json`, `tsconfig.base.json`, `README.md`, the app's favicon), and on demand. It tests and builds the site, uploads `apps/site/dist` and deploys it to the `github-pages` environment. CI also runs `bun run build:site` on every PR.
 - Dark mode follows `prefers-color-scheme` only; there is no toggle. `styles.css` overrides the color tokens in `@media (prefers-color-scheme: dark) { :root { … } }` with the app's dark palette and sets `color-scheme: light dark`. The ink band (header, hero, terminal blocks, contribute section, footer) is `surface-strong` with `on-strong` text, dark in both themes; `ink` is text only and turns light. `card` replaces Tailwind's `white`, `on-mint` is the dark text on mint buttons, and `focus` is the focus ring (#8FA9F2 in dark). `capture:site` shoots every screen in both schemes (`*-dark.webp`); the Open Graph image stays light.
@@ -441,6 +441,11 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - The repository drops stored weekdays outside 0–6, and falls back to monthly when none is left.
 - The banner, the footer and the generate button count occurrences, not series.
 - On phones the weekly date list is a two-column grid.
+
+### Decisions taken for the site's recurring card
+
+- The Gerar recorrentes screenshot was missing because every demo series already had its October 2026 occurrence, not because nothing was pending. The capture now opens November 2026, where the weekly Diarista series offers 9 occurrences.
+- Diarista (Moradia, R$ 120,00 per visit, Mondays and Fridays) keeps every month positive except July 2026, which was already negative because of the vacation trip.
 
 ### Decisions taken for dark mode (US-13)
 
