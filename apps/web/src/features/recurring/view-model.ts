@@ -14,8 +14,10 @@ import {
 } from '@livro-caixa/domain';
 import { TYPE_META } from '@/features/transactions/view-model';
 
-/** What the review dialog holds per series: whether it is chosen, and the date and value as typed. */
-// Weekly rows ignore `include` and `date`: each date is chosen through `skipped` and keeps its planned date.
+/**
+ * What the review dialog holds per series: whether it is chosen, and the date and value as typed.
+ * Weekly rows ignore `include` and `date`: each date is chosen through `skipped` and keeps its planned date.
+ */
 export interface RecurringDraft {
   include: boolean;
   date: IsoDate;
