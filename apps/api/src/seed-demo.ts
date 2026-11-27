@@ -3,6 +3,7 @@
  * Usage: bun run seed:demo   (refuses to touch a database that already has entries)
  */
 import {
+  datesOfMonth,
   MONTHLY_RECURRENCE,
   pad2,
   QUANTITY_SCALE,
@@ -11,6 +12,9 @@ import {
   type Snapshot,
   type Transaction,
   type TransactionType,
+  type Weekday,
+  weekdayOf,
+  weeklyRecurrence,
 } from '@livro-caixa/domain';
 import { bootstrap } from './bootstrap';
 import { loadConfig } from './config';
@@ -153,6 +157,9 @@ function history(): Transaction[] {
   });
 }
 
+const OCTOBER_MONTH = '2026-10';
+const LEDGER_MONTHS = [...MONTHS, OCTOBER_MONTH];
+
 const OCTOBER: Transaction[] = [
   tx('o1', '2026-10-01', 'Condomínio', '', 'despesa', 'c-moradia', 690, true, true, 's-condominio'),
   tx('o2', '2026-10-05', 'Salário', 'Valor líquido', 'receita', 'c-salario', 8500, false, true, 's-salario'),
@@ -210,6 +217,35 @@ const OCTOBER: Transaction[] = [
   tx('o10', '2026-10-30', 'Feira e hortifrúti', '', 'despesa', 'c-mercado', 186.4, true, false),
   tx('o11', '2026-10-28', 'Plano de saúde', '', 'despesa', 'c-saude', 412, false, false, 's-saude'),
 ];
+
+const CLEANER_SERIES_ID = 's-diarista';
+const CLEANER_VISIT_VALUE = 120;
+const CLEANER_WEEKDAYS: readonly Weekday[] = [1, 5];
+// Must stay the last Monday or Friday before DEMO_TODAY (2026-10-26) in
+// apps/site/scripts/capture-screenshots.ts, so that later visits are still pending.
+const CLEANER_LAST_CONFIRMED_DATE = '2026-10-23';
+
+function cleanerVisits(): Transaction[] {
+  return LEDGER_MONTHS.flatMap((month) =>
+    datesOfMonth(month)
+      .filter((date) => CLEANER_WEEKDAYS.includes(weekdayOf(date)))
+      .map((date): Transaction => ({
+        ...tx(
+          `d${date}`,
+          date,
+          'Diarista',
+          '',
+          'despesa',
+          'c-moradia',
+          CLEANER_VISIT_VALUE,
+          false,
+          date <= CLEANER_LAST_CONFIRMED_DATE,
+          CLEANER_SERIES_ID,
+        ),
+        recurrence: weeklyRecurrence(CLEANER_WEEKDAYS),
+      })),
+  );
+}
 
 const ASSET_DATE = '2026-10-28';
 
@@ -307,7 +343,7 @@ if (!ledgerIsEmpty && !portfolioIsEmpty) {
 }
 // Each part has its own check, so a dev database from before Patrimônio can still get its portfolio.
 if (ledgerIsEmpty) {
-  const rows = [...history(), ...OCTOBER];
+  const rows = [...history(), ...OCTOBER, ...cleanerVisits()];
   for (const row of rows) container.transactions.insert(row);
   console.info(`Loaded ${rows.length} demo entries.`);
 }

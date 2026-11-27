@@ -1,6 +1,6 @@
 # Livro-caixa
 
-Self-hosted household cash book: entries, split bills, the monthly settlement with your partner, recurring entries, a monthly summary, a dashboard and a net-worth tracker. Runs as a single Docker container; your data stays on your instance.
+Self-hosted household cash book: entries, split bills, the monthly settlement with your partner, monthly and weekly recurring entries, a monthly summary, a dashboard and a net-worth tracker. Runs as a single Docker container; your data stays on your instance.
 
 Project site: https://matheus-ferreira1.github.io/livro-caixa/
 
