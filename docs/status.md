@@ -460,9 +460,9 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 ### Phase 9 — Weekly recurring entries (US-14) (planned)
 
-- [ ] Domain: a `Recurrence` type (`monthly`, or `weekly` with weekdays `0`–`6`); weekly candidates are the weekday dates of the month after the series' latest occurrence; monthly candidates unchanged; form validation "Escolha ao menos um dia da semana."
+- [ ] Domain: a `Recurrence` type (`monthly`, or `weekly` with weekdays `0`–`6`); the source is the series' latest occurrence on or before the month's last day, and its frequency picks the rule; weekly candidates are the weekday dates of the month after the source; monthly candidates unchanged; form validation "Escolha ao menos um dia da semana."
 - [ ] Migration: `recurrence_frequency` (default `'monthly'`) and `recurrence_weekdays` (null unless weekly) on `transactions`.
-- [ ] API: `recurrence` on create, replace and read; candidates per date; `POST /api/recurring/generate` recomputes per `(seriesId, date)` and keeps the 409.
+- [ ] API: `recurrence` on create, replace and read; candidates per date; `POST /api/recurring/generate` matches weekly items per `(seriesId, date)` and monthly items per series, with the 409 for both; zod rules for `recurrence`.
 - [ ] Form: the "Frequência" segment and weekday chips; the weekly description.
 - [ ] Gerar recorrentes: one row per weekly series with "{n} ocorrências" and "Ver datas"; counts and totals by occurrence; the weekly banner sub-line; stacked at 375px.
 - [ ] i18n keys in pt-BR and en.
