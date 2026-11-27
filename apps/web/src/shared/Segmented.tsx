@@ -2,7 +2,9 @@ import { cn } from '@/shared/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group';
 
 interface SegmentedProps<T extends string> {
-  label: string;
+  /** The control's accessible name; ignored when `labelledBy` points at a visible label. */
+  label?: string;
+  labelledBy?: string;
   value: T;
   options: readonly (readonly [T, string])[];
   onChange: (value: T) => void;
@@ -13,6 +15,7 @@ interface SegmentedProps<T extends string> {
 /** The design's segmented control: a grey track with a raised white active segment. */
 export function Segmented<T extends string>({
   label,
+  labelledBy,
   value,
   options,
   onChange,
@@ -22,7 +25,8 @@ export function Segmented<T extends string>({
   return (
     <ToggleGroup
       type="single"
-      aria-label={label}
+      aria-label={labelledBy ? undefined : label}
+      aria-labelledby={labelledBy}
       value={value}
       onValueChange={(next) => {
         if (next) onChange(next as T);
