@@ -1,4 +1,5 @@
 import {
+  MONTHLY_RECURRENCE,
   computeSettlement,
   DEFAULT_LOCALIZATION as pt,
   localization,
@@ -23,6 +24,7 @@ const expense = (overrides: Partial<Transaction>): Transaction => ({
   split: true,
   confirmed: true,
   recurring: false,
+  recurrence: MONTHLY_RECURRENCE,
   seriesId: null,
   ...overrides,
 });

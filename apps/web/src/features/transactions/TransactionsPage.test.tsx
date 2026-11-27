@@ -1,4 +1,4 @@
-import type { Transaction } from '@livro-caixa/domain';
+import { MONTHLY_RECURRENCE, type Transaction } from '@livro-caixa/domain';
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { mockApi, renderRoutes } from '@/test/render';
@@ -21,6 +21,7 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
   split: false,
   confirmed: true,
   recurring: false,
+  recurrence: MONTHLY_RECURRENCE,
   seriesId: null,
   ...overrides,
 });
