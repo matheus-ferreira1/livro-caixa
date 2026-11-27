@@ -365,7 +365,7 @@ As someone who keeps the books at night, I want a dark theme, so the bright page
 
 ## Phase 9 — done
 
-### US-14 Weekly recurring entries (Recorrente semanal) — ✅ Done (Phase 9)
+### US-14 Weekly recurring entries (Recorrente semanal) — ✅ Done (Phase 9, PR #55)
 As someone who pays a cleaner who comes every Monday and Friday, I want an entry that repeats on chosen weekdays, so I can generate a month of visits at once instead of fixing every date by hand.
 
 The prototype has no weekly recurrence, so the rules and copy below are new. US-05 and US-07 stay as they are for monthly series.
