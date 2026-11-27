@@ -41,6 +41,7 @@ const isWeekly = (c: RecurringCandidate): boolean => c.source.recurrence.frequen
 /** A weekly series arrives as one candidate per date, so the dialog works on series, not candidates. */
 interface Series {
   seriesId: string;
+  first: RecurringCandidate;
   candidates: RecurringCandidate[];
 }
 
@@ -49,14 +50,14 @@ const groupBySeries = (candidates: RecurringCandidate[]): Series[] => {
   for (const c of candidates) {
     const series = bySeries.get(c.seriesId);
     if (series) series.candidates.push(c);
-    else bySeries.set(c.seriesId, { seriesId: c.seriesId, candidates: [c] });
+    else bySeries.set(c.seriesId, { seriesId: c.seriesId, first: c, candidates: [c] });
   }
   return [...bySeries.values()];
 };
 
 /** The dates of a series that are chosen: a monthly one is all or nothing, a weekly one date by date. */
 const chosenCandidates = (series: Series, draft: RecurringDraft): RecurringCandidate[] =>
-  isWeekly(series.candidates[0])
+  isWeekly(series.first)
     ? series.candidates.filter((c) => !draft.skipped.includes(c.date))
     : draft.include
       ? series.candidates
@@ -105,7 +106,7 @@ export function recurringRows(
   { t, money }: Pick<Localization, 't' | 'money'>,
 ): RecurringRow[] {
   return groupBySeries(candidates).map((series) => {
-    const [first] = series.candidates;
+    const { first } = series;
     const { description, categoryId, split, type, valueCents, date } = first.source;
     const category = categoryId ? categories.get(categoryId) : undefined;
     const { dd, mm } = dateParts(date, t);
@@ -160,7 +161,7 @@ export const withDateChecked = (draft: RecurringDraft, date: IsoDate, checked: b
 
 const chosen = (candidates: RecurringCandidate[], drafts: RecurringDrafts, money: MoneyFormat) =>
   groupBySeries(candidates).flatMap((series) => {
-    const draft = draftOf(series.candidates[0], drafts, money);
+    const draft = draftOf(series.first, drafts, money);
     return chosenCandidates(series, draft).map((candidate) => ({
       candidate,
       // A weekly date is not editable, so each occurrence keeps its planned date.
