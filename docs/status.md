@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-23, after the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases are built and merged, and the roadmap has no open phase. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-27, after US-14 (weekly recurring entries) was written and planned as Phase 9. Before it: the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). Phases 0 to 8 are built and merged. Phase 9 (US-14) is planned and not started. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -16,11 +16,12 @@ _Last updated: 2026-11-23, after the project site's dark screenshots (PR #52). B
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 | 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done (PRs #38, #39, #40, #41) |
 | 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | ✅ Done (PRs #50, #51, #52) |
+| 9 — Weekly recurrence | US-14 Recurring entries that repeat on chosen weekdays, generated per date | 📝 Planned |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
 
-No phase is planned. What is left:
+**Next: Phase 9, weekly recurring entries ([US-14](user-stories.md#phase-9--planned)).** See the [Phase 9 checklist](#phase-9--weekly-recurring-entries-us-14-planned). Also left:
 
 - **Follow-ups of dark mode (US-13)**, none of them blocking:
   - two category colors, `#008300` and `#6250D6`, are under 3:1 on the dark card (2.9 and 2.5). Every swatch sits next to the category name, so color is never the only cue; an outline in dark mode is the fix if that changes
@@ -456,6 +457,17 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - On phones the bottom bar's labels may wrap in English ("Monthly summary"), so its items align to the top.
 
 ## Roadmap
+
+### Phase 9 — Weekly recurring entries (US-14) (planned)
+
+- [ ] Domain: a `Recurrence` type (`monthly`, or `weekly` with weekdays `0`–`6`); the source is the series' latest occurrence on or before the month's last day, and its frequency picks the rule; weekly candidates are the weekday dates of the month after the source; monthly candidates unchanged; form validation "Escolha ao menos um dia da semana."
+- [ ] Migration: `recurrence_frequency` (default `'monthly'`) and `recurrence_weekdays` (null unless weekly) on `transactions`.
+- [ ] API: `recurrence` on create, replace and read; candidates per date; `POST /api/recurring/generate` matches weekly items per `(seriesId, date)` and monthly items per series, with the 409 for both; zod rules for `recurrence`.
+- [ ] Form: the "Frequência" segment and weekday chips; the weekly description.
+- [ ] Gerar recorrentes: one row per weekly series with "{n} ocorrências" and "Ver datas"; counts and totals by occurrence; the weekly banner sub-line; stacked at 375px.
+- [ ] i18n keys in pt-BR and en.
+- [ ] Unit, integration, component and e2e tests (create a weekly entry → next month's banner → review the dates → generate).
+- [ ] Update this file: schema, endpoints, domain modules, test counts and the decisions taken.
 
 ### Phase 8 — Dark mode (US-13) (done, PRs #50, #51)
 

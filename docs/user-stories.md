@@ -362,3 +362,55 @@ As someone who keeps the books at night, I want a dark theme, so the bright page
   - "Appearance"
   - "Choose light or dark, or follow the system. Applies to this device only."
   - label "Theme" (options "System", "Light", "Dark")
+
+## Phase 9 — planned
+
+### US-14 Weekly recurring entries (Recorrente semanal) — 📝 Planned (Phase 9)
+As someone who pays a cleaner who comes every Monday and Friday, I want an entry that repeats on chosen weekdays, so I can generate a month of visits at once instead of fixing every date by hand.
+
+The prototype has no weekly recurrence, so the rules and copy below are new. US-05 and US-07 stay as they are for monthly series.
+
+- **Form (US-05).** When "Recorrente" is checked, a "Frequência" segment appears under it: "Mensal" (default) and "Semanal".
+  - "Semanal" shows seven toggle chips with the shared weekday abbreviations, in calendar order `dom seg ter qua qui sex sáb`. Each chip is a button with `aria-pressed` and the full day name as its aria label ("segunda-feira").
+  - Switching to "Semanal" pre-selects the weekday of the entry's "Data". Changing the date later does not change the chips.
+  - The "Recorrente" description follows the frequency: monthly keeps "Acontece todo mês. Será sugerido ao gerar os recorrentes do mês seguinte."; weekly reads "Acontece toda semana nos dias marcados. Será sugerido ao gerar os recorrentes."
+  - Validation adds, after "Escolha uma categoria.": "Escolha ao menos um dia da semana." (weekly only).
+  - Unchecking "Recorrente" hides the frequency and saves the entry as monthly with no weekdays. The `seriesId` is kept, as in US-05. An acerto is never recurring, so it never has a frequency.
+- **Data.** Every entry stores its recurrence: `recurrence_frequency` (`'monthly' | 'weekly'`, default `'monthly'`) and `recurrence_weekdays` (the sorted weekday numbers, `0` = dom … `6` = sáb, as `"1,5"`; null unless weekly). A migration adds both columns with the defaults, so every existing series stays monthly. In the domain this is `recurrence: { frequency: 'monthly' } | { frequency: 'weekly', weekdays: Weekday[] }`.
+- **Candidates for month M (US-07).** For each series, the **source** is its latest occurrence on or before the last day of M. Occurrences in later months are ignored, so generating months out of order never hides an earlier one. A series is considered only while its source is `recurring` and not an acerto. The source alone decides the frequency, the weekdays and the value, so editing the latest occurrence changes what every later month generates.
+  - Monthly source: the series is a candidate when the source is before M, that is, when the series has no entry in M yet. The date is the source's day, capped at the month's last day. This is US-07's rule, unchanged.
+  - Weekly source: the candidates are every date in M that falls on one of the source's weekdays and comes **after the source's date**. Each date is one candidate, with the source's value. When the source is before M, that is every matching date of M.
+  - So creating the first visit on Monday the 3rd as weekly offers the rest of that month's Mondays and Fridays, and a month that is already generated offers nothing more. Deleting an occurrence in the middle of a month (a holiday) does not bring it back, because a later occurrence in that month exists. Generating November before October still offers all of October, because November is after October's last day.
+  - Switching a monthly series to weekly in M (editing November's entry on the 3rd) makes that entry the source, so the weekly rule offers the rest of November. Switching back to monthly makes the series monthly from that entry on.
+  - Known trade-off: deleting the **last** occurrences of a month makes those dates candidates again, until a later occurrence in that month is created. "Agora não" hides them for the month.
+  - Dates are computed with the domain date utilities on `YYYY-MM-DD` strings, never `new Date(iso)`.
+- **Banner.** The count is of occurrences, so one weekly series can make "9 lançamentos recorrentes ainda não foram gerados para {Mês}." When any candidate is weekly, the sub-line reads "Eles entram como previstos, com o valor da última ocorrência, para você ajustar." Otherwise it stays as in US-07.
+- **Dialog (US-07).** A weekly series is one row. Its "Data" cell shows "{n} ocorrência(s)" and the toggle "Ver datas" / "Ocultar datas", which expands a checkbox per date (`seg 02/11`). The dates cannot be edited here: a visit that moved to another day is generated on its planned date and edited afterwards, and it stays in the series. The row's single "Valor (R$)" applies to every checked date. Unchecking every date unselects the row, and checking the row checks every date.
+  - "Último lançado" shows the source, as for monthly rows.
+  - The footer's "{x} de {n} selecionados", its totals and "Gerar {n} lançamento(s)" count occurrences, not rows.
+  - Errors reuse US-07's: "Selecione ao menos um lançamento." and "Revise “{descrição}”: a data deve ser em {Mês} e o valor maior que zero."
+  - At 375px the dates stack under the row, like the rest of the dialog.
+- **API.** `POST /api/recurring/generate` keeps its body `{ month, items: [{ seriesId, date, valueCents }] }`, and a weekly series sends one item per checked date. The server recomputes the candidates, checks each item against them, and inserts everything in one transaction. The existing 409 ("Esses lançamentos já foram gerados. Atualize a página e revise de novo.") covers every item that no longer matches:
+  - Monthly series: matched by `seriesId` alone, at most one item per series, and the item's date only has to be in M, as in US-07 today (the dialog lets the date be edited). A second item for the same series is a 409.
+  - Weekly series: matched by `(seriesId, date)`, and each candidate date is used once. A date that is not a candidate, or the same date sent twice, is a 409. This replaces today's one-item-per-series guard for weekly series only, and keeps the protection against a second tab or a double click.
+  - `GET /api/recurring/candidates` returns one candidate per date, each with its series' `recurrence`.
+- **Entry validation (API).** `POST` and `PUT /api/transactions` accept and return `recurrence`. The zod schema accepts `{ frequency: 'monthly' }` or `{ frequency: 'weekly', weekdays }`, with weekdays as unique integers from 0 to 6, stored sorted.
+  - A weekly recurrence with no weekday is a 400 with "Escolha ao menos um dia da semana."
+  - Anything else is the generic 400 "Dados inválidos.": weekdays outside 0–6 or repeated, weekdays on a monthly recurrence, or a weekly recurrence on an entry that is not `recurring` or is an acerto.
+- Generated weekly entries are pending, with an empty note, `recurring: true`, the series' `seriesId` and the source's recurrence.
+- Knock-on: a weekly series adds about nine pending entries a month, which show in Lançamentos, in Visão geral's "Em aberto no mês" and in Resumo's projected mode. That is expected; nothing groups them.
+- Out of scope: "every N weeks", an end date for a series, editing every occurrence of a series at once, and editing a weekly date inside the Gerar recorrentes dialog.
+- Copy, pt-BR:
+  - label "Frequência" (options "Mensal", "Semanal")
+  - weekday chips: the shared abbreviations; aria "domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"
+  - weekly description "Acontece toda semana nos dias marcados. Será sugerido ao gerar os recorrentes."
+  - error "Escolha ao menos um dia da semana."
+  - banner sub-line "Eles entram como previstos, com o valor da última ocorrência, para você ajustar."
+  - dialog "{n} ocorrência(s)", "Ver datas", "Ocultar datas"
+- Copy, en:
+  - label "Frequency" (options "Monthly", "Weekly")
+  - weekday chips: the catalog's English abbreviations (`Sun Mon Tue Wed Thu Fri Sat`); aria "Sunday" … "Saturday"
+  - "Happens every week on the chosen days. Suggested when you generate recurring entries."
+  - "Choose at least one weekday."
+  - "They are added as pending, with the latest occurrence's amount, for you to adjust."
+  - "{n} occurrence(s)", "Show dates", "Hide dates"
