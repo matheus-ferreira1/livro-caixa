@@ -24,8 +24,6 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@
 import { useSaveTransaction } from '../api';
 import { TYPE_META } from '../view-model';
 
-const FREQUENCY_LABEL_ID = 'transaction-frequency-label';
-
 export interface FormTarget {
   /** null creates a new entry. */
   id: string | null;
@@ -72,7 +70,7 @@ function TransactionForm({
   const { register, control, watch, setValue, getValues, handleSubmit } = useForm<TransactionDraft>({
     defaultValues: target.draft,
   });
-  const ids = { date: useId(), value: useId(), description: useId(), note: useId() };
+  const ids = { date: useId(), value: useId(), description: useId(), note: useId(), frequency: useId() };
   const type = watch('type');
   const categoryId = watch('categoryId');
   const recurring = watch('recurring');
@@ -277,11 +275,11 @@ function TransactionForm({
 
         {showFrequency && (
           <div className="flex flex-col gap-2">
-            <span id={FREQUENCY_LABEL_ID} className="text-sm font-semibold">
+            <span id={ids.frequency} className="text-sm font-semibold">
               {t('transactions.formFrequencyLabel')}
             </span>
             <Segmented
-              labelledBy={FREQUENCY_LABEL_ID}
+              labelledBy={ids.frequency}
               value={frequency}
               options={[
                 ['monthly', t('transactions.formFrequencyMonthly')],
