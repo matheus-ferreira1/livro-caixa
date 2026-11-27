@@ -15,6 +15,7 @@ export * from './settings/preferences';
 export * from './settings/settings';
 export * from './transactions/list-query';
 export * from './transactions/month-summary';
+export * from './transactions/recurrence';
 export * from './transactions/recurring';
 export * from './transactions/recurring-request';
 export * from './transactions/settlement-share';

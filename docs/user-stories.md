@@ -363,15 +363,15 @@ As someone who keeps the books at night, I want a dark theme, so the bright page
   - "Choose light or dark, or follow the system. Applies to this device only."
   - label "Theme" (options "System", "Light", "Dark")
 
-## Phase 9 — planned
+## Phase 9 — done
 
-### US-14 Weekly recurring entries (Recorrente semanal) — 📝 Planned (Phase 9)
+### US-14 Weekly recurring entries (Recorrente semanal) — ✅ Done (Phase 9, PR #55)
 As someone who pays a cleaner who comes every Monday and Friday, I want an entry that repeats on chosen weekdays, so I can generate a month of visits at once instead of fixing every date by hand.
 
 The prototype has no weekly recurrence, so the rules and copy below are new. US-05 and US-07 stay as they are for monthly series.
 
 - **Form (US-05).** When "Recorrente" is checked, a "Frequência" segment appears under it: "Mensal" (default) and "Semanal".
-  - "Semanal" shows seven toggle chips with the shared weekday abbreviations, in calendar order `dom seg ter qua qui sex sáb`. Each chip is a button with `aria-pressed` and the full day name as its aria label ("segunda-feira").
+  - "Semanal" shows seven toggle chips with the shared weekday abbreviations, in calendar order `dom seg ter qua qui sex sáb`. Each chip is a button with `aria-pressed` and the full day name as its aria label ("segunda-feira"). The chips sit in a group labelled "Dias da semana".
   - Switching to "Semanal" pre-selects the weekday of the entry's "Data". Changing the date later does not change the chips.
   - The "Recorrente" description follows the frequency: monthly keeps "Acontece todo mês. Será sugerido ao gerar os recorrentes do mês seguinte."; weekly reads "Acontece toda semana nos dias marcados. Será sugerido ao gerar os recorrentes."
   - Validation adds, after "Escolha uma categoria.": "Escolha ao menos um dia da semana." (weekly only).
@@ -402,6 +402,7 @@ The prototype has no weekly recurrence, so the rules and copy below are new. US-
 - Out of scope: "every N weeks", an end date for a series, editing every occurrence of a series at once, and editing a weekly date inside the Gerar recorrentes dialog.
 - Copy, pt-BR:
   - label "Frequência" (options "Mensal", "Semanal")
+  - group label "Dias da semana" (the weekday chips' accessible name)
   - weekday chips: the shared abbreviations; aria "domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"
   - weekly description "Acontece toda semana nos dias marcados. Será sugerido ao gerar os recorrentes."
   - error "Escolha ao menos um dia da semana."
@@ -409,6 +410,7 @@ The prototype has no weekly recurrence, so the rules and copy below are new. US-
   - dialog "{n} ocorrência(s)", "Ver datas", "Ocultar datas"
 - Copy, en:
   - label "Frequency" (options "Monthly", "Weekly")
+  - group label "Weekdays" (the weekday chips' accessible name)
   - weekday chips: the catalog's English abbreviations (`Sun Mon Tue Wed Thu Fri Sat`); aria "Sunday" … "Saturday"
   - "Happens every week on the chosen days. Suggested when you generate recurring entries."
   - "Choose at least one weekday."

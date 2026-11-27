@@ -9,6 +9,7 @@ export const domainPtBR = {
   'form.date': 'Informe a data.',
   'form.description': 'Informe a descrição.',
   'form.value': 'Informe um valor maior que zero.',
+  'form.weekdays': 'Escolha ao menos um dia da semana.',
   'form.category': 'Escolha uma categoria.',
 
   'category.nameRequired': 'Dê um nome para a categoria.',
@@ -88,6 +89,14 @@ export const domainPtBR = {
   'weekday.4': 'qui',
   'weekday.5': 'sex',
   'weekday.6': 'sáb',
+
+  'weekdayName.0': 'domingo',
+  'weekdayName.1': 'segunda-feira',
+  'weekdayName.2': 'terça-feira',
+  'weekdayName.3': 'quarta-feira',
+  'weekdayName.4': 'quinta-feira',
+  'weekdayName.5': 'sexta-feira',
+  'weekdayName.6': 'sábado',
 
   'elapsed.now': 'agora',
   'elapsed.minutes': (count: number) => `há ${count} min`,

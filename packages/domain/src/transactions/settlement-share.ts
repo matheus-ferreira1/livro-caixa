@@ -2,6 +2,7 @@ import { dateParts, lastDayOfMonth, monthLabel, pad2, type MonthKey } from '../d
 import type { Localization } from '../i18n/localization';
 import { MINUS, percentOf } from '../money/money';
 import type { Settlement } from './month-summary';
+import { MONTHLY_RECURRENCE } from './recurrence';
 import type { TransactionInput } from './transaction-input';
 
 export interface SettlementContext {
@@ -68,5 +69,6 @@ export function settlementEntry(
     split: false,
     confirmed: false,
     recurring: false,
+    recurrence: MONTHLY_RECURRENCE,
   };
 }

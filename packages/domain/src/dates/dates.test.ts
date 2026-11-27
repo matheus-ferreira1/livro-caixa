@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { translator } from '../i18n/translate';
 import {
   dateParts,
+  datesOfMonth,
   daysBetween,
   defaultDateForMonth,
   elapsedLabel,
@@ -11,6 +12,7 @@ import {
   monthName,
   monthShortName,
   shiftMonth,
+  weekdayOf,
 } from './dates';
 
 const t = translator('pt-BR');
@@ -126,5 +128,31 @@ describe('dates in English', () => {
     const hour = 3_600_000;
     expect(elapsedLabel(now - 3 * hour, now, english)).toBe('3 h ago');
     expect(elapsedLabel(now - 24 * hour, now, english)).toBe('1 day ago');
+  });
+});
+
+describe('weekdayOf', () => {
+  test('numbers the weekday from Sunday = 0', () => {
+    expect(weekdayOf('2026-11-01')).toBe(0);
+    expect(weekdayOf('2026-11-02')).toBe(1);
+    expect(weekdayOf('2026-11-07')).toBe(6);
+  });
+
+  test('reads leap days on the calendar', () => {
+    expect(weekdayOf('2028-02-29')).toBe(2);
+  });
+});
+
+describe('datesOfMonth', () => {
+  test('lists every day of the month in order', () => {
+    const dates = datesOfMonth('2026-11');
+    expect(dates).toHaveLength(30);
+    expect(dates[0]).toBe('2026-11-01');
+    expect(dates.at(-1)).toBe('2026-11-30');
+  });
+
+  test('includes the leap day of February', () => {
+    expect(datesOfMonth('2028-02').at(-1)).toBe('2028-02-29');
+    expect(datesOfMonth('2026-02')).toHaveLength(28);
   });
 });

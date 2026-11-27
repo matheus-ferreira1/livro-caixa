@@ -125,4 +125,13 @@ export const MIGRATIONS: Migration[] = [
         CHECK (currency IN ('BRL', 'USD', 'EUR', 'GBP'));
     `,
   },
+  {
+    // Existing series keep repeating monthly; weekdays (0 = Sunday … 6 = Saturday, comma separated) are set only for weekly.
+    id: '006_weekly_recurrence',
+    sql: `
+      ALTER TABLE transactions ADD COLUMN recurrence_frequency TEXT NOT NULL DEFAULT 'monthly'
+        CHECK (recurrence_frequency IN ('monthly', 'weekly'));
+      ALTER TABLE transactions ADD COLUMN recurrence_weekdays TEXT;
+    `,
+  },
 ];

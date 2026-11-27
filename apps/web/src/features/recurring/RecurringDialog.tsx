@@ -15,6 +15,8 @@ import {
   generateRequest,
   recurringRows,
   recurringSummary,
+  withDateChecked,
+  withSeriesChecked,
   type RecurringDraft,
   type RecurringDrafts,
   type RecurringRow,
@@ -28,7 +30,8 @@ import {
 const ROW_GRID =
   'grid grid-cols-[28px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 gap-y-2 px-3 md:grid-cols-[36px_minmax(220px,1fr)_96px_168px_148px_150px] md:gap-3 md:px-4';
 
-const checkboxClass = 'size-[18px] border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary';
+const checkboxClass =
+  'size-[18px] border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary';
 
 interface RecurringDialogProps {
   month: MonthKey;
@@ -70,14 +73,17 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
   const rows = recurringRows(candidates, drafts, categoryMap, l10n);
   const summary = recurringSummary(candidates, drafts, l10n);
 
-  const updateRow = (row: RecurringRow, patch: Partial<RecurringDraft>) => {
+  const updateRow = (row: RecurringRow, change: (draft: RecurringDraft) => RecurringDraft) => {
     setDrafts((previous) => ({
       ...previous,
-      [row.seriesId]: { include: row.include, date: row.date, value: row.value, ...patch },
+      [row.seriesId]: change(
+        previous[row.seriesId] ?? { include: row.include, date: row.date, value: row.value, skipped: [] },
+      ),
     }));
     setError('');
   };
-  const toggleAll = () => rows.forEach((row) => updateRow(row, { include: !summary.allSelected }));
+  const toggleAll = () =>
+    rows.forEach((row) => updateRow(row, (draft) => withSeriesChecked(row, draft, !summary.allSelected)));
 
   const submit = () => {
     const result = generateRequest(month, candidates, drafts, l10n);
@@ -134,7 +140,7 @@ function RecurringReview({ month, onClose }: Omit<RecurringDialogProps, 'open'>)
                       key={row.seriesId}
                       row={row}
                       month={month}
-                      onChange={(patch) => updateRow(row, patch)}
+                      onChange={(change) => updateRow(row, change)}
                     />
                   ))}
                 </div>
@@ -188,9 +194,10 @@ function ReviewRow({
 }: {
   row: RecurringRow;
   month: MonthKey;
-  onChange: (patch: Partial<RecurringDraft>) => void;
+  onChange: (change: (draft: RecurringDraft) => RecurringDraft) => void;
 }) {
   const { t, money } = usePreferences();
+  const [expanded, setExpanded] = useState(false);
   const meta = TYPE_META[row.type];
   const inputClass =
     'min-h-11 w-full min-w-0 md:min-h-10 rounded-lg border border-input bg-card px-2.5 text-sm text-ink';
@@ -205,11 +212,13 @@ function ReviewRow({
       <Checkbox
         aria-label={row.includeLabel}
         checked={row.include}
-        onCheckedChange={(checked) => onChange({ include: checked === true })}
+        onCheckedChange={(checked) => onChange((draft) => withSeriesChecked(row, draft, checked === true))}
         className={checkboxClass}
       />
       <span className="col-span-2 flex min-w-0 flex-col md:col-auto">
-        <span className="font-semibold">{row.description}</span>
+        <span id={`series-${row.seriesId}`} className="font-semibold">
+          {row.description}
+        </span>
         <span className="text-[13px] text-muted-foreground">{row.meta}</span>
       </span>
       <span
@@ -221,17 +230,37 @@ function ReviewRow({
       >
         {row.typeLabel}
       </span>
-      <label data-label={t('recurring.columnDate')} className={cn(STACKED_FIELD, '[grid-area:2/1/3/3]')}>
-        <input
-          type="date"
-          aria-label={row.dateLabel}
-          value={row.date}
-          min={`${month}-01`}
-          max={`${month}-${pad2(lastDayOfMonth(month))}`}
-          onChange={(e) => onChange({ date: e.target.value })}
-          className={inputClass}
-        />
-      </label>
+      {row.weekly ? (
+        <div
+          data-label={t('recurring.columnDate')}
+          className={cn(STACKED_FIELD, 'items-start [grid-area:2/1/3/3]')}
+        >
+          <span className="flex min-h-11 flex-wrap items-center gap-x-2 text-sm md:min-h-10">
+            {row.occurrencesLabel}
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={expanded ? `dates-${row.seriesId}` : undefined}
+              onClick={() => setExpanded((open) => !open)}
+              className="min-h-11 rounded-md px-1 text-sm font-semibold text-primary hover:underline md:min-h-8"
+            >
+              {t(expanded ? 'recurring.hideDates' : 'recurring.showDates')}
+            </button>
+          </span>
+        </div>
+      ) : (
+        <label data-label={t('recurring.columnDate')} className={cn(STACKED_FIELD, '[grid-area:2/1/3/3]')}>
+          <input
+            type="date"
+            aria-label={row.dateLabel}
+            value={row.date}
+            min={`${month}-01`}
+            max={`${month}-${pad2(lastDayOfMonth(month))}`}
+            onChange={(e) => onChange((draft) => ({ ...draft, date: e.target.value }))}
+            className={inputClass}
+          />
+        </label>
+      )}
       <label
         data-label={t('recurring.columnValue', money.symbol)}
         className={cn(STACKED_FIELD, '[grid-area:2/3/3/4]')}
@@ -241,7 +270,7 @@ function ReviewRow({
           inputMode="decimal"
           aria-label={row.valueLabel}
           value={row.value}
-          onChange={(e) => onChange({ value: e.target.value })}
+          onChange={(e) => onChange((draft) => ({ ...draft, value: e.target.value }))}
           className={cn(inputClass, 'text-right font-mono font-medium')}
         />
       </label>
@@ -249,6 +278,26 @@ function ReviewRow({
       <span className="text-right font-mono text-[13px] text-muted-foreground [grid-area:3/2/4/4] max-md:pl-12 md:[grid-area:auto]">
         {row.lastLabel}
       </span>
+      {row.weekly && expanded && (
+        <ul
+          id={`dates-${row.seriesId}`}
+          aria-labelledby={`series-${row.seriesId}`}
+          className="col-span-full m-0 grid list-none grid-cols-2 gap-x-5 gap-y-1 p-0 md:flex md:flex-wrap md:pl-[48px]"
+        >
+          {row.dates.map(({ date, label, checked }) => (
+            <li key={date}>
+              <label className="flex min-h-11 items-center gap-2 text-sm md:min-h-9">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(next) => onChange((draft) => withDateChecked(draft, date, next === true))}
+                  className={checkboxClass}
+                />
+                {label}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

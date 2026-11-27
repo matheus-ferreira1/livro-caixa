@@ -1,6 +1,6 @@
 # Project status & roadmap
 
-_Last updated: 2026-11-27, after US-14 (weekly recurring entries) was written and planned as Phase 9. Before it: the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). Phases 0 to 8 are built and merged. Phase 9 (US-14) is planned and not started. See [What comes next](#what-comes-next)._
+_Last updated: 2026-11-27, after weekly recurring entries (US-14, Phase 9, PR #55). Before it: US-14 was written and planned. Before it: the project site's dark screenshots (PR #52). Before it: dark mode in the app (US-13, PR #51). Before it: the project site gained a dark mode that follows the OS (PR #50). Before it: the Configurações category lists stopped growing with the catalog (PR #49). Before it: the security hardening that followed an audit of the code and of a live instance (PR #48). Before it: the Visão geral chart's balance strip (PR #44). Before it: the HTTP error status and SPA fallback fixes (PR #43). Before it: the static serving fix for a path under a dot-directory (PR #42). Before it: the preferences and settings follow-ups (US-12, Phase 7): the preferences loading and retry behavior, and the selects showing the picked value. Before it: language and currency selection (US-12, Phase 7), then the project site (PR #37), the public GitHub Pages site in `apps/site`. Before it: the entry validation fix (PR #31), the login burst fix (PR #32), the sticky header (PRs #34, #35), the shared e2e helpers (PR #36), Phase 6 (PRs #20, #21, #22), the `parseMoney` fix (PR #23), the quote status on Patrimônio (PR #25), the closing's quote copy (PR #26), the MIT license (PR #27), the phone layout (PR #28) and the split of `CLAUDE.md` (PR #30). All planned phases (0 to 9) are built. See [What comes next](#what-comes-next)._
 
 ## Summary
 
@@ -16,12 +16,18 @@ _Last updated: 2026-11-27, after US-14 (weekly recurring entries) was written an
 | 6 — Patrimônio | US-10 Net worth and monthly closing | ✅ Done (PRs #20, #21, #22) |
 | 7 — Language and currency | US-12 `en` and pt-BR, BRL, USD, EUR and GBP, chosen in Configurações | ✅ Done (PRs #38, #39, #40, #41) |
 | 8 — Dark mode | US-13 Light, dark or system theme per device, chosen in Configurações; the project site follows the system | ✅ Done (PRs #50, #51, #52) |
-| 9 — Weekly recurrence | US-14 Recurring entries that repeat on chosen weekdays, generated per date | 📝 Planned |
+| 9 — Weekly recurrence | US-14 Recurring entries that repeat on chosen weekdays, generated per date | ✅ Done |
 | Project site | Public site for contributors and self-hosters in `apps/site`, deployed to GitHub Pages at https://matheus-ferreira1.github.io/livro-caixa/ | ✅ Built (PR #37); live once Pages is enabled |
 
 ## What comes next
 
-**Next: Phase 9, weekly recurring entries ([US-14](user-stories.md#phase-9--planned)).** See the [Phase 9 checklist](#phase-9--weekly-recurring-entries-us-14-planned). Also left:
+No phase is planned. What is left:
+
+- **Follow-ups of weekly recurrence (US-14)**, none of them blocking:
+  - deleting the last occurrences of a month makes those dates candidates again (the known trade-off in US-14)
+  - a weekly date cannot be edited in Gerar recorrentes
+  - "every N weeks" and an end date for a series are not built
+  - the demo seed has no weekly series
 
 - **Follow-ups of dark mode (US-13)**, none of them blocking:
   - two category colors, `#008300` and `#6250D6`, are under 3:1 on the dark card (2.9 and 2.5). Every swatch sits next to the category name, so color is never the only cue; an outline in dark mode is the fix if that changes
@@ -32,6 +38,8 @@ _Last updated: 2026-11-27, after US-14 (weekly recurring entries) was written an
   - zod 3 has a published advisory (GHSA-mrhx-c7xc-m3w5, fixed in zod 4); the 100 KB body limit and the `.max()` on arrays limit the exposure. Moving to zod 4 is a breaking upgrade, and `bun audit` is not yet a CI step
   - the compose file does not run the container with a read-only root filesystem (untested: Bun's caches may need a writable path), and base images and GitHub Actions are pinned by tag, not by digest
   - a login body is parsed up to the general 100 KB limit before its fields are bounded
+
+- **Web tests on Node 26**: they need `NODE_OPTIONS=--no-experimental-webstorage` locally, because Node's own `localStorage` shadows happy-dom's. CI runs them under Bun and is not affected.
 
 - **Not-found shape without a static root** (development, or a `STATIC_DIR` that does not exist, such as a mistyped one): a non-API miss still gets Express's HTML "Cannot GET" page, not the JSON 404, so the shape differs by configuration. Not blocking.
 - **Follow-ups of language and currency (US-12)**, none of them blocking:
@@ -104,6 +112,7 @@ Phases are ordered by dependency. Configurações comes first because acerto, re
 | [#50](https://github.com/matheus-ferreira1/livro-caixa/pull/50) | `feat/site-dark-mode` | The project site follows the OS color scheme: the app's dark palette in `@media (prefers-color-scheme: dark)`, `surface-strong` / `on-strong` split from ink, Tailwind white replaced by tokens, WCAG contrast tests for both themes, and `capture:site` shooting every screen in dark too (dark screenshots wait for the app's dark mode) |
 | [#51](https://github.com/matheus-ferreira1/livro-caixa/pull/51) | `feat/dark-mode` | Dark mode in the app (US-13): a light, dark or system theme per device in Configurações › Aparência, applied before the app loads by `theme-init.js`; ink split into text, `surface-strong` and `primary` tokens; raw colors replaced by tokens, with a guard test and a contrast test over both themes |
 | [#52](https://github.com/matheus-ferreira1/livro-caixa/pull/52) | `chore/site-dark-screenshots` | The project site's dark screenshots: every screenshot retaken in both schemes, and each wrapped in a `<picture>` whose dark source comes first |
+| [#55](https://github.com/matheus-ferreira1/livro-caixa/pull/55) | `feat/weekly-recurrence` | Weekly recurrence: `recurrence` on entries, migration `006_weekly_recurrence`, weekly candidates per date, generate matching per series and date, Frequência and weekday chips in the form, weekly rows in Gerar recorrentes, e2e |
 
 ### Project site (`apps/site`)
 
@@ -149,12 +158,12 @@ All routes except `/api/health`, `/api/preferences` and `/api/auth/login` requir
 | `GET /api/preferences` | — | No session needed: `{ language, currency }`, for the sign-in page |
 | `GET /api/transactions?month=YYYY-MM` | `ListMonthTransactions` | The month's entries; the client filters and sorts them |
 | `GET /api/transactions/search` | `SearchTransactions` | Query params `type, status, category ('all' \| id \| 'none'), q, from, to, sort, dir, page, pageSize (25\|50\|100)`. Returns `{ items, page, totalPages, start, end, total, totals, groups[{ monthKey, count, netCents, ids }] }`. Filters run in the domain over all rows. |
-| `POST /api/transactions` | `SaveTransaction` | 201; body is `TransactionInput` (`valueCents` as an integer). "Registrar acerto" posts `settlementEntry(...)` here. |
-| `PUT /api/transactions/:id` | `SaveTransaction` | Full replace; keeps `seriesId` |
+| `POST /api/transactions` | `SaveTransaction` | 201; body is `TransactionInput` (`valueCents` as an integer). Accepts and returns `recurrence`: `{ frequency: 'monthly' }` or `{ frequency: 'weekly', weekdays }`, weekdays `0` = dom … `6` = sáb, unique, stored sorted. An empty weekly list is 400 "Escolha ao menos um dia da semana."; other invalid shapes are 400 "Dados inválidos.". "Registrar acerto" posts `settlementEntry(...)` here. |
+| `PUT /api/transactions/:id` | `SaveTransaction` | Full replace; keeps `seriesId`; accepts and returns `recurrence` as `POST` does |
 | `PATCH /api/transactions/:id` | `ToggleTransactionFlags` | `{ confirmed?, split? }`; only expenses can be split |
 | `DELETE /api/transactions/:id` | `DeleteTransaction` | 204 |
-| `GET /api/recurring/candidates?month=YYYY-MM` | `ListRecurringCandidates` | `{ candidates: [{ seriesId, date, valueCents, source }] }`; `source` is the latest earlier occurrence |
-| `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when a series is no longer a candidate. All entries are inserted in one transaction. |
+| `GET /api/recurring/candidates?month=YYYY-MM` | `ListRecurringCandidates` | `{ candidates: [{ seriesId, date, valueCents, source }] }`; `source` is the latest earlier occurrence; one candidate per date for weekly series, and `source.recurrence` is included |
+| `POST /api/recurring/generate` | `GenerateRecurring` | 201 `{ transactions }`; body `{ month, items: [{ seriesId, date, valueCents }] }`. Candidates are recomputed on the server: 400 with "Selecione ao menos um lançamento." or "Revise “{descrição}”: …", 409 when an item no longer matches: monthly items match by series (one per series, date in the month), weekly items by `(seriesId, date)`, each date once; anything else is 409 too. All entries are inserted in one transaction. |
 | `GET /api/summary?year=YYYY&mode=real\|proj` | `GetYearSummary` | `{ year, mode, months[12], totals }` in cents; `mode` defaults to `real`. "Atual" and the default year come from the client. |
 | `GET /api/dashboard?month=YYYY-MM&mode=real\|proj` | `GetDashboard` | `{ month, mode, partnerName, kpis, series[12], categories, open, settlement }` in cents; `mode` defaults to `real`. `open` and `settlement` ignore the mode. Relative due labels come from the client, from `relativeDue` and its own "today". |
 | `GET /api/wealth?today=YYYY-MM-DD` | `GetWealth` | `{ totalCents, investedCents, dayChangeCents, openMonth, closingAvailable, assets, kpis, evolution }` in cents. `today` comes from the client. Grouping happens on the client, from `groupAssets`. Automatic assets carry `quotedAt` (epoch ms, null when never quoted) and `quoteFailed`. With a `BRAPI_TOKEN`, it first refreshes quotes older than 30 minutes (`RefreshQuotes`), one at a time, waiting at most 3 s; a failure never fails the read, and assets not reached stay due for the next read. |
@@ -172,7 +181,7 @@ Migrations are append-only and tracked in `schema_migrations`.
   - `sessions(token_hash PK, user_id, expires_at, persistent)`; only the SHA-256 of the token is stored
 - `002_ledger`:
   - `categories(id, name, type receita|despesa, color, UNIQUE(type, name NOCASE))`, seeded with the 12 default categories from the design
-  - `transactions(id, date YYYY-MM-DD, description, note, type, category_id, value_cents > 0, split, confirmed, recurring, series_id, created_at, updated_at)`
+  - `transactions(id, date YYYY-MM-DD, description, note, type, category_id, value_cents > 0, split, confirmed, recurring, series_id, recurrence_frequency ('monthly'|'weekly', default 'monthly'), recurrence_weekdays (e.g. "1,5", null unless weekly), created_at, updated_at)`
   - `settings(id = 1, partner_name, partner_share 0–100)`, seeded with `('Companheira', 50)`
 - `003_wealth`:
   - `assets(id, institution, name, asset_class, pricing auto|manual, quantity_e8, avg_price_cents, price_cents, invested_cents, current_cents, day_change_bps, quote_checked_at, updated_at, created_at)`; a CHECK requires quantity and price for `auto` and the current value for `manual`
@@ -181,16 +190,19 @@ Migrations are append-only and tracked in `schema_migrations`.
   - `settings` gains `language` (`pt-BR` or `en`, default `pt-BR`) and `currency` (`BRL`, `USD`, `EUR` or `GBP`, default `BRL`), each with a CHECK
 - `004_quote_status`:
   - `assets` gains `quoted_at` (epoch ms) and `quote_failed`; `quote_checked_at` and `day_change_bps` are reset so the next read checks every quote again
+- `006_weekly_recurrence`:
+  - `transactions` gains `recurrence_frequency` and `recurrence_weekdays`, with the defaults above, so every existing series stays monthly
 
 ### Domain (`packages/domain`)
 
 - `auth/`: login validation and messages, `nameFromEmail`, `initialsOf`
 - `i18n/`: the message catalogs (`messages/pt-BR/*` define the keys, `messages/en/*` must match, one pair of files per section), `translator(language)` returning `t(key, ...values)`, `localization(language, currency)` returning `{ language, currency, t, money }`
 - `money/`: `moneyFormat(currency)` returning `{ format, formatSigned, formatPercent, parse, parseSigned, toInput, symbol, formatQuantity, parseQuantity, toQuantityInput }`, `formatCompactAmount(cents, language)`, `percentOf`, `numberMarks`
-- `dates/`: `monthLabel`, `monthName`, `monthShortName`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `daysBetween`, `defaultDateForMonth`, `elapsedLabel`
+- `dates/`: `monthLabel`, `monthName`, `monthShortName`, `shiftMonth`, `lastDayOfMonth`, `dateParts`, `todayIso`, `daysBetween`, `defaultDateForMonth`, `elapsedLabel`, `weekdayOf`, `datesOfMonth`
 - `transactions/transaction.ts`: the `Transaction`, `Category` and `Settings` types, `signedCents`, `displayPartnerName`
 - `transactions/month-summary.ts`: `computeSettlement` (the acerto calculation) and `monthTiles`
-- `transactions/recurring.ts`: `recurringCandidates`, `validateRecurringSelection`, `RECURRING_MESSAGES`, `recurringEntry`; `recurring-request.ts` holds `recurringGenerateSchema`
+- `transactions/recurrence.ts`: `Recurrence`, `Weekday`, `MONTHLY_RECURRENCE`, `weeklyRecurrence`, `recurrenceSchema`
+- `transactions/recurring.ts`: `recurringCandidates`, `matchRecurringItems`, `validateRecurringSelection`, `RECURRING_MESSAGES`, `recurringEntry`; `recurring-request.ts` holds `recurringGenerateSchema`
 - `transactions/settlement-share.ts`: `buildShareText` (the WhatsApp message, worded as the prototype) and `settlementEntry` (the pending acerto that "Registrar acerto" creates)
 - `transactions/year-summary.ts`: `monthSummary`, `summaryStatus`, `yearSummary` (the Resumo mensal, with the running total and year totals)
 - `transactions/list-query.ts`: filters, `periodRange`, sorting (pt-BR collation, `compareByDate`), `paginate`, `pageList`, `groupByMonth`, `totalsOf`
@@ -206,17 +218,17 @@ Migrations are append-only and tracked in `schema_migrations`.
 - `wealth/asset-input.ts`: the sheet draft, `ASSET_MESSAGES`, `validateAssetFields`, `draftToAssetInput`, `assetInputSchema`, `toAsset`
 - `wealth/closing.ts`: `openMonth`, `closingAvailable`, `closingDraft`, `closingRequestFrom`, `applyClosing`, `closingRequestSchema`, `CLOSING_MESSAGES`
 - `wealth/kpis.ts`, `wealth/evolution.ts`, `wealth/allocation.ts`, `wealth/wealth.ts`: `wealthKpis`, `evolutionSeries`, `groupAssets`, `allocationSegments`, `buildWealth`
-- `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
+- `transactions/transaction-input.ts`: the form draft, `applyTypeChange`, `applyFrequencyChange`, `toggleWeekday`, `validateInput`, `draftToInput`, `toTransaction` (the entry rules), `transactionInputSchema`
 
 ### Tests (all green on `main` and in CI)
 
 | Suite | Count | Command |
 |---|---|---|
-| Domain unit | 398 | `bun run --filter '@livro-caixa/domain' test` |
-| API integration | 300 | `bun run --filter '@livro-caixa/api' test` |
-| Web component | 452 (of them 80 check that no component uses a raw color and 59 check token contrast in both themes) | `bun run --filter '@livro-caixa/web' test` |
+| Domain unit | 451 | `bun run --filter '@livro-caixa/domain' test` |
+| API integration | 323 | `bun run --filter '@livro-caixa/api' test` |
+| Web component | 467 in 31 files (of them 80 check that no component uses a raw color and 59 check token contrast in both themes) | `bun run --filter '@livro-caixa/web' test` |
 | Project site | 28: every screenshot with a dark version chosen before any light source, and the hero's phone source with its dark twin first; the page (one h1, landmarks and skip link, every in-page anchor has a target, external links only to the repository or brapi, the quick-start commands equal the README's across its steps, every copy button named for what it copies, no copy target with a prompting or long-running command before another command, the hero's phone image, every image sized and present, every picture source present, screenshots described and lazy below the hero, no external script, style or font, meta and absolute Open Graph image, the app's favicon unchanged, no hyphen before `R$`), the color themes (WCAG contrast for every drawn pair in light and dark, the ink band and mint unchanged in dark, `color-scheme`, no fixed white, no surface painted with ink) and the copy button (hidden without the clipboard API, copies, reports a failure) | `bun run --filter '@livro-caixa/site' test` |
-| E2E | 19 tests: the theme (a dark system from the first paint, on the sign-in page too; Claro kept across a reload while the system is dark, and back to Sistema) and language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
+| E2E | 20 tests: the theme (a dark system from the first paint, on the sign-in page too; Claro kept across a reload while the system is dark, and back to Sistema) and language and currency (switch to English and USD, an amount typed and shown that way, the choice kept across a reload and the sign-in page in English) and the top navigation while scrolling (sticky at 1440px and 768px, the header as tall as its scroll padding at both, scrolling away at 844×390 and at 375px with the bottom bar kept) and the phone layout (every screen and the two table dialogs at 375px, with nothing scrolling sideways or cut off and the nav on one line) and a chart tooltip staying on the screen for every month and a toast staying above the nav bar at 700px and the entry form scrolling to its last option on a short screen and the portfolio (add an asset → first closing → waiting banner → remove the asset) and the ledger (login error → login → create → confirm → edit → Todos → register and delete an acerto → delete → logout) and recorrentes (create a recurring entry → next month's banner → review → generate) and recorrentes semanais (a Monday+Friday weekly entry → next month's banner with 8 occurrences → uncheck one date → generate 7) and the summary (create a pending split bill → Resumo in both modes → open the month) and the dashboard (land after sign-in → pending split bill in both modes → the viewed month's cell of the chart's balance strip → "Confirmar") | `bun run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of these, plus `lint`, `typecheck`, `build` and `build:site`, on every PR and on every push to `main`. Its two jobs are "Lint, typecheck, test, build" and "E2E (Playwright, Chromium)". Both are required status checks on `main`, for admins too.
 
@@ -419,6 +431,17 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 - A missing `index.html` (an empty or partial `STATIC_DIR`, that is, a broken deploy) is a server fault: `sendFile` has a callback that passes the failure on as an error without send's 404 status, so it is logged and answered 500 `internal_error`, as before PR #43. If the headers already went out (a client aborting mid-download) nothing is logged or sent. The generic rule that a 4xx from the framework keeps its status is unchanged. The `sendFile` callback mirrors what Express's own default skips (`isServerFault` in `send-file-error.ts`): no error, headers already sent, `ECONNABORTED` (the client left while `send` was still stat-ing the file, before any header) and a `write` syscall error are not faults and are neither logged nor answered. Anything else, including `ENOENT`, an unreadable file and `EISDIR`, becomes the logged 500.
 - A bare trailing dot (`/lancamentos.`, a link pasted from chat) is still a navigation: only a dot followed by at least one character is an extension. The error handler calls `next(err)` when headers were already sent, and the JSON body limit is the exported `JSON_BODY_LIMIT_BYTES`.
 
+### Decisions taken for weekly recurrence (US-14)
+
+- The source of a series for month M is its latest occurrence on or before M's last day, and its frequency picks the rule. A later month never hides an earlier one.
+- Weekly candidates are the source's weekdays after the source's date. A monthly source keeps US-07's rule.
+- The generate body did not change. Monthly items match by series, and weekly items by series and date (`matchRecurringItems` in the domain). The 409 still guards a second tab and a double click.
+- The form reuses `Segmented`, which gained an optional `labelledBy`, so "Frequência" is announced once.
+- "Dias da semana" / "Weekdays" is new copy, not in the design. It names the chip group for screen readers.
+- The repository drops stored weekdays outside 0–6, and falls back to monthly when none is left.
+- The banner, the footer and the generate button count occurrences, not series.
+- On phones the weekly date list is a two-column grid.
+
 ### Decisions taken for dark mode (US-13)
 
 - The theme is per device (`localStorage['lc-theme']`: `system`, `light` or `dark`; default `system`), not a setting: language and currency belong to the instance, but each partner may want their own theme. No API, schema or migration change.
@@ -458,16 +481,16 @@ The design has no phone drawing beyond stacking, so everything here was decided 
 
 ## Roadmap
 
-### Phase 9 — Weekly recurring entries (US-14) (planned)
+### Phase 9 — Weekly recurring entries (US-14) (done, PR #55)
 
-- [ ] Domain: a `Recurrence` type (`monthly`, or `weekly` with weekdays `0`–`6`); the source is the series' latest occurrence on or before the month's last day, and its frequency picks the rule; weekly candidates are the weekday dates of the month after the source; monthly candidates unchanged; form validation "Escolha ao menos um dia da semana."
-- [ ] Migration: `recurrence_frequency` (default `'monthly'`) and `recurrence_weekdays` (null unless weekly) on `transactions`.
-- [ ] API: `recurrence` on create, replace and read; candidates per date; `POST /api/recurring/generate` matches weekly items per `(seriesId, date)` and monthly items per series, with the 409 for both; zod rules for `recurrence`.
-- [ ] Form: the "Frequência" segment and weekday chips; the weekly description.
-- [ ] Gerar recorrentes: one row per weekly series with "{n} ocorrências" and "Ver datas"; counts and totals by occurrence; the weekly banner sub-line; stacked at 375px.
-- [ ] i18n keys in pt-BR and en.
-- [ ] Unit, integration, component and e2e tests (create a weekly entry → next month's banner → review the dates → generate).
-- [ ] Update this file: schema, endpoints, domain modules, test counts and the decisions taken.
+- [x] Domain: a `Recurrence` type (`monthly`, or `weekly` with weekdays `0`–`6`); the source is the series' latest occurrence on or before the month's last day, and its frequency picks the rule; weekly candidates are the weekday dates of the month after the source; monthly candidates unchanged; form validation "Escolha ao menos um dia da semana."
+- [x] Migration: `recurrence_frequency` (default `'monthly'`) and `recurrence_weekdays` (null unless weekly) on `transactions`.
+- [x] API: `recurrence` on create, replace and read; candidates per date; `POST /api/recurring/generate` matches weekly items per `(seriesId, date)` and monthly items per series, with the 409 for both; zod rules for `recurrence`.
+- [x] Form: the "Frequência" segment and weekday chips; the weekly description.
+- [x] Gerar recorrentes: one row per weekly series with "{n} ocorrências" and "Ver datas"; counts and totals by occurrence; the weekly banner sub-line; stacked at 375px.
+- [x] i18n keys in pt-BR and en.
+- [x] Unit, integration, component and e2e tests (create a weekly entry → next month's banner → review the dates → generate).
+- [x] Update this file: schema, endpoints, domain modules, test counts and the decisions taken.
 
 ### Phase 8 — Dark mode (US-13) (done, PRs #50, #51)
 

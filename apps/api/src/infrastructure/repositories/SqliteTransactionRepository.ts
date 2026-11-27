@@ -1,5 +1,14 @@
 import type { Database } from 'bun:sqlite';
-import type { MonthKey, Transaction, TransactionType } from '@livro-caixa/domain';
+import {
+  isWeekday,
+  MONTHLY_RECURRENCE,
+  weeklyRecurrence,
+  type MonthKey,
+  type Recurrence,
+  type Transaction,
+  type TransactionType,
+  type Weekday,
+} from '@livro-caixa/domain';
 import type { TransactionRepository } from '../../application/ports';
 
 interface TransactionRow {
@@ -14,7 +23,24 @@ interface TransactionRow {
   confirmed: number;
   recurring: number;
   series_id: string | null;
+  recurrence_frequency: Recurrence['frequency'];
+  recurrence_weekdays: string | null;
 }
+
+const WEEKDAY_SEPARATOR = ',';
+
+const storedWeekdays = (stored: string | null): Weekday[] =>
+  (stored ?? '').split(WEEKDAY_SEPARATOR).map(Number).filter(isWeekday);
+
+// A corrupt weekly row falls back to monthly rather than a series that would never produce a date.
+const toRecurrence = (row: TransactionRow): Recurrence => {
+  if (row.recurrence_frequency !== 'weekly') return MONTHLY_RECURRENCE;
+  const weekdays = storedWeekdays(row.recurrence_weekdays);
+  return weekdays.length > 0 ? weeklyRecurrence(weekdays) : MONTHLY_RECURRENCE;
+};
+
+const weekdaysColumn = (recurrence: Recurrence): string | null =>
+  recurrence.frequency === 'weekly' ? recurrence.weekdays.join(WEEKDAY_SEPARATOR) : null;
 
 const toTransaction = (row: TransactionRow): Transaction => ({
   id: row.id,
@@ -28,6 +54,7 @@ const toTransaction = (row: TransactionRow): Transaction => ({
   confirmed: row.confirmed === 1,
   recurring: row.recurring === 1,
   seriesId: row.series_id,
+  recurrence: toRecurrence(row),
 });
 
 const toParams = (t: Transaction) =>
@@ -42,6 +69,8 @@ const toParams = (t: Transaction) =>
     t.confirmed ? 1 : 0,
     t.recurring ? 1 : 0,
     t.seriesId,
+    t.recurrence.frequency,
+    weekdaysColumn(t.recurrence),
     t.id,
   ] as const;
 
@@ -69,8 +98,9 @@ export class SqliteTransactionRepository implements TransactionRepository {
   insert(t: Transaction): void {
     this.db
       .query(
-        `INSERT INTO transactions (date, description, note, type, category_id, value_cents, split, confirmed, recurring, series_id, id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO transactions (date, description, note, type, category_id, value_cents, split, confirmed, recurring, series_id,
+           recurrence_frequency, recurrence_weekdays, id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(...toParams(t));
   }
@@ -83,7 +113,8 @@ export class SqliteTransactionRepository implements TransactionRepository {
     this.db
       .query(
         `UPDATE transactions SET date = ?, description = ?, note = ?, type = ?, category_id = ?, value_cents = ?,
-           split = ?, confirmed = ?, recurring = ?, series_id = ?, updated_at = unixepoch() * 1000
+           split = ?, confirmed = ?, recurring = ?, series_id = ?,
+           recurrence_frequency = ?, recurrence_weekdays = ?, updated_at = unixepoch() * 1000
          WHERE id = ?`,
       )
       .run(...toParams(t));

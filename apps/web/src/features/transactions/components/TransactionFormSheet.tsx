@@ -1,7 +1,11 @@
 import {
+  applyFrequencyChange,
   applyTypeChange,
   draftToInput,
+  toggleWeekday,
   TRANSACTION_TYPES,
+  WEEKDAYS,
+  type RecurrenceFrequency,
   type Category,
   type Transaction,
   type TransactionDraft,
@@ -14,6 +18,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/shared/api/client';
 import { usePreferences } from '@/shared/i18n/PreferencesProvider';
 import { cn } from '@/shared/lib/utils';
+import { Segmented } from '@/shared/Segmented';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@/shared/ui/sheet';
 import { useSaveTransaction } from '../api';
@@ -65,9 +70,12 @@ function TransactionForm({
   const { register, control, watch, setValue, getValues, handleSubmit } = useForm<TransactionDraft>({
     defaultValues: target.draft,
   });
-  const ids = { date: useId(), value: useId(), description: useId(), note: useId() };
+  const ids = { date: useId(), value: useId(), description: useId(), note: useId(), frequency: useId() };
   const type = watch('type');
   const categoryId = watch('categoryId');
+  const recurring = watch('recurring');
+  const frequency = watch('frequency');
+  const weekdays = watch('weekdays');
   const clearError = () => setError('');
 
   const submit = handleSubmit((draft) => {
@@ -95,6 +103,20 @@ function TransactionForm({
     setValue('split', changed.split);
     clearError();
   };
+
+  const pickFrequency = (next: RecurrenceFrequency) => {
+    const changed = applyFrequencyChange(getValues(), next);
+    setValue('frequency', changed.frequency);
+    setValue('weekdays', changed.weekdays);
+    clearError();
+  };
+
+  const pickWeekday = (weekday: (typeof WEEKDAYS)[number]) => {
+    setValue('weekdays', toggleWeekday(getValues(), weekday).weekdays);
+    clearError();
+  };
+
+  const showFrequency = type !== 'acerto' && recurring;
 
   const inputClass =
     'h-11 rounded-[10px] border border-input bg-card px-3 font-normal text-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
@@ -236,7 +258,11 @@ function TransactionForm({
               control={control}
               name="recurring"
               title={t('transactions.formRecurringTitle')}
-              description={t('transactions.formRecurringDescription')}
+              description={t(
+                showFrequency && frequency === 'weekly'
+                  ? 'transactions.formRecurringWeeklyDescription'
+                  : 'transactions.formRecurringDescription',
+              )}
             />
           )}
           <Option
@@ -246,6 +272,50 @@ function TransactionForm({
             description={t('transactions.formConfirmedDescription')}
           />
         </div>
+
+        {showFrequency && (
+          <div className="flex flex-col gap-2">
+            <span id={ids.frequency} className="text-sm font-semibold">
+              {t('transactions.formFrequencyLabel')}
+            </span>
+            <Segmented
+              labelledBy={ids.frequency}
+              value={frequency}
+              options={[
+                ['monthly', t('transactions.formFrequencyMonthly')],
+                ['weekly', t('transactions.formFrequencyWeekly')],
+              ]}
+              onChange={pickFrequency}
+              className="self-start"
+            />
+            {frequency === 'weekly' && (
+              <div
+                role="group"
+                aria-label={t('transactions.formWeekdaysLabel')}
+                className="flex flex-wrap gap-2"
+              >
+                {WEEKDAYS.map((weekday) => {
+                  const selected = weekdays.includes(weekday);
+                  return (
+                    <button
+                      key={weekday}
+                      type="button"
+                      aria-pressed={selected}
+                      aria-label={t(`weekdayName.${weekday}`)}
+                      onClick={() => pickWeekday(weekday)}
+                      className={cn(
+                        'min-h-11 min-w-11 rounded-full border-[1.5px] px-3 text-sm font-semibold text-ink',
+                        selected ? 'border-ink bg-accent' : 'border-border bg-card',
+                      )}
+                    >
+                      {t(`weekday.${weekday}`)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {error && (
           <span role="alert" className="text-sm font-semibold text-expense">

@@ -7,6 +7,11 @@ export const recurringPtBR = {
         : `${count} lançamentos recorrentes ainda não foram gerados`
     } para ${month}.`,
   'recurring.bannerHelp': 'Eles entram como previstos, com data e valor do último mês, para você ajustar.',
+  'recurring.bannerSublineWeekly':
+    'Eles entram como previstos, com o valor da última ocorrência, para você ajustar.',
+  'recurring.occurrences': (count: number) => `${count} ${count === 1 ? 'ocorrência' : 'ocorrências'}`,
+  'recurring.showDates': 'Ver datas',
+  'recurring.hideDates': 'Ocultar datas',
   'recurring.dismiss': 'Agora não',
   'recurring.reviewAndGenerate': 'Revisar e gerar',
 

@@ -18,6 +18,7 @@ export function aTransaction(overrides: Partial<Transaction> = {}): Transaction 
     confirmed: true,
     recurring: false,
     seriesId: null,
+    recurrence: { frequency: 'monthly' },
     ...overrides,
   };
 }

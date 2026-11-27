@@ -4,8 +4,7 @@ import { signIn } from './helpers';
 const DARK_PAGE = 'rgb(27, 36, 31)';
 const LIGHT_PAGE = 'rgb(244, 245, 241)';
 
-const pageBackground = (page: Page) =>
-  page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+const pageBackground = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
 /** The class the init script set before the app ran, read before any module code. */
 async function themeBeforeTheAppRuns(page: Page) {

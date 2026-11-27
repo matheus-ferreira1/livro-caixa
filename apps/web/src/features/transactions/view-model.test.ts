@@ -1,4 +1,5 @@
 import {
+  MONTHLY_RECURRENCE,
   DEFAULT_LOCALIZATION as pt,
   localization,
   type Category,
@@ -25,6 +26,7 @@ const base: Transaction = {
   split: true,
   confirmed: false,
   recurring: true,
+  recurrence: MONTHLY_RECURRENCE,
   seriesId: 's1',
 };
 

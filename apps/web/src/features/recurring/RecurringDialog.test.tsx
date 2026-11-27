@@ -1,5 +1,10 @@
-import type { RecurringCandidate, Transaction } from '@livro-caixa/domain';
-import { screen, waitFor } from '@testing-library/react';
+import {
+  MONTHLY_RECURRENCE,
+  weeklyRecurrence,
+  type RecurringCandidate,
+  type Transaction,
+} from '@livro-caixa/domain';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { mockApi, renderWithRoute } from '@/test/render';
 import { RecurringDialog } from './RecurringDialog';
@@ -16,6 +21,7 @@ const source = (overrides: Partial<Transaction>): Transaction => ({
   confirmed: true,
   recurring: true,
   seriesId: 's-net',
+  recurrence: MONTHLY_RECURRENCE,
   ...overrides,
 });
 
@@ -133,5 +139,66 @@ describe('RecurringDialog', () => {
     expect(
       screen.getByText('Todos os lançamentos recorrentes já estão em Novembro 2026.'),
     ).toBeInTheDocument();
+  });
+
+  describe('with a weekly series', () => {
+    const weekly = ['2026-11-02', '2026-11-09', '2026-11-16'].map((date) =>
+      candidate(
+        source({
+          seriesId: 's-clean',
+          description: 'Faxina',
+          valueCents: 20_000,
+          split: false,
+          recurrence: weeklyRecurrence([1]),
+        }),
+        date,
+      ),
+    );
+
+    const dates = () => within(screen.getByRole('list', { name: 'Faxina' }));
+
+    test('shows one row that reveals a checkbox per date', async () => {
+      const { user } = setup({ candidates: weekly });
+      expect(await screen.findByText('3 ocorrências')).toBeInTheDocument();
+      expect(screen.queryByLabelText('seg 02/11')).not.toBeInTheDocument();
+      const toggle = screen.getByRole('button', { name: 'Ver datas' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await user.click(toggle);
+      expect(screen.getByRole('button', { name: 'Ocultar datas' })).toHaveAttribute('aria-expanded', 'true');
+      expect(dates().getByRole('checkbox', { name: 'seg 09/11' })).toBeChecked();
+      expect(dialog()).toHaveTextContent('3 de 3 selecionados');
+    });
+
+    test('generates the checked dates with the row value', async () => {
+      const { user, posts } = setup({ candidates: weekly });
+      await user.click(await screen.findByRole('button', { name: 'Ver datas' }));
+      await user.click(dates().getByRole('checkbox', { name: 'seg 09/11' }));
+      const value = screen.getByLabelText('Valor de Faxina');
+      await user.clear(value);
+      await user.type(value, '250,00');
+      await user.click(screen.getByRole('button', { name: 'Gerar 2 lançamentos' }));
+      await waitFor(() =>
+        expect(posts).toEqual([
+          {
+            month: '2026-11',
+            items: [
+              { seriesId: 's-clean', date: '2026-11-02', valueCents: 25_000 },
+              { seriesId: 's-clean', date: '2026-11-16', valueCents: 25_000 },
+            ],
+          },
+        ]),
+      );
+    });
+
+    test('unchecks the row when every date is cleared and checks every date again with the row', async () => {
+      const { user } = setup({ candidates: weekly });
+      await user.click(await screen.findByRole('button', { name: 'Ver datas' }));
+      for (const label of ['seg 02/11', 'seg 09/11', 'seg 16/11'])
+        await user.click(dates().getByRole('checkbox', { name: label }));
+      expect(screen.getByRole('checkbox', { name: 'Incluir Faxina' })).not.toBeChecked();
+      await user.click(screen.getByRole('checkbox', { name: 'Incluir Faxina' }));
+      expect(dates().getByRole('checkbox', { name: 'seg 16/11' })).toBeChecked();
+      expect(dialog()).toHaveTextContent('3 de 3 selecionados');
+    });
   });
 });

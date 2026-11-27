@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { isMonthKey } from '../dates/dates';
 import { MAX_ENTRY_CENTS } from './transaction-input';
 
-// A household ledger has a few dozen recurring series at most.
+// One item per occurrence: a few dozen series, the weekly ones up to ~31 dates a month, stay well under this.
 const MAX_GENERATED_ITEMS = 500;
 
 /** What "Gerar lançamentos" sends: the chosen series with the reviewed date and value. */

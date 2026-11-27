@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import request from 'supertest';
-import { MAX_ENTRY_CENTS, type Transaction } from '@livro-caixa/domain';
+import { MAX_ENTRY_CENTS, MONTHLY_RECURRENCE, weeklyRecurrence, type Transaction } from '@livro-caixa/domain';
 import { buildTestApp, signIn } from '../../test/harness';
 
 let n = 0;
@@ -18,6 +18,7 @@ function anOccurrence(overrides: Partial<Transaction>): Transaction {
     confirmed: true,
     recurring: true,
     seriesId: 's-internet',
+    recurrence: MONTHLY_RECURRENCE,
     ...overrides,
   };
 }
@@ -57,7 +58,72 @@ describe('GET /api/recurring/candidates', () => {
   });
 });
 
+const WEEKLY = [
+  anOccurrence({ id: 'w1', date: '2026-10-30', seriesId: 's-feira', recurrence: weeklyRecurrence([1, 5]) }),
+];
+const weeklyItem = (date: string) => ({ seriesId: 's-feira', date, valueCents: 11_990 });
+
+describe('weekly series', () => {
+  test('suggests one candidate per date carrying the recurrence', async () => {
+    const { agent } = await appWith(WEEKLY);
+    const { body } = await agent.get('/api/recurring/candidates?month=2026-11').expect(200);
+    expect(body.candidates.map((c: { date: string }) => c.date).slice(0, 3)).toEqual([
+      '2026-11-02',
+      '2026-11-06',
+      '2026-11-09',
+    ]);
+    expect(body.candidates[0].source.recurrence).toEqual({ frequency: 'weekly', weekdays: [1, 5] });
+  });
+
+  test('generates several dates, each entry keeping the recurrence', async () => {
+    const { agent } = await appWith(WEEKLY);
+    const { body } = await agent
+      .post('/api/recurring/generate')
+      .send({ month: '2026-11', items: [weeklyItem('2026-11-02'), weeklyItem('2026-11-06')] })
+      .expect(201);
+    expect(body.transactions.map((t: { date: string }) => t.date)).toEqual(['2026-11-02', '2026-11-06']);
+    for (const t of body.transactions)
+      expect(t.recurrence).toEqual({ frequency: 'weekly', weekdays: [1, 5] });
+  });
+
+  test.each([
+    ['a repeated date', ['2026-11-02', '2026-11-02']],
+    ['a date that is not a candidate', ['2026-11-03']],
+  ])('refuses %s', async (_name, dates) => {
+    const { agent, container } = await appWith(WEEKLY);
+    const res = await agent
+      .post('/api/recurring/generate')
+      .send({ month: '2026-11', items: dates.map(weeklyItem) })
+      .expect(409);
+    expect(res.body.error.code).toBe('conflict');
+    expect(container.transactions.listByMonth('2026-11')).toEqual([]);
+  });
+
+  test('refuses the same dates generated twice', async () => {
+    const { agent } = await appWith(WEEKLY);
+    const payload = { month: '2026-11', items: [weeklyItem('2026-11-02'), weeklyItem('2026-11-06')] };
+    await agent.post('/api/recurring/generate').send(payload).expect(201);
+    await agent.post('/api/recurring/generate').send(payload).expect(409);
+  });
+});
+
 describe('POST /api/recurring/generate', () => {
+  test('keeps a monthly item whose date was edited within the month', async () => {
+    const { agent } = await appWith(SERIES);
+    await agent
+      .post('/api/recurring/generate')
+      .send({ month: '2026-11', items: [{ ...novemberItem, date: '2026-11-15' }] })
+      .expect(201);
+  });
+
+  test('refuses two items for one monthly series', async () => {
+    const { agent } = await appWith(SERIES);
+    await agent
+      .post('/api/recurring/generate')
+      .send({ month: '2026-11', items: [novemberItem, { ...novemberItem, date: '2026-11-15' }] })
+      .expect(409);
+  });
+
   test('creates pending entries in the same series, without the note', async () => {
     const { agent } = await appWith(SERIES);
     const { body } = await agent

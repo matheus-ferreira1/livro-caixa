@@ -1,4 +1,5 @@
 import {
+  MONTHLY_RECURRENCE,
   buildDashboard,
   CATEGORY_PALETTE,
   DEFAULT_LOCALIZATION,
@@ -28,6 +29,7 @@ const entry = (overrides: Partial<Transaction>): Transaction => ({
   split: false,
   confirmed: true,
   recurring: false,
+  recurrence: MONTHLY_RECURRENCE,
   seriesId: null,
   ...overrides,
 });
