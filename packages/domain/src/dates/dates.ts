@@ -64,13 +64,30 @@ export function lastDayOfMonth(key: MonthKey): number {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
 }
 
+/** Day of the week, 0 = Sunday … 6 = Saturday, as `Date.getUTCDay` numbers them. */
+export const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+
+export const isWeekday = (value: number): value is Weekday => (WEEKDAYS as readonly number[]).includes(value);
+
+/** Computed in UTC so the local time zone never moves the date to another day. */
+export function weekdayOf(date: IsoDate): Weekday {
+  const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
+  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return isWeekday(weekday) ? weekday : 0;
+}
+
+/** Every day of the month, in calendar order. */
+export const datesOfMonth = (key: MonthKey): IsoDate[] =>
+  Array.from({ length: lastDayOfMonth(key) }, (_, index) => `${key}-${pad2(index + 1)}`);
+
 export function dateParts(date: IsoDate, t: Translate) {
   const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
   return {
     dd: pad2(d),
     mm: pad2(m),
     yy: String(y).slice(2),
-    weekday: t(WEEKDAY_KEYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? 'weekday.0'),
+    weekday: t(WEEKDAY_KEYS[weekdayOf(date)]),
   };
 }
 
