@@ -3,24 +3,11 @@ import { signIn } from './helpers';
 
 // Months far from today and from the other specs, so this spec never shares data with them.
 const SOURCE_MONTH = '2027-05';
-const NEXT_MONTH = '2027-06';
-const MONDAY = 1;
-const FRIDAY = 5;
 
-function weekdaysInMonth(month: string, weekdays: number[]): number {
-  const [year, monthNumber] = month.split('-').map(Number);
-  const daysInMonth = new Date(Date.UTC(year as number, monthNumber as number, 0)).getUTCDate();
-  let count = 0;
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const weekday = new Date(Date.UTC(year as number, (monthNumber as number) - 1, day)).getUTCDay();
-    if (weekdays.includes(weekday)) count += 1;
-  }
-  return count;
-}
+// June 2027 Mondays: 7, 14, 21, 28; Fridays: 4, 11, 18, 25.
+const JUNE_OCCURRENCES = 8;
 
 test('generates the next month’s occurrences of a weekly recurring entry', async ({ page }) => {
-  const occurrences = weekdaysInMonth(NEXT_MONTH, [MONDAY, FRIDAY]);
-
   await signIn(page);
   await page.goto(`/lancamentos?mes=${SOURCE_MONTH}`);
 
@@ -45,22 +32,22 @@ test('generates the next month’s occurrences of a weekly recurring entry', asy
   await page.getByRole('button', { name: 'Próximo mês' }).click();
   await expect(page.getByRole('heading', { name: 'Junho 2027' })).toBeVisible();
   await expect(
-    page.getByText(`${occurrences} lançamentos recorrentes ainda não foram gerados para Junho 2027.`),
+    page.getByText(`${JUNE_OCCURRENCES} lançamentos recorrentes ainda não foram gerados para Junho 2027.`),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Revisar e gerar' }).click();
 
   const review = page.getByRole('dialog', { name: 'Gerar lançamentos recorrentes' });
-  await expect(review.getByText(`${occurrences} ocorrências`)).toBeVisible();
+  await expect(review.getByText(`${JUNE_OCCURRENCES} ocorrências`)).toBeVisible();
   await expect(review.getByRole('button', { name: 'Ver datas' })).toHaveAttribute('aria-expanded', 'false');
   await review.getByRole('button', { name: 'Ver datas' }).click();
   await expect(review.getByRole('button', { name: 'Ocultar datas' })).toHaveAttribute(
     'aria-expanded',
     'true',
   );
-  await expect(review.getByRole('checkbox', { name: /^(seg|sex) \d\d\/06$/ })).toHaveCount(occurrences);
+  await expect(review.getByRole('checkbox', { name: /^(seg|sex) \d\d\/06$/ })).toHaveCount(JUNE_OCCURRENCES);
 
   await review.getByRole('checkbox', { name: 'seg 07/06' }).uncheck();
-  const generated = occurrences - 1;
+  const generated = JUNE_OCCURRENCES - 1;
   await review.getByRole('button', { name: `Gerar ${generated} lançamentos` }).click();
 
   await expect(page.getByText(`${generated} lançamentos gerados como previstos`)).toBeVisible();
