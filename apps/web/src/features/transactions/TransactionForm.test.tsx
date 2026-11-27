@@ -33,7 +33,12 @@ function setup({ weekly = false }: { weekly?: boolean } = {}) {
     if (url === '/api/settings')
       return { status: 200, body: { settings: { partnerName: 'Bia', partnerShare: 40 } } };
     if (method === 'GET' && url === '/api/transactions?month=2026-10')
-      return { status: 200, body: { transactions: [weekly ? { ...LUZ, recurrence: { frequency: 'weekly', weekdays: [1, 5] } } : LUZ] } };
+      return {
+        status: 200,
+        body: {
+          transactions: [weekly ? { ...LUZ, recurrence: { frequency: 'weekly', weekdays: [1, 5] } } : LUZ],
+        },
+      };
     if (method === 'GET' && url.startsWith('/api/transactions?month='))
       return { status: 200, body: { transactions: [] } };
     if (method === 'POST' || method === 'PUT') {
