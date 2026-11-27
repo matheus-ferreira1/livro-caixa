@@ -221,7 +221,8 @@ const OCTOBER: Transaction[] = [
 const CLEANER_SERIES_ID = 's-diarista';
 const CLEANER_VISIT_VALUE = 120;
 const CLEANER_WEEKDAYS: readonly Weekday[] = [1, 5];
-// The last visit before the demo "today" (2026-10-26); later visits are still pending.
+// Must stay the last Monday or Friday before DEMO_TODAY (2026-10-26) in
+// apps/site/scripts/capture-screenshots.ts, so that later visits are still pending.
 const CLEANER_LAST_CONFIRMED_DATE = '2026-10-23';
 
 function cleanerVisits(): Transaction[] {
