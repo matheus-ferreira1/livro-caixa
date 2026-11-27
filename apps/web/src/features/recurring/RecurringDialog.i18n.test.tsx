@@ -1,4 +1,4 @@
-import type { RecurringCandidate, Transaction } from '@livro-caixa/domain';
+import { MONTHLY_RECURRENCE, type RecurringCandidate, type Transaction } from '@livro-caixa/domain';
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { mockApi, renderWithRoute } from '@/test/render';
@@ -16,6 +16,7 @@ const source: Transaction = {
   confirmed: true,
   recurring: true,
   seriesId: 's-net',
+  recurrence: MONTHLY_RECURRENCE,
 };
 
 const CANDIDATES: RecurringCandidate[] = [

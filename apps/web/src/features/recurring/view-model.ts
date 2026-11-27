@@ -1,6 +1,7 @@
 import {
   dateParts,
   monthLabel,
+  weekdayOf,
   sumCents,
   validateRecurringSelection,
   type Category,
@@ -19,6 +20,8 @@ export interface RecurringDraft {
   include: boolean;
   date: IsoDate;
   value: string;
+  /** Weekly series only: the dates left unchecked. Each date of the series is checked by default. */
+  skipped: IsoDate[];
 }
 
 export type RecurringDrafts = Record<string, RecurringDraft>;
@@ -27,10 +30,38 @@ const defaultDraft = (c: RecurringCandidate, money: MoneyFormat): RecurringDraft
   include: true,
   date: c.date,
   value: money.toInput(c.valueCents),
+  skipped: [],
 });
 
 export const defaultDrafts = (candidates: RecurringCandidate[], money: MoneyFormat): RecurringDrafts =>
   Object.fromEntries(candidates.map((c) => [c.seriesId, defaultDraft(c, money)]));
+
+const isWeekly = (c: RecurringCandidate): boolean => c.source.recurrence.frequency === 'weekly';
+
+/** A weekly series arrives as one candidate per date, so the dialog works on series, not candidates. */
+interface Series {
+  seriesId: string;
+  first: RecurringCandidate;
+  candidates: RecurringCandidate[];
+}
+
+const groupBySeries = (candidates: RecurringCandidate[]): Series[] => {
+  const bySeries = new Map<string, Series>();
+  for (const c of candidates) {
+    const series = bySeries.get(c.seriesId);
+    if (series) series.candidates.push(c);
+    else bySeries.set(c.seriesId, { seriesId: c.seriesId, first: c, candidates: [c] });
+  }
+  return [...bySeries.values()];
+};
+
+/** The dates of a series that are chosen: a monthly one is all or nothing, a weekly one date by date. */
+const chosenCandidates = (series: Series, draft: RecurringDraft): RecurringCandidate[] =>
+  isWeekly(series.first)
+    ? series.candidates.filter((c) => !draft.skipped.includes(c.date))
+    : draft.include
+      ? series.candidates
+      : [];
 
 // A series can show up after the dialog opened (the list refetched); it starts with the defaults.
 const draftOf = (c: RecurringCandidate, drafts: RecurringDrafts, money: MoneyFormat): RecurringDraft =>
@@ -39,6 +70,17 @@ const draftOf = (c: RecurringCandidate, drafts: RecurringDrafts, money: MoneyFor
 export const recurringBannerText = (count: number, month: MonthKey, { t }: Pick<Localization, 't'>): string =>
   t('recurring.banner', count, monthLabel(month, t));
 
+export const recurringBannerHelp = (
+  candidates: RecurringCandidate[],
+  { t }: Pick<Localization, 't'>,
+): string => t(candidates.some(isWeekly) ? 'recurring.bannerSublineWeekly' : 'recurring.bannerHelp');
+
+export interface RecurringDateOption {
+  date: IsoDate;
+  label: string;
+  checked: boolean;
+}
+
 export interface RecurringRow {
   seriesId: string;
   description: string;
@@ -46,12 +88,15 @@ export interface RecurringRow {
   type: TransactionType;
   typeLabel: string;
   include: boolean;
+  weekly: boolean;
   date: IsoDate;
   value: string;
   lastLabel: string;
   includeLabel: string;
   dateLabel: string;
   valueLabel: string;
+  occurrencesLabel: string;
+  dates: RecurringDateOption[];
 }
 
 export function recurringRows(
@@ -60,32 +105,69 @@ export function recurringRows(
   categories: Map<string, Category>,
   { t, money }: Pick<Localization, 't' | 'money'>,
 ): RecurringRow[] {
-  return candidates.map((c) => {
-    const { description, categoryId, split, type, valueCents, date } = c.source;
+  return groupBySeries(candidates).map((series) => {
+    const { first } = series;
+    const { description, categoryId, split, type, valueCents, date } = first.source;
     const category = categoryId ? categories.get(categoryId) : undefined;
     const { dd, mm } = dateParts(date, t);
-    const draft = draftOf(c, drafts, money);
+    const draft = draftOf(first, drafts, money);
+    const weekly = isWeekly(first);
     return {
-      seriesId: c.seriesId,
+      seriesId: series.seriesId,
       description,
       meta: (category?.name ?? t('category.none')) + (split ? t('recurring.splitSuffix') : ''),
       type,
       typeLabel: t(TYPE_META[type].labelKey),
-      include: draft.include,
+      include: chosenCandidates(series, draft).length > 0,
+      weekly,
       date: draft.date,
       value: draft.value,
       lastLabel: `${money.format(valueCents)} · ${dd}/${mm}`,
       includeLabel: t('recurring.includeRow', description),
       dateLabel: t('recurring.dateRow', description),
       valueLabel: t('recurring.valueRow', description),
+      occurrencesLabel: t('recurring.occurrences', series.candidates.length),
+      dates: weekly
+        ? series.candidates.map((c) => ({
+            date: c.date,
+            label: dateLabel(c.date, t),
+            checked: !draft.skipped.includes(c.date),
+          }))
+        : [],
     };
   });
 }
 
+const dateLabel = (date: IsoDate, t: Localization['t']): string => {
+  const { dd, mm } = dateParts(date, t);
+  return `${t(`weekday.${weekdayOf(date)}`)} ${dd}/${mm}`;
+};
+
+/** The draft after (un)checking a whole series: a weekly one checks or clears every date. */
+export const withSeriesChecked = (
+  row: RecurringRow,
+  draft: RecurringDraft,
+  checked: boolean,
+): RecurringDraft => ({
+  ...draft,
+  include: checked,
+  skipped: checked ? [] : row.dates.map((d) => d.date),
+});
+
+export const withDateChecked = (draft: RecurringDraft, date: IsoDate, checked: boolean): RecurringDraft => ({
+  ...draft,
+  skipped: checked ? draft.skipped.filter((d) => d !== date) : [...draft.skipped, date],
+});
+
 const chosen = (candidates: RecurringCandidate[], drafts: RecurringDrafts, money: MoneyFormat) =>
-  candidates
-    .map((c) => ({ candidate: c, draft: draftOf(c, drafts, money) }))
-    .filter(({ draft }) => draft.include);
+  groupBySeries(candidates).flatMap((series) => {
+    const draft = draftOf(series.first, drafts, money);
+    return chosenCandidates(series, draft).map((candidate) => ({
+      candidate,
+      // A weekly date is not editable, so each occurrence keeps its planned date.
+      draft: isWeekly(candidate) ? { ...draft, date: candidate.date } : draft,
+    }));
+  });
 
 export function recurringSummary(
   candidates: RecurringCandidate[],

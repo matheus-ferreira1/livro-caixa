@@ -1,6 +1,8 @@
 import {
   DEFAULT_LOCALIZATION as pt,
   localization,
+  MONTHLY_RECURRENCE,
+  weeklyRecurrence,
   type Category,
   type RecurringCandidate,
   type Transaction,
@@ -9,9 +11,12 @@ import { describe, expect, test } from 'vitest';
 import {
   defaultDrafts,
   generateRequest,
+  recurringBannerHelp,
   recurringBannerText,
   recurringRows,
   recurringSummary,
+  withDateChecked,
+  withSeriesChecked,
   type RecurringDrafts,
 } from './view-model';
 
@@ -31,6 +36,7 @@ const source = (overrides: Partial<Transaction>): Transaction => ({
   confirmed: true,
   recurring: true,
   seriesId: 's-net',
+  recurrence: MONTHLY_RECURRENCE,
   ...overrides,
 });
 
@@ -109,8 +115,8 @@ describe('recurringSummary', () => {
   test('leaves out unselected rows and unparseable values', () => {
     const drafts: RecurringDrafts = {
       ...defaultDrafts(CANDIDATES, pt.money),
-      's-sal': { include: false, date: '2026-11-05', value: '8500' },
-      's-net': { include: true, date: '2026-11-15', value: 'abc' },
+      's-sal': { include: false, date: '2026-11-05', value: '8500', skipped: [] },
+      's-net': { include: true, date: '2026-11-15', value: 'abc', skipped: [] },
     };
     expect(recurringSummary(CANDIDATES, drafts, pt)).toMatchObject({
       selectionLabel: '1 de 2 selecionados',
@@ -136,7 +142,7 @@ describe('generateRequest', () => {
   test('sends the selected rows with their reviewed date and value in cents', () => {
     const drafts = {
       ...defaultDrafts(CANDIDATES, pt.money),
-      's-net': { include: true, date: '2026-11-20', value: '1.234,56' },
+      's-net': { include: true, date: '2026-11-20', value: '1.234,56', skipped: [] },
     };
     expect(generateRequest('2026-11', CANDIDATES, drafts, pt)).toEqual({
       request: {
@@ -152,7 +158,7 @@ describe('generateRequest', () => {
   test('names the first row to review', () => {
     const drafts = {
       ...defaultDrafts(CANDIDATES, pt.money),
-      's-net': { include: true, date: '2026-12-01', value: '10' },
+      's-net': { include: true, date: '2026-12-01', value: '10', skipped: [] },
     };
     expect(generateRequest('2026-11', CANDIDATES, drafts, pt)).toEqual({
       error: 'Revise “Internet fibra”: a data deve ser em Novembro 2026 e o valor maior que zero.',
@@ -180,7 +186,7 @@ describe('recurring view models in English with US dollars', () => {
   test('reads typed amounts with a dot as the decimal mark', () => {
     const drafts = {
       ...defaultDrafts(CANDIDATES, english.money),
-      's-net': { include: true, date: '2026-11-20', value: '1,234.56' },
+      's-net': { include: true, date: '2026-11-20', value: '1,234.56', skipped: [] },
     };
     expect(generateRequest('2026-11', CANDIDATES, drafts, english)).toMatchObject({
       request: { items: [{ seriesId: 's-net', valueCents: 123_456 }, { seriesId: 's-sal' }] },
@@ -189,5 +195,74 @@ describe('recurring view models in English with US dollars', () => {
       selectionLabel: '2 of 2 selected',
       generateLabel: 'Generate 2 entries',
     });
+  });
+});
+
+const weeklyCandidates = ['2026-11-02', '2026-11-09', '2026-11-16'].map((date) =>
+  candidate(
+    {
+      seriesId: 's-clean',
+      description: 'Faxina',
+      valueCents: 20_000,
+      split: false,
+      recurrence: weeklyRecurrence([1]),
+    },
+    date,
+  ),
+);
+const MIXED = [...CANDIDATES, ...weeklyCandidates];
+
+describe('weekly series', () => {
+  test('are one row with a checkbox per date, labelled by weekday', () => {
+    const rows = recurringRows(MIXED, defaultDrafts(MIXED, pt.money), categories, pt);
+    expect(rows).toHaveLength(3);
+    expect(rows[2]).toMatchObject({
+      weekly: true,
+      include: true,
+      occurrencesLabel: '3 ocorrências',
+      value: '200,00',
+      dates: [
+        { date: '2026-11-02', label: 'seg 02/11', checked: true },
+        { date: '2026-11-09', label: 'seg 09/11', checked: true },
+        { date: '2026-11-16', label: 'seg 16/11', checked: true },
+      ],
+    });
+    expect(rows[0]?.weekly).toBe(false);
+  });
+
+  test('count occurrences, not rows, in the summary and the request', () => {
+    const drafts = defaultDrafts(MIXED, pt.money);
+    expect(recurringSummary(MIXED, drafts, pt)).toMatchObject({
+      selectionLabel: '5 de 5 selecionados',
+      expense: money('R$ 719,90'),
+      generateLabel: 'Gerar 5 lançamentos',
+    });
+    expect(generateRequest('2026-11', MIXED, drafts, pt)).toMatchObject({
+      request: {
+        items: expect.arrayContaining([
+          { seriesId: 's-clean', date: '2026-11-02', valueCents: 20_000 },
+          { seriesId: 's-clean', date: '2026-11-16', valueCents: 20_000 },
+        ]),
+      },
+    });
+  });
+
+  test('skip unchecked dates and unselect the row once none is left', () => {
+    const [row] = recurringRows(weeklyCandidates, defaultDrafts(weeklyCandidates, pt.money), categories, pt);
+    const base = defaultDrafts(weeklyCandidates, pt.money)['s-clean'];
+    if (!row || !base) throw new Error('fixture');
+    const some = withDateChecked(base, '2026-11-09', false);
+    expect(recurringSummary(weeklyCandidates, { 's-clean': some }, pt).selectionLabel).toBe(
+      '2 de 3 selecionados',
+    );
+    const none = withSeriesChecked(row, base, false);
+    const [cleared] = recurringRows(weeklyCandidates, { 's-clean': none }, categories, pt);
+    expect(cleared?.include).toBe(false);
+    expect(withSeriesChecked(row, none, true).skipped).toEqual([]);
+  });
+
+  test('use the weekly banner sub-line only when a candidate is weekly', () => {
+    expect(recurringBannerHelp(CANDIDATES, pt)).toBe(pt.t('recurring.bannerHelp'));
+    expect(recurringBannerHelp(MIXED, pt)).toBe(pt.t('recurring.bannerSublineWeekly'));
   });
 });
