@@ -45,4 +45,26 @@ describe('SqliteTransactionRepository recurrence', () => {
     repository.update({ ...entry('a'), recurrence });
     expect(repository.findById('a')?.recurrence).toEqual(recurrence);
   });
+
+  const storeWeekdays = (database: ReturnType<typeof openDatabase>, weekdays: string | null) =>
+    database.run(
+      "UPDATE transactions SET recurrence_frequency = 'weekly', recurrence_weekdays = ? WHERE id = 'a'",
+      [weekdays],
+    );
+
+  test('drops stored weekdays that are not 0-6', () => {
+    const database = openDatabase(':memory:');
+    const repository = new SqliteTransactionRepository(database);
+    repository.insert(entry('a'));
+    storeWeekdays(database, '1,9,x,5');
+    expect(repository.findById('a')?.recurrence).toEqual(weeklyRecurrence([1, 5]));
+  });
+
+  test('falls back to monthly when a weekly row has no valid weekday', () => {
+    const database = openDatabase(':memory:');
+    const repository = new SqliteTransactionRepository(database);
+    repository.insert(entry('a'));
+    storeWeekdays(database, '9,x');
+    expect(repository.findById('a')?.recurrence).toEqual(MONTHLY_RECURRENCE);
+  });
 });

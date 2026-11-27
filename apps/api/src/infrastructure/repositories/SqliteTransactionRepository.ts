@@ -1,5 +1,6 @@
 import type { Database } from 'bun:sqlite';
 import {
+  isWeekday,
   MONTHLY_RECURRENCE,
   weeklyRecurrence,
   type MonthKey,
@@ -28,10 +29,15 @@ interface TransactionRow {
 
 const WEEKDAY_SEPARATOR = ',';
 
-const toRecurrence = (row: TransactionRow): Recurrence =>
-  row.recurrence_frequency === 'weekly' && row.recurrence_weekdays
-    ? weeklyRecurrence(row.recurrence_weekdays.split(WEEKDAY_SEPARATOR).map((day) => Number(day) as Weekday))
-    : MONTHLY_RECURRENCE;
+const storedWeekdays = (stored: string | null): Weekday[] =>
+  (stored ?? '').split(WEEKDAY_SEPARATOR).map(Number).filter(isWeekday);
+
+// A corrupt weekly row falls back to monthly rather than a series that would never produce a date.
+const toRecurrence = (row: TransactionRow): Recurrence => {
+  if (row.recurrence_frequency !== 'weekly') return MONTHLY_RECURRENCE;
+  const weekdays = storedWeekdays(row.recurrence_weekdays);
+  return weekdays.length > 0 ? weeklyRecurrence(weekdays) : MONTHLY_RECURRENCE;
+};
 
 const weekdaysColumn = (recurrence: Recurrence): string | null =>
   recurrence.frequency === 'weekly' ? recurrence.weekdays.join(WEEKDAY_SEPARATOR) : null;

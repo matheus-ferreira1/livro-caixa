@@ -126,7 +126,7 @@ export const MIGRATIONS: Migration[] = [
     `,
   },
   {
-    // Existing series keep repeating monthly; weekdays (ISO 1-7, comma separated) are set only for weekly.
+    // Existing series keep repeating monthly; weekdays (0 = Sunday … 6 = Saturday, comma separated) are set only for weekly.
     id: '006_weekly_recurrence',
     sql: `
       ALTER TABLE transactions ADD COLUMN recurrence_frequency TEXT NOT NULL DEFAULT 'monthly'
