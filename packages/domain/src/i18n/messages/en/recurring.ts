@@ -8,6 +8,11 @@ export const recurringEn: typeof recurringPtBR = {
         : `${count} recurring entries have not been generated yet`
     } for ${month}.`,
   'recurring.bannerHelp': 'They come in as pending, with last month’s date and amount, for you to adjust.',
+  'recurring.bannerSublineWeekly':
+    "They are added as pending, with the latest occurrence's amount, for you to adjust.",
+  'recurring.occurrences': (count) => `${count} ${count === 1 ? 'occurrence' : 'occurrences'}`,
+  'recurring.showDates': 'Show dates',
+  'recurring.hideDates': 'Hide dates',
   'recurring.dismiss': 'Not now',
   'recurring.reviewAndGenerate': 'Review and generate',
 

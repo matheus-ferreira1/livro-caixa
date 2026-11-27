@@ -128,6 +128,12 @@ export const transactionsPtBR = {
   'transactions.formRecurringTitle': 'Recorrente',
   'transactions.formRecurringDescription':
     'Acontece todo mês. Será sugerido ao gerar os recorrentes do mês seguinte.',
+  'transactions.formFrequencyLabel': 'Frequência',
+  'transactions.formFrequencyMonthly': 'Mensal',
+  'transactions.formFrequencyWeekly': 'Semanal',
+  'transactions.formWeekdaysLabel': 'Dias da semana',
+  'transactions.formRecurringWeeklyDescription':
+    'Acontece toda semana nos dias marcados. Será sugerido ao gerar os recorrentes.',
   'transactions.formConfirmedTitle': 'Confirmado',
   'transactions.formConfirmedDescription':
     'Marque quando o valor já tiver saído ou entrado. Desmarcado, fica como previsto.',

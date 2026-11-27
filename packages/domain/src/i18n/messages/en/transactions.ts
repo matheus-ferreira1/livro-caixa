@@ -126,6 +126,12 @@ export const transactionsEn: typeof transactionsPtBR = {
   'transactions.formRecurringTitle': 'Recurring',
   'transactions.formRecurringDescription':
     'Happens every month. It will be suggested when generating next month’s recurring entries.',
+  'transactions.formFrequencyLabel': 'Frequency',
+  'transactions.formFrequencyMonthly': 'Monthly',
+  'transactions.formFrequencyWeekly': 'Weekly',
+  'transactions.formWeekdaysLabel': 'Weekdays',
+  'transactions.formRecurringWeeklyDescription':
+    'Happens every week on the chosen days. Suggested when you generate recurring entries.',
   'transactions.formConfirmedTitle': 'Confirmed',
   'transactions.formConfirmedDescription':
     'Check when the amount has already gone out or come in. Unchecked, it stays pending.',

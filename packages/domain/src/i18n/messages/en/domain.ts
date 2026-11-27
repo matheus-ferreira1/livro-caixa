@@ -10,6 +10,7 @@ export const domainEn: typeof domainPtBR = {
   'form.date': 'Enter the date.',
   'form.description': 'Enter the description.',
   'form.value': 'Enter an amount greater than zero.',
+  'form.weekdays': 'Choose at least one weekday.',
   'form.category': 'Choose a category.',
 
   'category.nameRequired': 'Give the category a name.',
@@ -88,6 +89,14 @@ export const domainEn: typeof domainPtBR = {
   'weekday.4': 'thu',
   'weekday.5': 'fri',
   'weekday.6': 'sat',
+
+  'weekdayName.0': 'Sunday',
+  'weekdayName.1': 'Monday',
+  'weekdayName.2': 'Tuesday',
+  'weekdayName.3': 'Wednesday',
+  'weekdayName.4': 'Thursday',
+  'weekdayName.5': 'Friday',
+  'weekdayName.6': 'Saturday',
 
   'elapsed.now': 'now',
   'elapsed.minutes': (count) => `${count} min ago`,
