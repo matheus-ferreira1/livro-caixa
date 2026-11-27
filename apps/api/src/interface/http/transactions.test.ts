@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import request from 'supertest';
-import type { Transaction } from '@livro-caixa/domain';
+import { MONTHLY_RECURRENCE, type Transaction } from '@livro-caixa/domain';
 import { buildTestApp, signIn } from '../../test/harness';
 
 async function appWith(transactions: Partial<Transaction>[]) {
@@ -25,6 +25,7 @@ function aRow(overrides: Partial<Transaction>): Transaction {
     confirmed: true,
     recurring: false,
     seriesId: null,
+    recurrence: MONTHLY_RECURRENCE,
     ...overrides,
   };
 }

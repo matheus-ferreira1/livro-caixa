@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  matchRecurringItems,
   recurringCandidates,
   recurringEntry,
   validateRecurringSelection,
@@ -31,16 +32,9 @@ export class GenerateRecurring {
   ) {}
 
   execute({ month, items }: RecurringGenerateRequest): Transaction[] {
-    const candidates = new Map(
-      recurringCandidates(this.transactions.listAll(), month).map((c) => [c.seriesId, c]),
-    );
-    const chosen = items.map((item) => {
-      const candidate = candidates.get(item.seriesId);
-      if (!candidate) throw new ApplicationError('conflict', this.translate()('recurring.stale'));
-      // A series listed twice would generate twice.
-      candidates.delete(item.seriesId);
-      return { ...item, source: candidate.source };
-    });
+    const match = matchRecurringItems(recurringCandidates(this.transactions.listAll(), month), items);
+    if (match.status === 'stale') throw new ApplicationError('conflict', this.translate()('recurring.stale'));
+    const chosen = match.matched.map(({ item, source }) => ({ ...item, source }));
 
     const error = validateRecurringSelection(
       chosen.map((c) => ({ description: c.source.description, date: c.date, valueCents: c.valueCents })),
