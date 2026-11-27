@@ -3,7 +3,9 @@ import { localization } from '../i18n/localization';
 import { aTransaction } from '../test/builders';
 import {
   MAX_ENTRY_CENTS,
+  applyFrequencyChange,
   applyTypeChange,
+  toggleWeekday,
   draftFromTransaction,
   draftToInput,
   emptyDraft,
@@ -30,6 +32,8 @@ const valid: TransactionDraft = {
   split: true,
   confirmed: false,
   recurring: false,
+  frequency: 'monthly',
+  weekdays: [],
 };
 
 describe('emptyDraft', () => {
@@ -44,7 +48,39 @@ describe('emptyDraft', () => {
       split: false,
       confirmed: false,
       recurring: false,
+      frequency: 'monthly',
+      weekdays: [],
     });
+  });
+});
+
+describe('applyFrequencyChange', () => {
+  test('switching to weekly pre-selects the weekday of the date', () => {
+    expect(applyFrequencyChange({ ...valid, date: '2026-11-06' }, 'weekly')).toMatchObject({
+      frequency: 'weekly',
+      weekdays: [5],
+    });
+  });
+
+  test('pre-selects nothing while the date is not a real day', () => {
+    expect(applyFrequencyChange({ ...valid, date: '' }, 'weekly').weekdays).toEqual([]);
+  });
+
+  test('switching back to monthly clears the weekdays', () => {
+    const weekly = { ...valid, frequency: 'weekly' as const, weekdays: [1, 5] as const };
+    expect(applyFrequencyChange({ ...weekly, weekdays: [...weekly.weekdays] }, 'monthly')).toMatchObject({
+      frequency: 'monthly',
+      weekdays: [],
+    });
+  });
+});
+
+describe('toggleWeekday', () => {
+  test('adds a weekday in calendar order and removes it on the second press', () => {
+    const draft = { ...valid, frequency: 'weekly' as const, weekdays: [5 as const] };
+    const added = toggleWeekday(draft, 1);
+    expect(added.weekdays).toEqual([1, 5]);
+    expect(toggleWeekday(added, 5).weekdays).toEqual([1]);
   });
 });
 
@@ -56,6 +92,18 @@ describe('applyTypeChange', () => {
       split: false,
     });
     expect(applyTypeChange(valid, 'acerto', categories)).toMatchObject({ categoryId: null, split: false });
+  });
+
+  test('an acerto never keeps a weekly frequency', () => {
+    const weekly: TransactionDraft = { ...valid, recurring: true, frequency: 'weekly', weekdays: [1] };
+    expect(applyTypeChange(weekly, 'acerto', categories)).toMatchObject({
+      frequency: 'monthly',
+      weekdays: [],
+    });
+    expect(applyTypeChange(weekly, 'receita', categories)).toMatchObject({
+      frequency: 'weekly',
+      weekdays: [1],
+    });
   });
 
   test('keeps split when staying on expense', () => {
@@ -78,6 +126,27 @@ describe('draftToInput + validateInput', () => {
     expect(check({ type: 'acerto', categoryId: null })).toBeNull();
   });
 
+  test('asks for a weekday after the category, only for a weekly recurring entry', () => {
+    const weeklyWithoutDays = { recurring: true, frequency: 'weekly' as const, weekdays: [] };
+    expect(check({ ...weeklyWithoutDays, categoryId: null })).toBe(l10n.t('form.category'));
+    expect(check(weeklyWithoutDays)).toBe('Escolha ao menos um dia da semana.');
+    expect(check({ ...weeklyWithoutDays, weekdays: [1] })).toBeNull();
+    expect(check({ ...weeklyWithoutDays, recurring: false })).toBeNull();
+  });
+
+  test('sends the weekly recurrence with the weekdays sorted', () => {
+    const result = draftToInput({ ...valid, recurring: true, frequency: 'weekly', weekdays: [5, 1] }, l10n);
+    expect(result).toMatchObject({ input: { recurrence: { frequency: 'weekly', weekdays: [1, 5] } } });
+  });
+
+  test.each([
+    { recurring: false, type: 'despesa' as const },
+    { recurring: true, type: 'acerto' as const, categoryId: null },
+  ])('sends a monthly recurrence for %p', (patch) => {
+    const result = draftToInput({ ...valid, frequency: 'weekly', weekdays: [1], ...patch }, l10n);
+    expect(result).toMatchObject({ input: { recurrence: { frequency: 'monthly' } } });
+  });
+
   test('normalizes a valid draft', () => {
     const result = draftToInput(valid, l10n);
     expect(result).toEqual({
@@ -91,6 +160,7 @@ describe('draftToInput + validateInput', () => {
         split: true,
         confirmed: false,
         recurring: false,
+        recurrence: { frequency: 'monthly' },
       },
     });
   });
@@ -116,6 +186,22 @@ describe('toTransaction', () => {
     expect(toTransaction('n1', input({ recurring: true }), null).seriesId).toBe('s-n1');
   });
 
+  test('stores a weekly recurrence with its weekdays', () => {
+    const t = toTransaction('n1', input({ recurring: true, frequency: 'weekly', weekdays: [5, 1] }), null);
+    expect(t).toMatchObject({
+      recurring: true,
+      seriesId: 's-n1',
+      recurrence: { frequency: 'weekly', weekdays: [1, 5] },
+    });
+  });
+
+  test('a non-recurring entry or an acerto is stored as monthly', () => {
+    const weekly = { recurrence: { frequency: 'weekly' as const, weekdays: [1 as const] } };
+    expect(toTransaction('n1', { ...input(), ...weekly }, null).recurrence).toEqual({ frequency: 'monthly' });
+    const settlement = { ...input({ type: 'acerto', categoryId: null, recurring: true }), ...weekly };
+    expect(toTransaction('n1', settlement, null).recurrence).toEqual({ frequency: 'monthly' });
+  });
+
   test('editing keeps the series even when recurrence is switched off', () => {
     const existing = aTransaction({ id: 'old', recurring: true, seriesId: 's-luz' });
     const t = toTransaction('old', input({ recurring: false }), existing);
@@ -131,7 +217,14 @@ describe('draftFromTransaction', () => {
       note: 'x',
       recurring: true,
       categoryId: t.categoryId,
+      frequency: 'monthly',
+      weekdays: [],
     });
+  });
+
+  test('prefills the weekly frequency and its weekdays', () => {
+    const t = aTransaction({ recurring: true, recurrence: { frequency: 'weekly', weekdays: [1, 5] } });
+    expect(draftFromTransaction(t, l10n.money)).toMatchObject({ frequency: 'weekly', weekdays: [1, 5] });
   });
 });
 
@@ -148,6 +241,49 @@ describe('transactionInputSchema', () => {
 
   test.each([MAX_ENTRY_CENTS + 1, 1e300])('rejects %p, above the largest amount', (valueCents) => {
     expect(transactionInputSchema.safeParse({ ...input, valueCents }).success).toBe(false);
+  });
+
+  test('defaults the recurrence to monthly', () => {
+    expect(transactionInputSchema.parse({ ...input, recurrence: undefined }).recurrence).toEqual({
+      frequency: 'monthly',
+    });
+  });
+
+  test('accepts weekly weekdays on a recurring entry and stores them sorted', () => {
+    const weekly = { ...input, recurring: true, recurrence: { frequency: 'weekly', weekdays: [5, 1] } };
+    expect(transactionInputSchema.parse(weekly).recurrence).toEqual({
+      frequency: 'weekly',
+      weekdays: [1, 5],
+    });
+  });
+
+  test('lets an empty weekly list through, for validateInput to ask for a weekday', () => {
+    const weekly = { ...input, recurring: true, recurrence: { frequency: 'weekly', weekdays: [] } };
+    const parsed = transactionInputSchema.parse(weekly);
+    expect(validateInput(parsed, l10n.t)).toBe('Escolha ao menos um dia da semana.');
+  });
+
+  test.each([
+    { name: 'a weekday above 6', recurring: true, recurrence: { frequency: 'weekly', weekdays: [7] } },
+    { name: 'a negative weekday', recurring: true, recurrence: { frequency: 'weekly', weekdays: [-1] } },
+    { name: 'a fractional weekday', recurring: true, recurrence: { frequency: 'weekly', weekdays: [1.5] } },
+    { name: 'a repeated weekday', recurring: true, recurrence: { frequency: 'weekly', weekdays: [1, 1] } },
+    { name: 'weekdays on monthly', recurring: true, recurrence: { frequency: 'monthly', weekdays: [1] } },
+    { name: 'an unknown frequency', recurring: true, recurrence: { frequency: 'daily' } },
+    {
+      name: 'weekly on a one-off entry',
+      recurring: false,
+      recurrence: { frequency: 'weekly', weekdays: [1] },
+    },
+    {
+      name: 'weekly on an acerto',
+      recurring: true,
+      type: 'acerto',
+      categoryId: null,
+      recurrence: { frequency: 'weekly', weekdays: [1] },
+    },
+  ])('rejects $name', ({ name: _name, ...patch }) => {
+    expect(transactionInputSchema.safeParse({ ...input, ...patch }).success).toBe(false);
   });
 
   test('keeps the total of a very large ledger exact', () => {

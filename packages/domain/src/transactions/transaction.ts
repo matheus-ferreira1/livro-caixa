@@ -2,6 +2,7 @@ import type { Translate } from '../i18n/translate';
 import type { IsoDate } from '../dates/dates';
 import type { Cents } from '../money/money';
 import type { Currency, Language } from '../settings/preferences';
+import type { Recurrence } from './recurrence';
 
 export const TRANSACTION_TYPES = ['receita', 'despesa', 'acerto'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -21,6 +22,8 @@ export interface Transaction {
   recurring: boolean;
   /** Links every occurrence of a recurring entry across months. */
   seriesId: string | null;
+  /** Monthly unless the entry is recurring and weekly; an acerto is always monthly. */
+  recurrence: Recurrence;
 }
 
 export interface Category {

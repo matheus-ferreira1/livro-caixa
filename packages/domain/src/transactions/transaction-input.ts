@@ -1,8 +1,23 @@
 import { z } from 'zod';
-import { defaultDateForMonth, isIsoDate, type IsoDate, type MonthKey } from '../dates/dates';
+import {
+  defaultDateForMonth,
+  isIsoDate,
+  weekdayOf,
+  type IsoDate,
+  type MonthKey,
+  type Weekday,
+} from '../dates/dates';
 import type { Localization } from '../i18n/localization';
 import type { Translate } from '../i18n/translate';
 import type { Cents, MoneyFormat } from '../money/money';
+import {
+  MONTHLY_RECURRENCE,
+  recurrenceSchema,
+  sortWeekdays,
+  weeklyRecurrence,
+  type Recurrence,
+  type RecurrenceFrequency,
+} from './recurrence';
 import { TRANSACTION_TYPES, type Category, type Transaction, type TransactionType } from './transaction';
 
 /** What the Novo/Editar lançamento form holds: the value is still the text being typed. */
@@ -16,6 +31,10 @@ export interface TransactionDraft {
   split: boolean;
   confirmed: boolean;
   recurring: boolean;
+  /** Only meaningful while recurring; saved as monthly otherwise. */
+  frequency: RecurrenceFrequency;
+  /** The weekly chips, in calendar order; empty while monthly. */
+  weekdays: Weekday[];
 }
 
 /**
@@ -25,17 +44,23 @@ export interface TransactionDraft {
 export const MAX_ENTRY_CENTS = 100_000_000_000;
 
 /** What the API accepts to create or replace an entry. */
-export const transactionInputSchema = z.object({
-  date: z.string(),
-  description: z.string().max(200),
-  note: z.string().max(500).default(''),
-  type: z.enum(TRANSACTION_TYPES),
-  categoryId: z.string().nullable(),
-  valueCents: z.number().int().max(MAX_ENTRY_CENTS),
-  split: z.boolean(),
-  confirmed: z.boolean(),
-  recurring: z.boolean(),
-});
+export const transactionInputSchema = z
+  .object({
+    date: z.string(),
+    description: z.string().max(200),
+    note: z.string().max(500).default(''),
+    type: z.enum(TRANSACTION_TYPES),
+    categoryId: z.string().nullable(),
+    valueCents: z.number().int().max(MAX_ENTRY_CENTS),
+    split: z.boolean(),
+    confirmed: z.boolean(),
+    recurring: z.boolean(),
+    recurrence: recurrenceSchema.default(MONTHLY_RECURRENCE),
+  })
+  // Only a recurring entry repeats, and an acerto never does, so neither can carry weekdays.
+  .refine(
+    (input) => input.recurrence.frequency === 'monthly' || (input.recurring && input.type !== 'acerto'),
+  );
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 
@@ -53,6 +78,8 @@ export function emptyDraft(month: MonthKey, today: IsoDate, categories: Category
     split: false,
     confirmed: false,
     recurring: false,
+    frequency: 'monthly',
+    weekdays: [],
   };
 }
 
@@ -67,7 +94,25 @@ export function draftFromTransaction(t: Transaction, money: MoneyFormat): Transa
     split: t.split,
     confirmed: t.confirmed,
     recurring: t.recurring,
+    frequency: t.recurrence.frequency,
+    weekdays: t.recurrence.frequency === 'weekly' ? [...t.recurrence.weekdays] : [],
   };
+}
+
+/** Switching to weekly pre-selects the weekday of the entry's date; the chips never follow later date edits. */
+export function applyFrequencyChange(
+  draft: TransactionDraft,
+  frequency: RecurrenceFrequency,
+): TransactionDraft {
+  if (frequency === 'monthly') return { ...draft, frequency, weekdays: [] };
+  return { ...draft, frequency, weekdays: isIsoDate(draft.date) ? [weekdayOf(draft.date)] : [] };
+}
+
+export function toggleWeekday(draft: TransactionDraft, weekday: Weekday): TransactionDraft {
+  const weekdays = draft.weekdays.includes(weekday)
+    ? draft.weekdays.filter((w) => w !== weekday)
+    : sortWeekdays([...draft.weekdays, weekday]);
+  return { ...draft, weekdays };
 }
 
 /** Switching type resets the category to the first one of that type; only expenses stay split. */
@@ -81,6 +126,7 @@ export function applyTypeChange(
     type,
     categoryId: firstCategoryId(categories, type),
     split: type === 'despesa' ? draft.split : false,
+    ...(type === 'acerto' ? { frequency: 'monthly', weekdays: [] } : {}),
   };
 }
 
@@ -93,7 +139,20 @@ export function validateInput(
   if (!input.description.trim()) return t('form.description');
   if (input.valueCents === null || input.valueCents <= 0) return t('form.value');
   if (input.type !== 'acerto' && !input.categoryId) return t('form.category');
+  if (isWeeklyWithoutWeekdays(input)) return t('form.weekdays');
   return null;
+}
+
+const isWeeklyWithoutWeekdays = ({
+  recurring,
+  recurrence,
+}: Pick<TransactionInput, 'recurring' | 'recurrence'>) =>
+  recurring && recurrence.frequency === 'weekly' && recurrence.weekdays.length === 0;
+
+/** Unchecking Recorrente, or switching to acerto, saves the entry as monthly with no weekdays. */
+function draftRecurrence(draft: TransactionDraft): Recurrence {
+  const repeatsWeekly = draft.recurring && draft.type !== 'acerto' && draft.frequency === 'weekly';
+  return repeatsWeekly ? weeklyRecurrence(draft.weekdays) : MONTHLY_RECURRENCE;
 }
 
 export function draftToInput(
@@ -110,6 +169,7 @@ export function draftToInput(
     split: draft.split,
     confirmed: draft.confirmed,
     recurring: draft.recurring,
+    recurrence: draftRecurrence(draft),
   };
   const error = validateInput({ ...fields, valueCents }, t);
   if (error || valueCents === null) return { error: error ?? t('form.value') };
@@ -128,6 +188,10 @@ export function toTransaction(
 ): Transaction {
   const isSettlement = input.type === 'acerto';
   const recurring = !isSettlement && input.recurring;
+  const recurrence =
+    recurring && input.recurrence.frequency === 'weekly'
+      ? weeklyRecurrence(input.recurrence.weekdays)
+      : MONTHLY_RECURRENCE;
   return {
     id,
     date: input.date,
@@ -140,5 +204,6 @@ export function toTransaction(
     confirmed: input.confirmed,
     recurring,
     seriesId: existing?.seriesId ?? (recurring ? `s-${id}` : null),
+    recurrence,
   };
 }

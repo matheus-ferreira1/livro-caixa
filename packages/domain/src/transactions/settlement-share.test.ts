@@ -68,6 +68,7 @@ describe('settlementEntry', () => {
       split: false,
       confirmed: false,
       recurring: false,
+      recurrence: { frequency: 'monthly' },
     });
   });
 });
