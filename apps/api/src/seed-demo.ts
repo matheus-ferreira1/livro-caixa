@@ -3,6 +3,7 @@
  * Usage: bun run seed:demo   (refuses to touch a database that already has entries)
  */
 import {
+  MONTHLY_RECURRENCE,
   pad2,
   QUANTITY_SCALE,
   type Asset,
@@ -40,6 +41,7 @@ function tx(
     confirmed,
     recurring: Boolean(seriesId),
     seriesId,
+    recurrence: MONTHLY_RECURRENCE,
   };
 }
 

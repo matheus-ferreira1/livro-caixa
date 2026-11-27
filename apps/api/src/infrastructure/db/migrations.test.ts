@@ -52,3 +52,29 @@ describe('005_language_and_currency', () => {
     expect(() => db.query(`UPDATE settings SET ${column} = ? WHERE id = 1`).run(value)).toThrow();
   });
 });
+
+describe('006_weekly_recurrence', () => {
+  const columns = 'SELECT recurrence_frequency, recurrence_weekdays FROM transactions';
+
+  test('turns existing entries into monthly ones', () => {
+    const db = new Database(':memory:');
+    db.exec(sqlOf('002_ledger'));
+    db.exec(`INSERT INTO transactions (id, date, description, type, value_cents, recurring, series_id)
+      VALUES ('t1', '2026-10-05', 'Internet', 'despesa', 100, 1, 's1')`);
+
+    db.exec(sqlOf('006_weekly_recurrence'));
+
+    expect(db.query(columns).get()).toEqual({ recurrence_frequency: 'monthly', recurrence_weekdays: null });
+  });
+
+  test('rejects an unknown frequency', () => {
+    const db = new Database(':memory:');
+    db.exec(sqlOf('002_ledger'));
+    db.exec(sqlOf('006_weekly_recurrence'));
+
+    expect(() =>
+      db.exec(`INSERT INTO transactions (id, date, description, type, value_cents, recurrence_frequency)
+        VALUES ('t1', '2026-10-05', 'Internet', 'despesa', 100, 'daily')`),
+    ).toThrow();
+  });
+});

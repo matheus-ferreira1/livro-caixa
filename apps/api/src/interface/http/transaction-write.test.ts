@@ -68,6 +68,53 @@ describe('POST /api/transactions', () => {
     expect(body.transaction.seriesId).toBe(`s-${body.transaction.id}`);
   });
 
+  test('stores and returns a weekly recurrence', async () => {
+    const { agent } = await signedIn();
+    const { body } = await agent
+      .post('/api/transactions')
+      .send({ ...input, recurring: true, recurrence: { frequency: 'weekly', weekdays: [1, 5] } })
+      .expect(201);
+    expect(body.transaction.recurrence).toEqual({ frequency: 'weekly', weekdays: [1, 5] });
+    const list = await agent.get('/api/transactions?month=2026-11').expect(200);
+    expect(list.body.transactions[0].recurrence).toEqual({ frequency: 'weekly', weekdays: [1, 5] });
+  });
+
+  test('defaults to a monthly recurrence', async () => {
+    const { agent } = await signedIn();
+    const { body } = await agent.post('/api/transactions').send(input).expect(201);
+    expect(body.transaction.recurrence).toEqual({ frequency: 'monthly' });
+  });
+
+  test('asks for at least one weekday', async () => {
+    const { agent } = await signedIn();
+    const res = await agent
+      .post('/api/transactions')
+      .send({ ...input, recurring: true, recurrence: { frequency: 'weekly', weekdays: [] } })
+      .expect(400);
+    expect(res.body.error.message).toBe('Escolha ao menos um dia da semana.');
+  });
+
+  test.each([
+    ['out-of-range weekday', { recurring: true, recurrence: { frequency: 'weekly', weekdays: [8] } }],
+    ['repeated weekday', { recurring: true, recurrence: { frequency: 'weekly', weekdays: [1, 1] } }],
+    ['weekdays on a monthly one', { recurring: true, recurrence: { frequency: 'monthly', weekdays: [1] } }],
+    [
+      'weekly on a non-recurring entry',
+      { recurring: false, recurrence: { frequency: 'weekly', weekdays: [1] } },
+    ],
+    [
+      'weekly on an acerto',
+      { type: 'acerto', recurring: true, recurrence: { frequency: 'weekly', weekdays: [1] } },
+    ],
+  ])('rejects %s', async (_name, patch) => {
+    const { agent } = await signedIn();
+    const res = await agent
+      .post('/api/transactions')
+      .send({ ...input, ...patch })
+      .expect(400);
+    expect(res.body.error.message).toBe('Dados inválidos.');
+  });
+
   test.each([
     [{ date: '06/11/2026' }, 'Informe a data.'],
     [{ description: '  ' }, 'Informe a descrição.'],
@@ -107,6 +154,19 @@ describe('POST /api/transactions with values no ledger can hold', () => {
 });
 
 describe('PUT /api/transactions/:id', () => {
+  test('replaces the recurrence', async () => {
+    const { agent } = await signedIn();
+    const created = await agent
+      .post('/api/transactions')
+      .send({ ...input, recurring: true })
+      .expect(201);
+    const { body } = await agent
+      .put(`/api/transactions/${created.body.transaction.id}`)
+      .send({ ...input, recurring: true, recurrence: { frequency: 'weekly', weekdays: [3] } })
+      .expect(200);
+    expect(body.transaction.recurrence).toEqual({ frequency: 'weekly', weekdays: [3] });
+  });
+
   test('replaces an entry and keeps its series', async () => {
     const { agent } = await signedIn();
     const created = (
