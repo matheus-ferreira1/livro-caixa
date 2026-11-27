@@ -1,7 +1,6 @@
 import {
   dateParts,
   monthLabel,
-  weekdayOf,
   sumCents,
   validateRecurringSelection,
   type Category,
@@ -16,6 +15,7 @@ import {
 import { TYPE_META } from '@/features/transactions/view-model';
 
 /** What the review dialog holds per series: whether it is chosen, and the date and value as typed. */
+// Weekly rows ignore `include` and `date`: each date is chosen through `skipped` and keeps its planned date.
 export interface RecurringDraft {
   include: boolean;
   date: IsoDate;
@@ -139,8 +139,8 @@ export function recurringRows(
 }
 
 const dateLabel = (date: IsoDate, t: Localization['t']): string => {
-  const { dd, mm } = dateParts(date, t);
-  return `${t(`weekday.${weekdayOf(date)}`)} ${dd}/${mm}`;
+  const { dd, mm, weekday } = dateParts(date, t);
+  return `${weekday} ${dd}/${mm}`;
 };
 
 /** The draft after (un)checking a whole series: a weekly one checks or clears every date. */
