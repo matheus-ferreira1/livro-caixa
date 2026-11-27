@@ -167,6 +167,19 @@ describe('PUT /api/transactions/:id', () => {
     expect(body.transaction.recurrence).toEqual({ frequency: 'weekly', weekdays: [3] });
   });
 
+  test('keeps a weekly recurrence when the body omits it', async () => {
+    const { agent } = await signedIn();
+    const created = await agent
+      .post('/api/transactions')
+      .send({ ...input, recurring: true, recurrence: { frequency: 'weekly', weekdays: [1, 5] } })
+      .expect(201);
+    const { body } = await agent
+      .put(`/api/transactions/${created.body.transaction.id}`)
+      .send({ ...input, recurring: true })
+      .expect(200);
+    expect(body.transaction.recurrence).toEqual({ frequency: 'weekly', weekdays: [1, 5] });
+  });
+
   test('replaces an entry and keeps its series', async () => {
     const { agent } = await signedIn();
     const created = (

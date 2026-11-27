@@ -55,11 +55,12 @@ export const transactionInputSchema = z
     split: z.boolean(),
     confirmed: z.boolean(),
     recurring: z.boolean(),
-    recurrence: recurrenceSchema.default(MONTHLY_RECURRENCE),
+    // Absent means "unchanged": a replace keeps the entry's recurrence, a create is monthly.
+    recurrence: recurrenceSchema.optional(),
   })
   // Only a recurring entry repeats, and an acerto never does, so neither can carry weekdays.
   .refine(
-    (input) => input.recurrence.frequency === 'monthly' || (input.recurring && input.type !== 'acerto'),
+    (input) => input.recurrence?.frequency !== 'weekly' || (input.recurring && input.type !== 'acerto'),
   );
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
@@ -148,7 +149,7 @@ const isWeeklyWithoutWeekdays = ({
   recurring,
   recurrence,
 }: Pick<TransactionInput, 'recurring' | 'recurrence'>) =>
-  recurring && recurrence.frequency === 'weekly' && recurrence.weekdays.length === 0;
+  recurring && recurrence?.frequency === 'weekly' && recurrence.weekdays.length === 0;
 
 /** Unchecking Recorrente, or switching to acerto, saves the entry as monthly with no weekdays. */
 function draftRecurrence(draft: TransactionDraft): Recurrence {
@@ -189,10 +190,9 @@ export function toTransaction(
 ): Transaction {
   const isSettlement = input.type === 'acerto';
   const recurring = !isSettlement && input.recurring;
+  const requested = input.recurrence ?? existing?.recurrence ?? MONTHLY_RECURRENCE;
   const recurrence =
-    recurring && input.recurrence.frequency === 'weekly'
-      ? weeklyRecurrence(input.recurrence.weekdays)
-      : MONTHLY_RECURRENCE;
+    recurring && requested.frequency === 'weekly' ? weeklyRecurrence(requested.weekdays) : MONTHLY_RECURRENCE;
   return {
     id,
     date: input.date,

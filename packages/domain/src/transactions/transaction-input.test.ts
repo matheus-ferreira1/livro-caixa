@@ -207,6 +207,25 @@ describe('toTransaction', () => {
     expect(toTransaction('n1', settlement, null).recurrence).toEqual({ frequency: 'monthly' });
   });
 
+  test('a replace without a recurrence keeps the existing weekly one', () => {
+    const weekly = { frequency: 'weekly' as const, weekdays: [2 as const] };
+    const existing = aTransaction({ id: 'old', recurring: true, seriesId: 's-old', recurrence: weekly });
+    const { recurrence: _omitted, ...withoutRecurrence } = input({ recurring: true });
+    expect(toTransaction('old', withoutRecurrence, existing).recurrence).toEqual(weekly);
+  });
+
+  test('a create without a recurrence is monthly', () => {
+    const { recurrence: _omitted, ...withoutRecurrence } = input({ recurring: true });
+    expect(toTransaction('n1', withoutRecurrence, null).recurrence).toEqual({ frequency: 'monthly' });
+  });
+
+  test('a replace that turns recurring off becomes monthly', () => {
+    const weekly = { frequency: 'weekly' as const, weekdays: [2 as const] };
+    const existing = aTransaction({ id: 'old', recurring: true, seriesId: 's-old', recurrence: weekly });
+    const { recurrence: _omitted, ...withoutRecurrence } = input({ recurring: false });
+    expect(toTransaction('old', withoutRecurrence, existing).recurrence).toEqual({ frequency: 'monthly' });
+  });
+
   test('editing keeps the series even when recurrence is switched off', () => {
     const existing = aTransaction({ id: 'old', recurring: true, seriesId: 's-luz' });
     const t = toTransaction('old', input({ recurring: false }), existing);
