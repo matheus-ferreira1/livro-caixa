@@ -4,7 +4,7 @@ import {
   type RecurringCandidate,
   type Transaction,
 } from '@livro-caixa/domain';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { mockApi, renderWithRoute } from '@/test/render';
 import { RecurringDialog } from './RecurringDialog';
@@ -155,6 +155,8 @@ describe('RecurringDialog', () => {
       ),
     );
 
+    const dates = () => within(screen.getByRole('list', { name: 'Faxina' }));
+
     test('shows one row that reveals a checkbox per date', async () => {
       const { user } = setup({ candidates: weekly });
       expect(await screen.findByText('3 ocorrências')).toBeInTheDocument();
@@ -163,14 +165,14 @@ describe('RecurringDialog', () => {
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await user.click(toggle);
       expect(screen.getByRole('button', { name: 'Ocultar datas' })).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.getByRole('checkbox', { name: 'seg 09/11' })).toBeChecked();
+      expect(dates().getByRole('checkbox', { name: 'seg 09/11' })).toBeChecked();
       expect(dialog()).toHaveTextContent('3 de 3 selecionados');
     });
 
     test('generates the checked dates with the row value', async () => {
       const { user, posts } = setup({ candidates: weekly });
       await user.click(await screen.findByRole('button', { name: 'Ver datas' }));
-      await user.click(screen.getByRole('checkbox', { name: 'seg 09/11' }));
+      await user.click(dates().getByRole('checkbox', { name: 'seg 09/11' }));
       const value = screen.getByLabelText('Valor de Faxina');
       await user.clear(value);
       await user.type(value, '250,00');
@@ -192,10 +194,10 @@ describe('RecurringDialog', () => {
       const { user } = setup({ candidates: weekly });
       await user.click(await screen.findByRole('button', { name: 'Ver datas' }));
       for (const label of ['seg 02/11', 'seg 09/11', 'seg 16/11'])
-        await user.click(screen.getByRole('checkbox', { name: label }));
+        await user.click(dates().getByRole('checkbox', { name: label }));
       expect(screen.getByRole('checkbox', { name: 'Incluir Faxina' })).not.toBeChecked();
       await user.click(screen.getByRole('checkbox', { name: 'Incluir Faxina' }));
-      expect(screen.getByRole('checkbox', { name: 'seg 16/11' })).toBeChecked();
+      expect(dates().getByRole('checkbox', { name: 'seg 16/11' })).toBeChecked();
       expect(dialog()).toHaveTextContent('3 de 3 selecionados');
     });
   });

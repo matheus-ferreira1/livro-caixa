@@ -216,7 +216,9 @@ function ReviewRow({
         className={checkboxClass}
       />
       <span className="col-span-2 flex min-w-0 flex-col md:col-auto">
-        <span className="font-semibold">{row.description}</span>
+        <span id={`series-${row.seriesId}`} className="font-semibold">
+          {row.description}
+        </span>
         <span className="text-[13px] text-muted-foreground">{row.meta}</span>
       </span>
       <span
@@ -279,7 +281,8 @@ function ReviewRow({
       {row.weekly && expanded && (
         <ul
           id={`dates-${row.seriesId}`}
-          className="col-span-full m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 md:pl-[48px]"
+          aria-labelledby={`series-${row.seriesId}`}
+          className="col-span-full m-0 grid list-none grid-cols-2 gap-x-5 gap-y-1 p-0 md:flex md:flex-wrap md:pl-[48px]"
         >
           {row.dates.map(({ date, label, checked }) => (
             <li key={date}>
