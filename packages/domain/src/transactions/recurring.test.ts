@@ -76,6 +76,17 @@ describe('recurringCandidates for a weekly series', () => {
     ]);
   });
 
+  test('a Monday-only series dated before a five-Monday month offers all five Mondays', () => {
+    const series = [weekly('faxina', '2026-10-05', [MONDAY])];
+    expect(datesOf(recurringCandidates(series, '2026-11'))).toEqual([
+      '2026-11-02',
+      '2026-11-09',
+      '2026-11-16',
+      '2026-11-23',
+      '2026-11-30',
+    ]);
+  });
+
   test('switching a monthly series to weekly mid-month offers the rest of that month', () => {
     const series = [occurrence('s1', '2026-10-03'), weekly('s1', '2026-11-03', [TUESDAY, FRIDAY])];
     expect(datesOf(recurringCandidates(series, '2026-11'))).toEqual([
@@ -251,6 +262,15 @@ describe('matchRecurringItems', () => {
       ['2026-11-06', '2026-10-30'],
       ['2026-11-05', '2026-10-05'],
     ]);
+  });
+
+  test('matches one request that mixes a monthly and a weekly series', () => {
+    const result = matchRecurringItems(candidates, [item('luz', '2026-11-05'), item('faxina', '2026-11-02')]);
+    expect(result.status).toBe('matched');
+  });
+
+  test('is stale for a weekly series with no candidates left', () => {
+    expect(matchRecurringItems([], [item('faxina', '2026-11-02')])).toEqual({ status: 'stale' });
   });
 
   test.each([
