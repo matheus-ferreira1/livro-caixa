@@ -3,6 +3,7 @@
  * Usage: bun run seed:demo   (refuses to touch a database that already has entries)
  */
 import {
+  datesOfMonth,
   MONTHLY_RECURRENCE,
   pad2,
   QUANTITY_SCALE,
@@ -11,6 +12,8 @@ import {
   type Snapshot,
   type Transaction,
   type TransactionType,
+  weekdayOf,
+  weeklyRecurrence,
 } from '@livro-caixa/domain';
 import { bootstrap } from './bootstrap';
 import { loadConfig } from './config';
@@ -211,6 +214,39 @@ const OCTOBER: Transaction[] = [
   tx('o11', '2026-10-28', 'Plano de saúde', '', 'despesa', 'c-saude', 412, false, false, 's-saude'),
 ];
 
+const CLEANER_SERIES_ID = 's-diarista';
+const CLEANER_VISIT_VALUE = 120;
+const CLEANER_WEEKDAYS = [1, 5] as const;
+const CLEANER_FIRST_MONTH = '2025-11';
+const CLEANER_LAST_MONTH = '2026-10';
+// The last visit before the demo "today" (2026-10-26); later visits are still pending.
+const CLEANER_LAST_CONFIRMED_DATE = '2026-10-23';
+
+function cleanerVisits(): Transaction[] {
+  const months = [...MONTHS, '2026-10'].filter(
+    (month) => month >= CLEANER_FIRST_MONTH && month <= CLEANER_LAST_MONTH,
+  );
+  return months.flatMap((month) =>
+    datesOfMonth(month)
+      .filter((date) => (CLEANER_WEEKDAYS as readonly number[]).includes(weekdayOf(date)))
+      .map((date): Transaction => ({
+        ...tx(
+          `d${date}`,
+          date,
+          'Diarista',
+          '',
+          'despesa',
+          'c-moradia',
+          CLEANER_VISIT_VALUE,
+          false,
+          date <= CLEANER_LAST_CONFIRMED_DATE,
+          CLEANER_SERIES_ID,
+        ),
+        recurrence: weeklyRecurrence(CLEANER_WEEKDAYS),
+      })),
+  );
+}
+
 const ASSET_DATE = '2026-10-28';
 
 function autoAsset(
@@ -307,7 +343,7 @@ if (!ledgerIsEmpty && !portfolioIsEmpty) {
 }
 // Each part has its own check, so a dev database from before Patrimônio can still get its portfolio.
 if (ledgerIsEmpty) {
-  const rows = [...history(), ...OCTOBER];
+  const rows = [...history(), ...OCTOBER, ...cleanerVisits()];
   for (const row of rows) container.transactions.insert(row);
   console.info(`Loaded ${rows.length} demo entries.`);
 }
