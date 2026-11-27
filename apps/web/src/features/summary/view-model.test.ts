@@ -1,4 +1,5 @@
 import {
+  MONTHLY_RECURRENCE,
   DEFAULT_LOCALIZATION,
   localization,
   yearSummary,
@@ -27,6 +28,7 @@ const entry = (
   split: false,
   confirmed,
   recurring: false,
+  recurrence: MONTHLY_RECURRENCE,
   seriesId: null,
 });
 

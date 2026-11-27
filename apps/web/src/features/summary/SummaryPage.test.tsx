@@ -1,4 +1,5 @@
 import {
+  MONTHLY_RECURRENCE,
   monthName,
   monthOf,
   translator,
@@ -25,6 +26,7 @@ const entry = (overrides: Partial<Transaction>): Transaction => ({
   split: false,
   confirmed: true,
   recurring: false,
+  recurrence: MONTHLY_RECURRENCE,
   seriesId: null,
   ...overrides,
 });
