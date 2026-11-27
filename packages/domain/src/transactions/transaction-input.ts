@@ -104,6 +104,7 @@ export function applyFrequencyChange(
   draft: TransactionDraft,
   frequency: RecurrenceFrequency,
 ): TransactionDraft {
+  if (draft.frequency === frequency) return draft;
   if (frequency === 'monthly') return { ...draft, frequency, weekdays: [] };
   return { ...draft, frequency, weekdays: isIsoDate(draft.date) ? [weekdayOf(draft.date)] : [] };
 }

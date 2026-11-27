@@ -62,6 +62,11 @@ describe('applyFrequencyChange', () => {
     });
   });
 
+  test('re-selecting weekly keeps the chosen weekdays', () => {
+    const weekly: TransactionDraft = { ...valid, frequency: 'weekly', weekdays: [1, 5] };
+    expect(applyFrequencyChange(weekly, 'weekly').weekdays).toEqual([1, 5]);
+  });
+
   test('pre-selects nothing while the date is not a real day', () => {
     expect(applyFrequencyChange({ ...valid, date: '' }, 'weekly').weekdays).toEqual([]);
   });
