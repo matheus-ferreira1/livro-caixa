@@ -210,19 +210,19 @@ describe('toTransaction', () => {
   test('a replace without a recurrence keeps the existing weekly one', () => {
     const weekly = { frequency: 'weekly' as const, weekdays: [2 as const] };
     const existing = aTransaction({ id: 'old', recurring: true, seriesId: 's-old', recurrence: weekly });
-    const { recurrence: _omitted, ...withoutRecurrence } = input({ recurring: true });
+    const withoutRecurrence = { ...input({ recurring: true }), recurrence: undefined };
     expect(toTransaction('old', withoutRecurrence, existing).recurrence).toEqual(weekly);
   });
 
   test('a create without a recurrence is monthly', () => {
-    const { recurrence: _omitted, ...withoutRecurrence } = input({ recurring: true });
+    const withoutRecurrence = { ...input({ recurring: true }), recurrence: undefined };
     expect(toTransaction('n1', withoutRecurrence, null).recurrence).toEqual({ frequency: 'monthly' });
   });
 
   test('a replace that turns recurring off becomes monthly', () => {
     const weekly = { frequency: 'weekly' as const, weekdays: [2 as const] };
     const existing = aTransaction({ id: 'old', recurring: true, seriesId: 's-old', recurrence: weekly });
-    const { recurrence: _omitted, ...withoutRecurrence } = input({ recurring: false });
+    const withoutRecurrence = { ...input({ recurring: false }), recurrence: undefined };
     expect(toTransaction('old', withoutRecurrence, existing).recurrence).toEqual({ frequency: 'monthly' });
   });
 
@@ -267,10 +267,8 @@ describe('transactionInputSchema', () => {
     expect(transactionInputSchema.safeParse({ ...input, valueCents }).success).toBe(false);
   });
 
-  test('defaults the recurrence to monthly', () => {
-    expect(transactionInputSchema.parse({ ...input, recurrence: undefined }).recurrence).toEqual({
-      frequency: 'monthly',
-    });
+  test('leaves an absent recurrence undefined', () => {
+    expect(transactionInputSchema.parse({ ...input, recurrence: undefined }).recurrence).toBeUndefined();
   });
 
   test('accepts weekly weekdays on a recurring entry and stores them sorted', () => {
