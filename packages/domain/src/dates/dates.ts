@@ -74,6 +74,7 @@ export const isWeekday = (value: number): value is Weekday => (WEEKDAYS as reado
 export function weekdayOf(date: IsoDate): Weekday {
   const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
   const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  // getUTCDay is always 0-6; the guard only narrows the type.
   return isWeekday(weekday) ? weekday : 0;
 }
 
