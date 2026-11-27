@@ -111,6 +111,18 @@ for (const { colorScheme, suffix } of COLOR_SCHEMES) {
       await save(page, 'acerto', suffix);
       await page.keyboard.press('Escape');
 
+      // November is the month after the last seeded one, so every recurring series is still to be generated.
+      await page.goto('/lancamentos?mes=2026-11');
+      await settle(page, 'November 2026');
+      await page.getByRole('button', { name: 'Review and generate' }).click();
+      const recurringDialog = page.getByRole('dialog', { name: 'Generate recurring entries' });
+      await expect(recurringDialog).toBeVisible();
+      await recurringDialog.getByRole('button', { name: 'Show dates' }).click();
+      await recurringDialog.getByRole('button', { name: 'Hide dates' }).scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      await save(page, 'recorrentes', suffix);
+      await page.keyboard.press('Escape');
+
       await page.goto('/resumo');
       await settle(page, '2026');
       await save(page, 'resumo', suffix);
